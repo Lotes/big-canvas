@@ -1,0 +1,48 @@
+<html>
+<head>
+	<title>big canvas</title>
+	<script type="text/javascript" src="jquery-1.7.2.min.js"></script>
+	<script type="text/javascript" src="jquery-palette/parse-color.js"></script>
+	<script type="text/javascript" src="jquery-palette/jquery.palette.js"></script>
+	<link type="text/css" rel="stylesheet" href="jquery-palette/css/palette.css" />
+	<script type="text/javascript" src="underscore-min.js"></script>
+	<script type="text/javascript" src="backbone-min.js"></script>
+	<script type="text/javascript" src="bigcanvas.js"></script>
+	<style type="text/css">
+		html, body {
+			width: 100%;
+			height: 100%;
+			padding: 0;
+			margin: 0;
+		}
+		
+		#menu {
+			opacity: 0.75;
+			background-color: black;
+			left: 0;
+			top: 0;
+			position: fixed;
+		}
+		
+		.button {
+			margin: 0.5em;
+			cursor: pointer;
+			display: block;
+			width: 32px;
+			height: 32px;
+		}
+		
+		.activated {
+			border: 1px white solid;
+		}
+	</style>
+</head>
+<body>
+<canvas id="bigcanvas" width="100" height="100">No canvas supported :-(.)</canvas>
+<div id="menu">
+	<image id="moveButton" class="button" src="move.png"/>
+	<image id="pencilButton" class="button activated" src="pencil.png"/>
+	<div id="colorPicker" class="button" style="background-color: red"></div>
+</div>
+</body>
+</html>
