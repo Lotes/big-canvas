@@ -1,2 +1,10 @@
-server/client:
--random button for finding images
+-zu Node.js konvertieren
+
+-Bildlink-Generator
+-32-bit-Begrenzung aufheben (endlose Karte)
+-transparenter Pinsel
+-Radierer (transparent)
+-Standardtool soll "Verschieben" sein
+-Undo/Redo
+-Touch-Events für iPad/Handys
+-Radierer+Pinsel mit Breite angeben
