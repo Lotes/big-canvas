@@ -2,7 +2,7 @@ var config = {
     TILES_SIZE: 128,
     TILES_PATH: "/tiles/",
     UNAVAILABLE_TILE_PATH: "/tiles/unavailable.png",
-    WEBSOCKET_URL: 'ws://' + document.location.host + '/canvas'
+    WEBSOCKET_URL: 'ws://' + document.location.hostname + ':8081/big-canvas'
 };
 
 function Point(x, y) {

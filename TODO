@@ -1,10 +1,23 @@
 -zu Node.js konvertieren
 
--Bildlink-Generator
+-Bildlink-Generator (/images/u8Ik1lwz --> x/y/width/height)
 -32-bit-Begrenzung aufheben (endlose Karte)
 -transparenter Pinsel
 -Radierer (transparent)
 -Standardtool soll "Verschieben" sein
 -Undo/Redo
--Touch-Events f�r iPad/Handys
+-Touch-Events für iPad/Handys
 -Radierer+Pinsel mit Breite angeben
+-Onlineliste für Region
+
+-------------------------------------------------------------------------
+Routen:
+- /tiles/:column_:row.png
+  - schlägt die Kachel im private/tiles-Ordner nach und gibt sie aus, falls sie existiert, oder sendet leere Kachel falls nicht
+  - im Arbeitspeicher cachen
+- /images/:id
+  - schlägt das Bild im private/images-Ordner nach
+  - dort ist in einer Datei x/y/width/height hinterlegt
+  - außerdem die Anzahl der Zugriffe
+  - im Arbeitspeicher cachen
+  - maximale Beschränkung 4096x4096?
