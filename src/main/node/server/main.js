@@ -93,7 +93,13 @@ socketServer.on('connection', function(socket) {
             };
 
             socket.on("message", function(message) {
-
+                /* kinds of messages:
+                    -getName(uid)
+                    -setName(name)
+                    -setWindow(x, y, width, height) //all BigInteger, width&height <=4096
+                    -draw(brush/eraser)
+                    -undo/redo(actionId)
+                 */
             });
 
             socket.on("close", function() {
