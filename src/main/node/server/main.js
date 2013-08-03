@@ -5,6 +5,8 @@ var WebSocketServer = require('ws').Server;
 var UserStore = require("./UserStore");
 var NameGenerator = require("./NameGenerator");
 var signature = require('cookie-signature');
+var BigCanvas = require("./BigCanvas");
+var BigInteger = require("big-integer");
 
 var webServer = express();
 var sessionStore = new SessionStore({
@@ -61,12 +63,22 @@ webServer.get('/tiles/:x_:y.png', function(req, res){
 
 webServer.get('/images/:id.png', function(req, res){
     //TODO
+    res.end("nothing");
 });
 
 webServer.listen(config.SERVER_WEB_PORT);
 
-var socketIds = 0;
-var sockets = {};
+
+var socketIds = BigInteger(0);
+function BigCanvasSocket(wsSocket, userId) {
+    var id = socketIds.toString();
+    socketIds = socketIds.next();
+    this.getId = function() { return id; };
+    this.send = function(obj) { wsSocket.send(JSON.stringify(obj)); };
+    this.getUserId = function() { return userId; };
+    this.close = function(obj) { wsSocket.close(); };
+}
+
 var socketServer = new WebSocketServer({
     port: config.SERVER_SOCKET_PORT,
     path: "/"+config.SERVER_SOCKET_PATH
@@ -79,31 +91,25 @@ socketServer.on('connection', function(socket) {
         var sessionID = socket.upgradeReq.cookies[config.SERVER_SESSION_ID];
         sessionID = signature.unsign(sessionID.slice(2), config.SERVER_SESSION_SECRET);
         sessionStore.get(sessionID, function(err, session) {
-            if(err)
-                throw err;
-            if(!session.userId)
-                throw new Error("The session '"+sessionID+"' has no user id.");
-
-            //initialize socket associated data
-            var socketId = socketIds++;
-            sockets[socketId] = {
-                socket: socket,
-                userId: session.userId,
-                window: null
-            };
-
+            if(err || !session.userId) {
+                socket.close();
+                return;
+            }
+            //initialize connection
+            var extSocket = new BigCanvasSocket(socket, session.userId);
+            BigCanvas.Server.connect(extSocket);
+            //receiving messages
             socket.on("message", function(message) {
-                /* kinds of messages:
-                    -getName(uid)
-                    -setName(name)
-                    -setWindow(x, y, width, height) //all BigInteger, width&height <=4096
-                    -draw(brush/eraser)
-                    -undo/redo(actionId)
-                 */
+                try {
+                    BigCanvas.Server.receive(extSocket, JSON.parse(message));
+                } catch(ex) {
+                    console.log("Error while receiving: "+ex.message);
+                    socket.close();
+                }
             });
-
+            //finalize connection
             socket.on("close", function() {
-                delete sockets[socketId];
+                BigCanvas.Server.disconnect(extSocket);
             });
         });
     });

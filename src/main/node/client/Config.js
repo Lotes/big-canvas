@@ -1,6 +1,6 @@
-var Config = {
-    SERVER_SOCKET_PORT: 8081,
-    SERVER_SOCKET_PATH: "big-canvas"
-};
+//client configuration
+var Config = require("../Config");
+
+Config.RPC_DEFINITIONS_PATH = "big-canvas.types";
 
 module.exports = Config;

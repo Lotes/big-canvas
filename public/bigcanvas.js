@@ -3174,7 +3174,7 @@ var Backbone = require("backbone");
 var BigInteger = require("big-integer");
 
 $(function() {
-    alert("test");
+
 });
 },{"backbone":1,"big-integer":2,"underscore":3}]},{},[4])
 ;

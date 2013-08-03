@@ -1,0 +1,330 @@
+start
+  = _ decls:(ds:definition _  { return ds; } )* { return decls; }
+
+identifier
+  = c:[a-zA-Z_] cs:[a-zA-Z_0-9]* { return c+cs.join(""); }
+
+identifiers
+  = id:identifier ids:(_ "," _ s:identifier { return s; })*
+    {
+        ids.unshift(id);
+        return ids;
+    }
+
+/* === Types === */
+type
+  = t:(
+      primitiveType 
+      / id:identifier { return id; } 
+    )
+    { 
+      return t;
+    }
+
+restriction
+  = from:value _ ".." _ to:value 
+    { 
+      return {
+        restrictionKind: "range", 
+        from: from, 
+        to: to
+      }; 
+    }  
+  / r:regex    
+    { 
+      return {
+        restrictionKind: "regex", 
+        regex: r
+      }; 
+    }  
+    
+primitiveType
+  = "Integer" { return "Integer"; }
+  / "String"  { return "String"; }
+  / "Boolean" { return "Boolean"; }
+  / "Float"   { return "Float"; }
+  / "Void"    { return "Void"; }
+  
+/* Match-Clause*/  
+matchClause
+  = "match" _ "{" 
+      _ cs:(caseClause)* d:(_ dc:defaultClause {return dc;})? _
+    "}"
+    {
+        if(d)
+          cs.push(d);
+        return cs;
+    }
+
+defaultClause
+  = "default" _ ":" _ as:attributes _ 
+    {
+        return {
+            value: null,
+            members: as
+        };
+    }
+    
+caseClause
+  = "case" __ value:value _ ":"
+       _ as:attributes _
+    {
+        return {
+            value: value,
+            members: as
+        };
+    }
+
+value
+  = variableValue
+  / numericValue
+  / booleanValue
+  
+variableValue
+  = id:identifier 
+    { 
+      return {
+        valueKind: "constant",
+        name: id
+      };
+    }
+    
+booleanValue
+  = "true"
+    { 
+      return {
+        valueKind: "boolean",
+        value: true
+      };
+    }
+  / "false"
+    { 
+      return {
+        valueKind: "boolean",
+        value: false
+      };
+    }
+  
+numericValue
+  = pre:(number:[0-9]+ { return parseInt(number.join(""), 10); })
+    frac:("." digits:[0-9]+ { return parseFloat("0."+digits.join("")); })?
+    { 
+      frac = frac || 0;
+      return {
+        valueKind: "number",
+        value: pre + frac
+      };
+    }
+ 
+/* === Definitions === */
+definition
+  = enumDefinition
+  / aliasDefinition
+  / structDefintion
+  / interfaceDefinition
+  
+attribute
+  = id:identifier _ ":" _ type:type _ 
+    match:(mc:matchClause _ {return mc; })? ";" 
+    { 
+      var r = {
+        memberKind: "attribute",
+        name: id,
+        type: type
+      };
+      if(match !== "") 
+        r.match = match;
+      return r;
+    }  
+
+attributes
+  = (_ m:attribute { return m; })*
+  
+interfaces
+  = (_ inf:interface { return inf; })*
+  
+interface
+  = functionInterface
+  / eventInterface
+
+formalParameter
+  = id:identifier _ ":" _ type:type
+    {
+      return {
+        name: id,
+        type: type
+      };
+    }  
+  
+formalParameters
+  = ps:(f:formalParameter 
+      fs:(_ "," _ s:formalParameter { return s; })*
+        {
+          fs.unshift(f);
+          return fs;
+        }
+      )?
+    {
+      return ps || [];
+    }
+  
+functionInterface
+  = "function" __ name:identifier 
+    _ "(" _ params:formalParameters _ ")" 
+    ret:(_ ":" _ t:type {return t; })?
+    _ ";"
+    {
+      return {
+        interfaceKind: "function",
+        name: name,
+        parameters: params,
+        returnType: ret || undefined
+      };
+    }
+     
+eventInterface
+  = "event" __ name:identifier 
+    _ "(" _ params:formalParameters _ ")" _ ";" 
+    {
+      return {
+        interfaceKind: "event",
+        name: name,
+        parameters: params
+      };
+    }
+    
+structDefintion
+  = "struct" __ name:identifier _ "{" 
+       _ as:attributes _    
+    "}"  
+    {
+        return {
+            typeKind: "struct",
+            name: name,
+            members: as
+        };
+    }
+  
+aliasDefinition
+  = "type" __ name:identifier _ "=" _ 
+    alias:(
+      "list" __ "of" __ t:type    
+      {
+        return {
+          isList: true,
+          elementType: t
+        };   
+      }
+      / type:type res:(_ "in" __ r:restriction { return r; })? 
+      {
+        return {
+          isList: false,
+          alias: type,
+          restriction: res || undefined
+        };   
+      }
+    )
+    { 
+      alias.typeKind = "alias";
+      alias.name = name;
+      return alias; 
+    }
+
+enumDefinition
+  = "enum" __ name:identifier _ "{" 
+       _ ids:identifiers _
+    "}"
+    {
+      return {
+        typeKind: "enum",
+        name: name,
+        values: ids
+      };
+    }
+
+interfaceDefinition
+  = "interface" __ name:identifier _ "{"
+      _ ins:interfaces _
+    "}"
+    {
+      return {
+        typeKind: "interface",
+        name: name,
+        interfaces: ins
+      };
+    }
+    
+/* === Whitespaces === */
+_
+  = whitespace*
+  
+__
+  = whitespace+
+    
+whitespace
+  = [" "\n\t\r]
+  / "//" [^\r\n]*
+  / "/*" [^"*/"]* "*/"
+  
+/* regualar expressions */
+SourceCharacter
+  = .
+
+LineTerminator
+  = [\n\r\u2028\u2029]
+
+regex
+  = "/" body:RegularExpressionBody "/" 
+    flags:RegularExpressionFlags 
+    {
+      return "/"+body+"/"+flags;
+    }
+
+RegularExpressionBody
+  = char_:RegularExpressionFirstChar chars:RegularExpressionChars    {
+      return char_ + chars;
+    }
+
+RegularExpressionChars
+  = chars:RegularExpressionChar* { return chars.join(""); }
+
+RegularExpressionFirstChar
+  = ![*\\/[] char_:RegularExpressionNonTerminator { return char_; }
+  / RegularExpressionBackslashSequence
+  / RegularExpressionClass
+
+RegularExpressionChar
+  = ![\\/[] char_:RegularExpressionNonTerminator { return char_; }
+  / RegularExpressionBackslashSequence
+  / RegularExpressionClass
+
+/*
+ * This rule contains an error in the specification: "NonTerminator" instead of
+ * "RegularExpressionNonTerminator".
+ */
+RegularExpressionBackslashSequence
+  = "\\" char_:RegularExpressionNonTerminator { return "\\" + char_; }
+
+RegularExpressionNonTerminator
+  = !LineTerminator char_:SourceCharacter { return char_; }
+
+RegularExpressionClass
+  = "[" chars:RegularExpressionClassChars "]" { return "[" + chars + "]"; }
+
+RegularExpressionClassChars
+  = chars:RegularExpressionClassChar* { return chars.join(""); }
+
+RegularExpressionClassChar
+  = ![\]\\] char_:RegularExpressionNonTerminator { return char_; }
+  / RegularExpressionBackslashSequence
+
+RegularExpressionFlags
+  = parts:IdentifierPart* { return parts.join(""); }
+  
+IdentifierStart
+  = [a-zA-Z]
+  / "$"
+  / "_"
+  
+IdentifierPart
+  = IdentifierStart
