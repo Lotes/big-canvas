@@ -3169,12 +3169,3661 @@ if (typeof module !== "undefined") {
 
 })()
 },{}],4:[function(require,module,exports){
+//common configuration file
+var Config = {
+    SERVER_SOCKET_PORT: 8081,
+    SERVER_SOCKET_PATH: "big-canvas"
+};
+
+module.exports = Config;
+},{}],5:[function(require,module,exports){
+var Config = require("./Config");
+var Generator = require("./../rpc/json-rpc-generator");
+var BigCanvas = function(callback) {
+  var self = this;
+  $.ajax(Config.RPC_DEFINITIONS_PATH)
+    .done(function(definitionsText) {
+      //setup client stub
+      var generator = new Generator(definitionsText);
+      self.Types = generator.Types;
+      self.Client = new generator.Interfaces.Main.Client({
+        onAction: function(userId, actionId, action, region) {
+          console.log(userId);
+        }
+      });
+      //setup web socket
+      var connected = false;
+      var url = "ws://"+document.location.hostname+":"+Config.SERVER_SOCKET_PORT+"/"+Config.SERVER_SOCKET_PATH;
+      var socket = new WebSocket(url);
+      socket.onopen = function() {
+        connected = true;
+        callback();
+      };
+      socket.onerror = function() {
+        if(!connected)
+          callback(new Error("Could not connect with web socket!"));
+        console.log("WebSocket error!");
+      };
+      socket.onclose = function() {
+        connected = false;
+        console.log("WebSocket closed!");
+      };
+      socket.onmessage = function(msg) {
+        try {
+          var obj = JSON.parse(msg.data);
+          self.Client.receive(obj);
+        } catch(ex) {
+          console.log("Could not read message: "+msg.data+" ("+ex.message+").");
+        }
+      };
+      self.Client.on("send", function(obj) {
+        var msg = JSON.stringify(obj);
+        if(connected)
+          socket.send(msg);
+        else
+          console.log("Could not send message: "+msg+".");
+      })
+    })
+    .fail(function(jqXHR, textStatus) {
+      callback(new Error(textStatus));
+    });
+};
+module.exports = BigCanvas;
+},{"./../rpc/json-rpc-generator":8,"./Config":6}],6:[function(require,module,exports){
+//client configuration
+var Config = require("../Config");
+
+Config.RPC_DEFINITIONS_PATH = "big-canvas.types";
+
+module.exports = Config;
+},{"../Config":4}],7:[function(require,module,exports){
+var Config = require("./Config");
 var _ = require("underscore");
 var Backbone = require("backbone");
 var BigInteger = require("big-integer");
+var BigCanvas = require("./BigCanvas");
 
 $(function() {
+  var bigCanvas = new BigCanvas(function(err) {
+    if(err)
+      throw err;
 
+    bigCanvas.Client.setName("Test", function(err) {
+      if(err)
+        console.log(err);
+      else
+        console.log("success");
+    })
+  });
 });
-},{"backbone":1,"big-integer":2,"underscore":3}]},{},[4])
+
+
+},{"./BigCanvas":5,"./Config":6,"backbone":1,"big-integer":2,"underscore":3}],8:[function(require,module,exports){
+var parser = require("./json-rpc-parser");
+var Backbone = require("backbone");
+var _ = require("underscore");
+
+/* IMPORTANT:
+ * - the server object handles socket objects
+ * - these socket objects must have at least a "send(object)" method
+ */
+
+var Generator = function(schemeText) {
+  try {
+    var definitions = parser.parse(schemeText);
+    //console.log(JSON.stringify(definitions, null, 2));
+        
+    var interfaces = {};
+    var types = { //base type: BOOLEAN, STRING, FLOAT, INTEGER, VOID, STRUCT, LIST
+      Boolean: {
+        baseType: "BOOLEAN",
+        name: "Boolean",
+        validate: function(obj) { 
+          return typeof(obj) === "boolean"; 
+        }
+      },
+      String: {     
+        baseType: "STRING",
+        name: "String",
+        validate: function(obj) { 
+          return typeof(obj) === "string"; 
+        }
+      },
+      Float: {
+        baseType: "FLOAT",
+        name: "Float",
+        validate: function(obj) { 
+          return typeof(obj) === "number"; 
+        }
+      },
+      Integer: {
+        baseType: "INTEGER",
+        name: "Integer",
+        validate: function(obj) { 
+          return typeof(obj) === "number" 
+                 && Math.floor(obj) === obj; 
+        }
+      },
+      Void: {
+        baseType: "VOID",
+        name: "Void",
+        validate: function(obj) { 
+          return typeof(obj) === "undefined"; 
+        }
+      }
+    };
+    function resolveType(name) {
+      if(name in types)
+			  return types[name];
+		  else
+			  throw new Error("Could not resolve type '"+name+"'.");
+    } 
+    function resolveParameters(params) {
+      var result = [];
+      for(var i=0; i<params.length; i++)
+        result.push({
+          name: params[i].name,
+          type: resolveType(params[i].type)
+        });
+      return result;
+    }
+    for(var i=0; i<definitions.length; i++) {
+      var def = definitions[i];
+      var name = def.name;
+      if(def.typeKind != "interface") {
+        //its an alias, struct or enumeration
+        if(name in types)
+          throw new Error("Type '"+name+"' already exists!");
+        switch(def.typeKind) {
+          case "enum":
+            types[name] = {
+              baseType: "STRING",
+              name: name,
+              validate: (function(values) {
+                return function(obj) {
+                  if(typeof(obj) !== "string")
+                    return false;
+                  for(var j=0; j<values.length; j++)
+                    if(obj === values[j])
+                      return true;
+                  return false;
+                };
+              })(def.values)
+            };
+            break;
+          case "alias":
+            if(def.isList) {
+              var elementType = resolveType(def.elementType);
+              types[name] = {
+                baseType: "LIST",
+                name: name,
+                validate: (function(elemType) {
+                  return function(obj) {
+                    if(typeof(obj) !== "object" || !("length" in obj))
+                      return false;
+                    for(var j=0; j<obj.length; j++)
+                      if(!elemType.validate(obj[j]))
+                        return false;
+                    return true;
+                  };
+                })(elementType)
+              };
+            } else {
+              var base = resolveType(def.alias);
+              var baseType = base.baseType;
+              var validate = base.validate;
+              if(def.restriction) {
+                var restriction = def.restriction;
+                switch(restriction.restrictionKind) {
+                  case "regex":
+                    if(baseType !== "STRING")
+                      throw new Error("Regular expression restriction holds only for string types (type: "+name+").");
+                    validate = (function(vali, regex) {
+                      return function(obj) {
+                        return vali(obj) && obj.match(regex) != null;
+                      };
+                    })(validate, eval(restriction.regex));
+                    break;
+                  case "range":
+                    switch(baseType) {
+                      case "INTEGER":
+                      case "FLOAT":
+                        if(restriction.from.valueKind !== "number"
+                           || restriction.to.valueKind !== "number")
+                           throw new Error("Range restriction must consist of numeric limits (type: "+name+").");
+                        if(restriction.from.value > restriction.to.value)
+                          throw new Error("Lower limit must be smaller or equal to the upper limit (type: "+name+").");
+                        validate = (function(vali, lower, upper) {
+                          return function(obj) {
+                            return vali(obj) && obj >= lower && obj <= upper;
+                          };
+                        })(validate, restriction.from.value, restriction.to.value);
+                        break;
+                      default:
+                        throw new Error("Range restriction holds only for numeric types (type: "+name+").");
+                    }
+                    break;
+                }
+              }
+              types[name] = {
+                baseType: baseType,
+                name: name,
+                validate: validate
+              };   
+            }
+            break;
+          case "struct":
+            function typeCheckMembers(members) {
+              var checker = [];
+              for(var j=0; j<members.length; j++) {
+                var member = members[j];
+                var memberName = member.name;
+                var memberType = resolveType(member.type);
+                var memberChecker = {
+                  name: memberName,
+                  type: memberType
+                  //cases
+                };                
+                var casesChecker = [];
+                if(member.match) {
+                  for(var k=0; k<member.match.length; k++) {
+                    var match = member.match[k];
+                    var caseChecker = {};
+                    if(match.value != null) {
+                      switch(match.value.valueKind) {
+                        case "constant": 
+                          if(!memberType.validate(match.value.name))
+                            throw new Error("'"+match.value.name+"' is not a member of type '"+member.type+"'.");
+                          caseChecker.value = match.value.name;
+                          break;
+                        case "number":
+                          if(!memberType.validate(match.value.value))
+                            throw new Error("'"+match.value.name+"' is not a member of type '"+member.type+"'.");
+                          caseChecker.value = match.value.value;
+                      }
+                    }
+                    caseChecker.membersChecker = typeCheckMembers(match.members);
+                    casesChecker.push(caseChecker);
+                  }
+                }
+                memberChecker.cases = casesChecker;
+                checker.push(memberChecker);
+              }
+              return checker;
+            }
+            function validateMembers(checker, object) {
+              for(var m=0; m<checker.length; m++) {
+                var memberChecker = checker[m];
+                if(!(memberChecker.name in object))
+                  return false;
+                var value = object[memberChecker.name];
+                if(!memberChecker.type.validate(value))
+                  return false;
+                for(var n=0; n<memberChecker.cases.length; n++) {
+                  var caseChecker = memberChecker.cases[n];
+                  if(caseChecker.value == value) {
+                    if(!validateMembers(caseChecker.membersChecker, object))
+                      return false;
+                    break;
+                  }
+                }
+              }
+              return true;
+            }
+            var checker = typeCheckMembers(def.members);
+            types[name] = {
+              baseType: "STRUCT",
+              name: name,
+              validate: (function(ch){
+                return function(obj) {
+                  return validateMembers(ch, obj);
+                };
+              })(checker)
+            };
+            break;
+        }
+      } else {
+        //def is an interface
+        if(name in interfaces)
+          throw new Error("Interface '"+name+"' already exists!");
+        //collect functions/events of interface
+        var functions = {};
+        for(var j=0; j<def.interfaces.length; j++) {
+          var fn = def.interfaces[j];
+          var functionName = fn.name;
+          if(functionName in functions)
+            throw new Error("Function '"+functionName+"' already exists in interface '"+name+"'!");
+          switch(fn.interfaceKind) {
+            case "function":
+              functions[functionName] = {
+                interfaceKind: "function",
+                parameters: resolveParameters(fn.parameters),
+                returns: resolveType(fn.returnType || "Void")
+              };
+              break;
+            case "event":
+              functions[functionName] = {
+                interfaceKind: "event",
+                parameters: resolveParameters(fn.parameters)
+              };
+              break;
+          }
+        }
+        //=== build client ===
+        //add event handler
+        var client = (function(fns) {
+          return function(implementations) {
+            _.extend(this, Backbone.Events);
+            this.sequenceNumber = 0;    
+            this.callbacks = {};
+            //check for event implementations
+            this.eventHandlers = {};
+            for(var fname in fns) {
+              var fn = fns[fname];
+              if(fn.interfaceKind !== "event")
+                continue;
+              //if event is not implemented, add a dummy implementation
+              if(!(fname in implementations)) {
+                console.log("Please add an implementation for event '"+fname+"'.");
+                implementations[fname] = (function(nm) {
+                  return function() {
+                    console.log("Event '"+nm+"' was called!");
+                  };
+                })(fname);
+              }
+              //add event handler
+              this.eventHandlers[fname] = implementations[fname];
+            }
+          };          
+        })(functions);
+        //add function stubs
+        for(var fname in functions) {
+          var fn = functions[fname];
+          if(fn.interfaceKind !== "function")
+            continue;
+          client.prototype[fname] = (function(fname, fn) {
+            //compute usage signature
+            var params = [];
+            for(var i=0; i<fn.parameters.length; i++) {
+              var p = fn.parameters[i];
+              params.push(p.name+": "+p.type.name);
+            }
+            var usage = "Usage: function "+fname+"("+params.join(", ")+", callback: function(err: Error, result: "+fn.returns.name+"))";
+            //compute stub function            
+            return function() {
+              if(arguments.length != fn.parameters.length + 1
+                 || typeof(arguments[arguments.length-1]) !== "function")
+                throw new Error(usage);
+              var callback = arguments[arguments.length-1];
+              try {
+                //validate parameters
+                var paramsList = [];
+                for(var i=0; i<fn.parameters.length; i++) {
+                  var formalParam = fn.parameters[i];
+                  var actualParam = arguments[i];
+                  if(!formalParam.type.validate(actualParam))
+                    throw new Error("Invalid argument ("+(i+1)+").");
+                  paramsList.push(actualParam);
+                }
+                //send remote procedure call
+                var seqNo = this.sequenceNumber++;
+                this.callbacks[seqNo] = callback;
+                this.trigger("send", {
+                  type: "functionCall",
+                  sequenceNumber: seqNo,
+                  functionName: fname,
+                  parameters: paramsList
+                });
+              } catch(ex) {
+                callback(ex);
+              }
+            };
+          })(fname, fn);
+        }
+        client.prototype.receive = function(obj) {
+          try {
+            switch(obj.type) {
+              case "functionError":
+                var seqNo = obj.sequenceNumber;
+                if(!(seqNo in this.callbacks))
+                  return false;
+                var callback = this.callbacks[seqNo];
+                delete this.callbacks[seqNo];
+                callback && callback(new Error(obj.errorMessage));
+                return true;
+              case "functionReturn":
+                var seqNo = obj.sequenceNumber;
+                if(!(seqNo in this.callbacks))
+                  return false;
+                var callback = this.callbacks[seqNo];
+                delete this.callbacks[seqNo];
+                callback && callback(null, obj["returnValue"]);
+                return true;
+              case "eventCall":
+                var eventName = obj.eventName;
+                var params = obj.parameters;
+                if(!(eventName in this.eventHandlers))
+                  return false;
+                this.eventHandlers[eventName].apply(this, params);
+                return true;
+            }
+          } catch(ex) {
+            console.log(ex);
+            return false;
+          }
+          return false;
+        };
+        
+        //=== build server ===
+        //create function handlers
+        var server = (function(fns) {
+          return function(implementations) {
+            var self = this;
+            _.extend(this, Backbone.Events);
+            //call constructor
+            if(implementations.constructor)
+              implementations.constructor.apply(this);
+            //handle connect request
+            if(implementations.connect)
+              this.connect = implementations.connect;
+            else
+              this.connect = function(socket) {
+                console.log("Socket "+socket.getId()+" connected.");
+              };
+            //handle disconnect request
+            if(implementations.disconnect)
+              this.disconnect = implementations.disconnect;
+            else
+              this.disconnect = function(socket) {
+                console.log("Socket "+socket.getId()+" disconnected.");
+              };
+            //create function handlers
+            this.functionHandlers = {};
+            for(var fname in fns) {
+              var fn = fns[fname];
+              if(fn.interfaceKind !== "function")
+                continue;
+              //if event is not implemented, add a dummy implementation
+              if(!(fname in implementations))
+                throw new Error("Please add an implementation for function '"+fname+"'.");                
+              //add event handler
+              this.functionHandlers[fname] = (function(fn, impl) {
+                //compute usage signature
+                var params = [];
+                for(var i=0; i<fn.parameters.length; i++) {
+                  var p = fn.parameters[i];
+                  params.push(p.name+": "+p.type.name);
+                }
+                var usage = "Usage: function "+fname+"(socket: Socket, "+params.join(", ")+", callback: function(err: Error, result: "+fn.returns.name+"))";
+                //compute stub function            
+                return function() {
+                  if(arguments.length != fn.parameters.length + 2
+                     || typeof(arguments[arguments.length-1]) !== "function")
+                    throw new Error(usage);
+                  var socket = arguments[0];
+                  var callback = arguments[arguments.length-1];
+                  try {
+                    //validate parameters
+                    var paramsList = [];
+                    for(var i=0; i<fn.parameters.length; i++) {
+                      var formalParam = fn.parameters[i];
+                      var actualParam = arguments[i+1];
+                      if(!formalParam.type.validate(actualParam))
+                        throw new Error("Invalid argument ("+(i+1)+").");
+                      paramsList.push(actualParam);
+                    }
+                    //validate result
+                    paramsList.push(function(err, result) {
+                      if(err)
+                        callback(err);
+                      else
+                        if(fn.returns.validate(result))
+                          callback(null, result);
+                        else
+                          callback(new Error("Invalid result."));
+                    });
+                    //add socket
+                    paramsList.unshift(socket);
+                    //apply actual function
+                    impl.apply(self, paramsList);
+                  } catch(ex) {
+                    callback(ex);
+                  }
+                };
+              })(fn, implementations[fname]);
+            }
+          };          
+        })(functions);
+        //create receive-callback mechanism
+        server.prototype.receive = function(socket, obj) {
+          var self = this;
+          try {
+            switch(obj.type) {
+              case "functionCall":
+                var seqNo = obj.sequenceNumber;
+                var fname = obj.functionName;
+                var params = obj.parameters;
+                params.unshift(socket);
+                params.push(function(err, result) {
+                  var answer;
+                  if(err)
+                    answer = {
+                      type: "functionError",
+                      sequenceNumber: seqNo,
+                      errorMessage: err.message
+                    };
+                  else
+                    answer = {
+                      type: "functionReturn",
+                      sequenceNumber: seqNo,
+                      returnValue: result
+                    };
+                  socket.send(answer);
+                });
+                this.functionHandlers[fname].apply(this, params);
+                return true;
+            }
+          } catch(ex) {
+            //console.log(ex);
+            return false;
+          }
+          return false;
+        };
+        //create event stubs
+        for(var fname in functions) {
+          var fn = functions[fname];
+          if(fn.interfaceKind !== "event")
+            continue;
+          server.prototype[fname] = (function(fname, fn) {
+            return function() {
+              //validate parameters
+              if(arguments.length !== fn.parameters.length + 1)
+                throw new Error("Invalid number of arguments!");
+              var paramsList = [];
+              var socket = arguments[0];
+              for(var i=0; i<fn.parameters.length; i++) {
+                var formalParam = fn.parameters[i];
+                var actualParam = arguments[i+1];
+                if(!formalParam.type.validate(actualParam))
+                  throw new Error("Invalid argument ("+(i+1)+")!");
+                paramsList.push(actualParam);
+              }
+              //send the event
+              socket.send({
+                type: "eventCall",
+                eventName: fname,
+                parameters: paramsList
+              });
+            };
+          })(fname, fn);
+        }
+        
+        interfaces[name] = {
+          Client: client,
+          Server: server
+        };
+      }
+    }
+      
+    //result
+    this.Types = types;
+    this.Interfaces = interfaces;
+  } catch(ex) {
+    console.log(ex);
+  }
+};
+
+module.exports = Generator;
+},{"./json-rpc-parser":9,"backbone":1,"underscore":3}],9:[function(require,module,exports){
+module.exports = (function(){
+  /*
+   * Generated by PEG.js 0.7.0.
+   *
+   * http://pegjs.majda.cz/
+   */
+  
+  function quote(s) {
+    /*
+     * ECMA-262, 5th ed., 7.8.4: All characters may appear literally in a
+     * string literal except for the closing quote character, backslash,
+     * carriage return, line separator, paragraph separator, and line feed.
+     * Any character may appear in the form of an escape sequence.
+     *
+     * For portability, we also escape escape all control and non-ASCII
+     * characters. Note that "\0" and "\v" escape sequences are not used
+     * because JSHint does not like the first and IE the second.
+     */
+     return '"' + s
+      .replace(/\\/g, '\\\\')  // backslash
+      .replace(/"/g, '\\"')    // closing quote character
+      .replace(/\x08/g, '\\b') // backspace
+      .replace(/\t/g, '\\t')   // horizontal tab
+      .replace(/\n/g, '\\n')   // line feed
+      .replace(/\f/g, '\\f')   // form feed
+      .replace(/\r/g, '\\r')   // carriage return
+      .replace(/[\x00-\x07\x0B\x0E-\x1F\x80-\uFFFF]/g, escape)
+      + '"';
+  }
+  
+  var result = {
+    /*
+     * Parses the input with a generated parser. If the parsing is successfull,
+     * returns a value explicitly or implicitly specified by the grammar from
+     * which the parser was generated (see |PEG.buildParser|). If the parsing is
+     * unsuccessful, throws |PEG.parser.SyntaxError| describing the error.
+     */
+    parse: function(input, startRule) {
+      var parseFunctions = {
+        "start": parse_start,
+        "identifier": parse_identifier,
+        "identifiers": parse_identifiers,
+        "type": parse_type,
+        "restriction": parse_restriction,
+        "primitiveType": parse_primitiveType,
+        "matchClause": parse_matchClause,
+        "defaultClause": parse_defaultClause,
+        "caseClause": parse_caseClause,
+        "value": parse_value,
+        "variableValue": parse_variableValue,
+        "booleanValue": parse_booleanValue,
+        "numericValue": parse_numericValue,
+        "definition": parse_definition,
+        "attribute": parse_attribute,
+        "attributes": parse_attributes,
+        "interfaces": parse_interfaces,
+        "interface": parse_interface,
+        "formalParameter": parse_formalParameter,
+        "formalParameters": parse_formalParameters,
+        "functionInterface": parse_functionInterface,
+        "eventInterface": parse_eventInterface,
+        "structDefintion": parse_structDefintion,
+        "aliasDefinition": parse_aliasDefinition,
+        "enumDefinition": parse_enumDefinition,
+        "interfaceDefinition": parse_interfaceDefinition,
+        "_": parse__,
+        "__": parse___,
+        "whitespace": parse_whitespace,
+        "SourceCharacter": parse_SourceCharacter,
+        "LineTerminator": parse_LineTerminator,
+        "regex": parse_regex,
+        "RegularExpressionBody": parse_RegularExpressionBody,
+        "RegularExpressionChars": parse_RegularExpressionChars,
+        "RegularExpressionFirstChar": parse_RegularExpressionFirstChar,
+        "RegularExpressionChar": parse_RegularExpressionChar,
+        "RegularExpressionBackslashSequence": parse_RegularExpressionBackslashSequence,
+        "RegularExpressionNonTerminator": parse_RegularExpressionNonTerminator,
+        "RegularExpressionClass": parse_RegularExpressionClass,
+        "RegularExpressionClassChars": parse_RegularExpressionClassChars,
+        "RegularExpressionClassChar": parse_RegularExpressionClassChar,
+        "RegularExpressionFlags": parse_RegularExpressionFlags,
+        "IdentifierStart": parse_IdentifierStart
+      };
+      
+      if (startRule !== undefined) {
+        if (parseFunctions[startRule] === undefined) {
+          throw new Error("Invalid rule name: " + quote(startRule) + ".");
+        }
+      } else {
+        startRule = "start";
+      }
+      
+      var pos = { offset: 0, line: 1, column: 1, seenCR: false };
+      var reportFailures = 0;
+      var rightmostFailuresPos = { offset: 0, line: 1, column: 1, seenCR: false };
+      var rightmostFailuresExpected = [];
+      
+      function padLeft(input, padding, length) {
+        var result = input;
+        
+        var padLength = length - input.length;
+        for (var i = 0; i < padLength; i++) {
+          result = padding + result;
+        }
+        
+        return result;
+      }
+      
+      function escape(ch) {
+        var charCode = ch.charCodeAt(0);
+        var escapeChar;
+        var length;
+        
+        if (charCode <= 0xFF) {
+          escapeChar = 'x';
+          length = 2;
+        } else {
+          escapeChar = 'u';
+          length = 4;
+        }
+        
+        return '\\' + escapeChar + padLeft(charCode.toString(16).toUpperCase(), '0', length);
+      }
+      
+      function clone(object) {
+        var result = {};
+        for (var key in object) {
+          result[key] = object[key];
+        }
+        return result;
+      }
+      
+      function advance(pos, n) {
+        var endOffset = pos.offset + n;
+        
+        for (var offset = pos.offset; offset < endOffset; offset++) {
+          var ch = input.charAt(offset);
+          if (ch === "\n") {
+            if (!pos.seenCR) { pos.line++; }
+            pos.column = 1;
+            pos.seenCR = false;
+          } else if (ch === "\r" || ch === "\u2028" || ch === "\u2029") {
+            pos.line++;
+            pos.column = 1;
+            pos.seenCR = true;
+          } else {
+            pos.column++;
+            pos.seenCR = false;
+          }
+        }
+        
+        pos.offset += n;
+      }
+      
+      function matchFailed(failure) {
+        if (pos.offset < rightmostFailuresPos.offset) {
+          return;
+        }
+        
+        if (pos.offset > rightmostFailuresPos.offset) {
+          rightmostFailuresPos = clone(pos);
+          rightmostFailuresExpected = [];
+        }
+        
+        rightmostFailuresExpected.push(failure);
+      }
+      
+      function parse_start() {
+        var result0, result1, result2, result3;
+        var pos0, pos1, pos2, pos3;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        result0 = parse__();
+        if (result0 !== null) {
+          result1 = [];
+          pos2 = clone(pos);
+          pos3 = clone(pos);
+          result2 = parse_definition();
+          if (result2 !== null) {
+            result3 = parse__();
+            if (result3 !== null) {
+              result2 = [result2, result3];
+            } else {
+              result2 = null;
+              pos = clone(pos3);
+            }
+          } else {
+            result2 = null;
+            pos = clone(pos3);
+          }
+          if (result2 !== null) {
+            result2 = (function(offset, line, column, ds) { return ds; })(pos2.offset, pos2.line, pos2.column, result2[0]);
+          }
+          if (result2 === null) {
+            pos = clone(pos2);
+          }
+          while (result2 !== null) {
+            result1.push(result2);
+            pos2 = clone(pos);
+            pos3 = clone(pos);
+            result2 = parse_definition();
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                result2 = [result2, result3];
+              } else {
+                result2 = null;
+                pos = clone(pos3);
+              }
+            } else {
+              result2 = null;
+              pos = clone(pos3);
+            }
+            if (result2 !== null) {
+              result2 = (function(offset, line, column, ds) { return ds; })(pos2.offset, pos2.line, pos2.column, result2[0]);
+            }
+            if (result2 === null) {
+              pos = clone(pos2);
+            }
+          }
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, decls) { return decls; })(pos0.offset, pos0.line, pos0.column, result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_identifier() {
+        var result0, result1, result2;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (/^[a-zA-Z_]/.test(input.charAt(pos.offset))) {
+          result0 = input.charAt(pos.offset);
+          advance(pos, 1);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("[a-zA-Z_]");
+          }
+        }
+        if (result0 !== null) {
+          result1 = [];
+          if (/^[a-zA-Z_0-9]/.test(input.charAt(pos.offset))) {
+            result2 = input.charAt(pos.offset);
+            advance(pos, 1);
+          } else {
+            result2 = null;
+            if (reportFailures === 0) {
+              matchFailed("[a-zA-Z_0-9]");
+            }
+          }
+          while (result2 !== null) {
+            result1.push(result2);
+            if (/^[a-zA-Z_0-9]/.test(input.charAt(pos.offset))) {
+              result2 = input.charAt(pos.offset);
+              advance(pos, 1);
+            } else {
+              result2 = null;
+              if (reportFailures === 0) {
+                matchFailed("[a-zA-Z_0-9]");
+              }
+            }
+          }
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, c, cs) { return c+cs.join(""); })(pos0.offset, pos0.line, pos0.column, result0[0], result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_identifiers() {
+        var result0, result1, result2, result3, result4, result5;
+        var pos0, pos1, pos2, pos3;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        result0 = parse_identifier();
+        if (result0 !== null) {
+          result1 = [];
+          pos2 = clone(pos);
+          pos3 = clone(pos);
+          result2 = parse__();
+          if (result2 !== null) {
+            if (input.charCodeAt(pos.offset) === 44) {
+              result3 = ",";
+              advance(pos, 1);
+            } else {
+              result3 = null;
+              if (reportFailures === 0) {
+                matchFailed("\",\"");
+              }
+            }
+            if (result3 !== null) {
+              result4 = parse__();
+              if (result4 !== null) {
+                result5 = parse_identifier();
+                if (result5 !== null) {
+                  result2 = [result2, result3, result4, result5];
+                } else {
+                  result2 = null;
+                  pos = clone(pos3);
+                }
+              } else {
+                result2 = null;
+                pos = clone(pos3);
+              }
+            } else {
+              result2 = null;
+              pos = clone(pos3);
+            }
+          } else {
+            result2 = null;
+            pos = clone(pos3);
+          }
+          if (result2 !== null) {
+            result2 = (function(offset, line, column, s) { return s; })(pos2.offset, pos2.line, pos2.column, result2[3]);
+          }
+          if (result2 === null) {
+            pos = clone(pos2);
+          }
+          while (result2 !== null) {
+            result1.push(result2);
+            pos2 = clone(pos);
+            pos3 = clone(pos);
+            result2 = parse__();
+            if (result2 !== null) {
+              if (input.charCodeAt(pos.offset) === 44) {
+                result3 = ",";
+                advance(pos, 1);
+              } else {
+                result3 = null;
+                if (reportFailures === 0) {
+                  matchFailed("\",\"");
+                }
+              }
+              if (result3 !== null) {
+                result4 = parse__();
+                if (result4 !== null) {
+                  result5 = parse_identifier();
+                  if (result5 !== null) {
+                    result2 = [result2, result3, result4, result5];
+                  } else {
+                    result2 = null;
+                    pos = clone(pos3);
+                  }
+                } else {
+                  result2 = null;
+                  pos = clone(pos3);
+                }
+              } else {
+                result2 = null;
+                pos = clone(pos3);
+              }
+            } else {
+              result2 = null;
+              pos = clone(pos3);
+            }
+            if (result2 !== null) {
+              result2 = (function(offset, line, column, s) { return s; })(pos2.offset, pos2.line, pos2.column, result2[3]);
+            }
+            if (result2 === null) {
+              pos = clone(pos2);
+            }
+          }
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, id, ids) {
+                ids.unshift(id);
+                return ids;
+            })(pos0.offset, pos0.line, pos0.column, result0[0], result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_type() {
+        var result0;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        result0 = parse_primitiveType();
+        if (result0 === null) {
+          pos1 = clone(pos);
+          result0 = parse_identifier();
+          if (result0 !== null) {
+            result0 = (function(offset, line, column, id) { return id; })(pos1.offset, pos1.line, pos1.column, result0);
+          }
+          if (result0 === null) {
+            pos = clone(pos1);
+          }
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, t) { 
+              return t;
+            })(pos0.offset, pos0.line, pos0.column, result0);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_restriction() {
+        var result0, result1, result2, result3, result4;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        result0 = parse_value();
+        if (result0 !== null) {
+          result1 = parse__();
+          if (result1 !== null) {
+            if (input.substr(pos.offset, 2) === "..") {
+              result2 = "..";
+              advance(pos, 2);
+            } else {
+              result2 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"..\"");
+              }
+            }
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                result4 = parse_value();
+                if (result4 !== null) {
+                  result0 = [result0, result1, result2, result3, result4];
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, from, to) { 
+              return {
+                restrictionKind: "range", 
+                from: from, 
+                to: to
+              }; 
+            })(pos0.offset, pos0.line, pos0.column, result0[0], result0[4]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        if (result0 === null) {
+          pos0 = clone(pos);
+          result0 = parse_regex();
+          if (result0 !== null) {
+            result0 = (function(offset, line, column, r) { 
+                return {
+                  restrictionKind: "regex", 
+                  regex: r
+                }; 
+              })(pos0.offset, pos0.line, pos0.column, result0);
+          }
+          if (result0 === null) {
+            pos = clone(pos0);
+          }
+        }
+        return result0;
+      }
+      
+      function parse_primitiveType() {
+        var result0;
+        var pos0;
+        
+        pos0 = clone(pos);
+        if (input.substr(pos.offset, 7) === "Integer") {
+          result0 = "Integer";
+          advance(pos, 7);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"Integer\"");
+          }
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column) { return "Integer"; })(pos0.offset, pos0.line, pos0.column);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        if (result0 === null) {
+          pos0 = clone(pos);
+          if (input.substr(pos.offset, 6) === "String") {
+            result0 = "String";
+            advance(pos, 6);
+          } else {
+            result0 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"String\"");
+            }
+          }
+          if (result0 !== null) {
+            result0 = (function(offset, line, column) { return "String"; })(pos0.offset, pos0.line, pos0.column);
+          }
+          if (result0 === null) {
+            pos = clone(pos0);
+          }
+          if (result0 === null) {
+            pos0 = clone(pos);
+            if (input.substr(pos.offset, 7) === "Boolean") {
+              result0 = "Boolean";
+              advance(pos, 7);
+            } else {
+              result0 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"Boolean\"");
+              }
+            }
+            if (result0 !== null) {
+              result0 = (function(offset, line, column) { return "Boolean"; })(pos0.offset, pos0.line, pos0.column);
+            }
+            if (result0 === null) {
+              pos = clone(pos0);
+            }
+            if (result0 === null) {
+              pos0 = clone(pos);
+              if (input.substr(pos.offset, 5) === "Float") {
+                result0 = "Float";
+                advance(pos, 5);
+              } else {
+                result0 = null;
+                if (reportFailures === 0) {
+                  matchFailed("\"Float\"");
+                }
+              }
+              if (result0 !== null) {
+                result0 = (function(offset, line, column) { return "Float"; })(pos0.offset, pos0.line, pos0.column);
+              }
+              if (result0 === null) {
+                pos = clone(pos0);
+              }
+              if (result0 === null) {
+                pos0 = clone(pos);
+                if (input.substr(pos.offset, 4) === "Void") {
+                  result0 = "Void";
+                  advance(pos, 4);
+                } else {
+                  result0 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\"Void\"");
+                  }
+                }
+                if (result0 !== null) {
+                  result0 = (function(offset, line, column) { return "Void"; })(pos0.offset, pos0.line, pos0.column);
+                }
+                if (result0 === null) {
+                  pos = clone(pos0);
+                }
+              }
+            }
+          }
+        }
+        return result0;
+      }
+      
+      function parse_matchClause() {
+        var result0, result1, result2, result3, result4, result5, result6, result7;
+        var pos0, pos1, pos2, pos3;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.substr(pos.offset, 5) === "match") {
+          result0 = "match";
+          advance(pos, 5);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"match\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse__();
+          if (result1 !== null) {
+            if (input.charCodeAt(pos.offset) === 123) {
+              result2 = "{";
+              advance(pos, 1);
+            } else {
+              result2 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"{\"");
+              }
+            }
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                result4 = [];
+                result5 = parse_caseClause();
+                while (result5 !== null) {
+                  result4.push(result5);
+                  result5 = parse_caseClause();
+                }
+                if (result4 !== null) {
+                  pos2 = clone(pos);
+                  pos3 = clone(pos);
+                  result5 = parse__();
+                  if (result5 !== null) {
+                    result6 = parse_defaultClause();
+                    if (result6 !== null) {
+                      result5 = [result5, result6];
+                    } else {
+                      result5 = null;
+                      pos = clone(pos3);
+                    }
+                  } else {
+                    result5 = null;
+                    pos = clone(pos3);
+                  }
+                  if (result5 !== null) {
+                    result5 = (function(offset, line, column, dc) {return dc;})(pos2.offset, pos2.line, pos2.column, result5[1]);
+                  }
+                  if (result5 === null) {
+                    pos = clone(pos2);
+                  }
+                  result5 = result5 !== null ? result5 : "";
+                  if (result5 !== null) {
+                    result6 = parse__();
+                    if (result6 !== null) {
+                      if (input.charCodeAt(pos.offset) === 125) {
+                        result7 = "}";
+                        advance(pos, 1);
+                      } else {
+                        result7 = null;
+                        if (reportFailures === 0) {
+                          matchFailed("\"}\"");
+                        }
+                      }
+                      if (result7 !== null) {
+                        result0 = [result0, result1, result2, result3, result4, result5, result6, result7];
+                      } else {
+                        result0 = null;
+                        pos = clone(pos1);
+                      }
+                    } else {
+                      result0 = null;
+                      pos = clone(pos1);
+                    }
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, cs, d) {
+                if(d)
+                  cs.push(d);
+                return cs;
+            })(pos0.offset, pos0.line, pos0.column, result0[4], result0[5]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_defaultClause() {
+        var result0, result1, result2, result3, result4, result5;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.substr(pos.offset, 7) === "default") {
+          result0 = "default";
+          advance(pos, 7);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"default\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse__();
+          if (result1 !== null) {
+            if (input.charCodeAt(pos.offset) === 58) {
+              result2 = ":";
+              advance(pos, 1);
+            } else {
+              result2 = null;
+              if (reportFailures === 0) {
+                matchFailed("\":\"");
+              }
+            }
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                result4 = parse_attributes();
+                if (result4 !== null) {
+                  result5 = parse__();
+                  if (result5 !== null) {
+                    result0 = [result0, result1, result2, result3, result4, result5];
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, as) {
+                return {
+                    value: null,
+                    members: as
+                };
+            })(pos0.offset, pos0.line, pos0.column, result0[4]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_caseClause() {
+        var result0, result1, result2, result3, result4, result5, result6, result7;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.substr(pos.offset, 4) === "case") {
+          result0 = "case";
+          advance(pos, 4);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"case\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse___();
+          if (result1 !== null) {
+            result2 = parse_value();
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                if (input.charCodeAt(pos.offset) === 58) {
+                  result4 = ":";
+                  advance(pos, 1);
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\":\"");
+                  }
+                }
+                if (result4 !== null) {
+                  result5 = parse__();
+                  if (result5 !== null) {
+                    result6 = parse_attributes();
+                    if (result6 !== null) {
+                      result7 = parse__();
+                      if (result7 !== null) {
+                        result0 = [result0, result1, result2, result3, result4, result5, result6, result7];
+                      } else {
+                        result0 = null;
+                        pos = clone(pos1);
+                      }
+                    } else {
+                      result0 = null;
+                      pos = clone(pos1);
+                    }
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, value, as) {
+                return {
+                    value: value,
+                    members: as
+                };
+            })(pos0.offset, pos0.line, pos0.column, result0[2], result0[6]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_value() {
+        var result0;
+        
+        result0 = parse_variableValue();
+        if (result0 === null) {
+          result0 = parse_numericValue();
+          if (result0 === null) {
+            result0 = parse_booleanValue();
+          }
+        }
+        return result0;
+      }
+      
+      function parse_variableValue() {
+        var result0;
+        var pos0;
+        
+        pos0 = clone(pos);
+        result0 = parse_identifier();
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, id) { 
+              return {
+                valueKind: "constant",
+                name: id
+              };
+            })(pos0.offset, pos0.line, pos0.column, result0);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_booleanValue() {
+        var result0;
+        var pos0;
+        
+        pos0 = clone(pos);
+        if (input.substr(pos.offset, 4) === "true") {
+          result0 = "true";
+          advance(pos, 4);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"true\"");
+          }
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column) { 
+              return {
+                valueKind: "boolean",
+                value: true
+              };
+            })(pos0.offset, pos0.line, pos0.column);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        if (result0 === null) {
+          pos0 = clone(pos);
+          if (input.substr(pos.offset, 5) === "false") {
+            result0 = "false";
+            advance(pos, 5);
+          } else {
+            result0 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"false\"");
+            }
+          }
+          if (result0 !== null) {
+            result0 = (function(offset, line, column) { 
+                return {
+                  valueKind: "boolean",
+                  value: false
+                };
+              })(pos0.offset, pos0.line, pos0.column);
+          }
+          if (result0 === null) {
+            pos = clone(pos0);
+          }
+        }
+        return result0;
+      }
+      
+      function parse_numericValue() {
+        var result0, result1, result2, result3;
+        var pos0, pos1, pos2, pos3;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        pos2 = clone(pos);
+        if (/^[0-9]/.test(input.charAt(pos.offset))) {
+          result1 = input.charAt(pos.offset);
+          advance(pos, 1);
+        } else {
+          result1 = null;
+          if (reportFailures === 0) {
+            matchFailed("[0-9]");
+          }
+        }
+        if (result1 !== null) {
+          result0 = [];
+          while (result1 !== null) {
+            result0.push(result1);
+            if (/^[0-9]/.test(input.charAt(pos.offset))) {
+              result1 = input.charAt(pos.offset);
+              advance(pos, 1);
+            } else {
+              result1 = null;
+              if (reportFailures === 0) {
+                matchFailed("[0-9]");
+              }
+            }
+          }
+        } else {
+          result0 = null;
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, number) { return parseInt(number.join(""), 10); })(pos2.offset, pos2.line, pos2.column, result0);
+        }
+        if (result0 === null) {
+          pos = clone(pos2);
+        }
+        if (result0 !== null) {
+          pos2 = clone(pos);
+          pos3 = clone(pos);
+          if (input.charCodeAt(pos.offset) === 46) {
+            result1 = ".";
+            advance(pos, 1);
+          } else {
+            result1 = null;
+            if (reportFailures === 0) {
+              matchFailed("\".\"");
+            }
+          }
+          if (result1 !== null) {
+            if (/^[0-9]/.test(input.charAt(pos.offset))) {
+              result3 = input.charAt(pos.offset);
+              advance(pos, 1);
+            } else {
+              result3 = null;
+              if (reportFailures === 0) {
+                matchFailed("[0-9]");
+              }
+            }
+            if (result3 !== null) {
+              result2 = [];
+              while (result3 !== null) {
+                result2.push(result3);
+                if (/^[0-9]/.test(input.charAt(pos.offset))) {
+                  result3 = input.charAt(pos.offset);
+                  advance(pos, 1);
+                } else {
+                  result3 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("[0-9]");
+                  }
+                }
+              }
+            } else {
+              result2 = null;
+            }
+            if (result2 !== null) {
+              result1 = [result1, result2];
+            } else {
+              result1 = null;
+              pos = clone(pos3);
+            }
+          } else {
+            result1 = null;
+            pos = clone(pos3);
+          }
+          if (result1 !== null) {
+            result1 = (function(offset, line, column, digits) { return parseFloat("0."+digits.join("")); })(pos2.offset, pos2.line, pos2.column, result1[1]);
+          }
+          if (result1 === null) {
+            pos = clone(pos2);
+          }
+          result1 = result1 !== null ? result1 : "";
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, pre, frac) { 
+              frac = frac || 0;
+              return {
+                valueKind: "number",
+                value: pre + frac
+              };
+            })(pos0.offset, pos0.line, pos0.column, result0[0], result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_definition() {
+        var result0;
+        
+        result0 = parse_enumDefinition();
+        if (result0 === null) {
+          result0 = parse_aliasDefinition();
+          if (result0 === null) {
+            result0 = parse_structDefintion();
+            if (result0 === null) {
+              result0 = parse_interfaceDefinition();
+            }
+          }
+        }
+        return result0;
+      }
+      
+      function parse_attribute() {
+        var result0, result1, result2, result3, result4, result5, result6, result7;
+        var pos0, pos1, pos2, pos3;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        result0 = parse_identifier();
+        if (result0 !== null) {
+          result1 = parse__();
+          if (result1 !== null) {
+            if (input.charCodeAt(pos.offset) === 58) {
+              result2 = ":";
+              advance(pos, 1);
+            } else {
+              result2 = null;
+              if (reportFailures === 0) {
+                matchFailed("\":\"");
+              }
+            }
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                result4 = parse_type();
+                if (result4 !== null) {
+                  result5 = parse__();
+                  if (result5 !== null) {
+                    pos2 = clone(pos);
+                    pos3 = clone(pos);
+                    result6 = parse_matchClause();
+                    if (result6 !== null) {
+                      result7 = parse__();
+                      if (result7 !== null) {
+                        result6 = [result6, result7];
+                      } else {
+                        result6 = null;
+                        pos = clone(pos3);
+                      }
+                    } else {
+                      result6 = null;
+                      pos = clone(pos3);
+                    }
+                    if (result6 !== null) {
+                      result6 = (function(offset, line, column, mc) {return mc; })(pos2.offset, pos2.line, pos2.column, result6[0]);
+                    }
+                    if (result6 === null) {
+                      pos = clone(pos2);
+                    }
+                    result6 = result6 !== null ? result6 : "";
+                    if (result6 !== null) {
+                      if (input.charCodeAt(pos.offset) === 59) {
+                        result7 = ";";
+                        advance(pos, 1);
+                      } else {
+                        result7 = null;
+                        if (reportFailures === 0) {
+                          matchFailed("\";\"");
+                        }
+                      }
+                      if (result7 !== null) {
+                        result0 = [result0, result1, result2, result3, result4, result5, result6, result7];
+                      } else {
+                        result0 = null;
+                        pos = clone(pos1);
+                      }
+                    } else {
+                      result0 = null;
+                      pos = clone(pos1);
+                    }
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, id, type, match) { 
+              var r = {
+                memberKind: "attribute",
+                name: id,
+                type: type
+              };
+              if(match !== "") 
+                r.match = match;
+              return r;
+            })(pos0.offset, pos0.line, pos0.column, result0[0], result0[4], result0[6]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_attributes() {
+        var result0, result1, result2;
+        var pos0, pos1;
+        
+        result0 = [];
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        result1 = parse__();
+        if (result1 !== null) {
+          result2 = parse_attribute();
+          if (result2 !== null) {
+            result1 = [result1, result2];
+          } else {
+            result1 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result1 = null;
+          pos = clone(pos1);
+        }
+        if (result1 !== null) {
+          result1 = (function(offset, line, column, m) { return m; })(pos0.offset, pos0.line, pos0.column, result1[1]);
+        }
+        if (result1 === null) {
+          pos = clone(pos0);
+        }
+        while (result1 !== null) {
+          result0.push(result1);
+          pos0 = clone(pos);
+          pos1 = clone(pos);
+          result1 = parse__();
+          if (result1 !== null) {
+            result2 = parse_attribute();
+            if (result2 !== null) {
+              result1 = [result1, result2];
+            } else {
+              result1 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result1 = null;
+            pos = clone(pos1);
+          }
+          if (result1 !== null) {
+            result1 = (function(offset, line, column, m) { return m; })(pos0.offset, pos0.line, pos0.column, result1[1]);
+          }
+          if (result1 === null) {
+            pos = clone(pos0);
+          }
+        }
+        return result0;
+      }
+      
+      function parse_interfaces() {
+        var result0, result1, result2;
+        var pos0, pos1;
+        
+        result0 = [];
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        result1 = parse__();
+        if (result1 !== null) {
+          result2 = parse_interface();
+          if (result2 !== null) {
+            result1 = [result1, result2];
+          } else {
+            result1 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result1 = null;
+          pos = clone(pos1);
+        }
+        if (result1 !== null) {
+          result1 = (function(offset, line, column, inf) { return inf; })(pos0.offset, pos0.line, pos0.column, result1[1]);
+        }
+        if (result1 === null) {
+          pos = clone(pos0);
+        }
+        while (result1 !== null) {
+          result0.push(result1);
+          pos0 = clone(pos);
+          pos1 = clone(pos);
+          result1 = parse__();
+          if (result1 !== null) {
+            result2 = parse_interface();
+            if (result2 !== null) {
+              result1 = [result1, result2];
+            } else {
+              result1 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result1 = null;
+            pos = clone(pos1);
+          }
+          if (result1 !== null) {
+            result1 = (function(offset, line, column, inf) { return inf; })(pos0.offset, pos0.line, pos0.column, result1[1]);
+          }
+          if (result1 === null) {
+            pos = clone(pos0);
+          }
+        }
+        return result0;
+      }
+      
+      function parse_interface() {
+        var result0;
+        
+        result0 = parse_functionInterface();
+        if (result0 === null) {
+          result0 = parse_eventInterface();
+        }
+        return result0;
+      }
+      
+      function parse_formalParameter() {
+        var result0, result1, result2, result3, result4;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        result0 = parse_identifier();
+        if (result0 !== null) {
+          result1 = parse__();
+          if (result1 !== null) {
+            if (input.charCodeAt(pos.offset) === 58) {
+              result2 = ":";
+              advance(pos, 1);
+            } else {
+              result2 = null;
+              if (reportFailures === 0) {
+                matchFailed("\":\"");
+              }
+            }
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                result4 = parse_type();
+                if (result4 !== null) {
+                  result0 = [result0, result1, result2, result3, result4];
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, id, type) {
+              return {
+                name: id,
+                type: type
+              };
+            })(pos0.offset, pos0.line, pos0.column, result0[0], result0[4]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_formalParameters() {
+        var result0, result1, result2, result3, result4, result5;
+        var pos0, pos1, pos2, pos3, pos4;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        pos2 = clone(pos);
+        result0 = parse_formalParameter();
+        if (result0 !== null) {
+          result1 = [];
+          pos3 = clone(pos);
+          pos4 = clone(pos);
+          result2 = parse__();
+          if (result2 !== null) {
+            if (input.charCodeAt(pos.offset) === 44) {
+              result3 = ",";
+              advance(pos, 1);
+            } else {
+              result3 = null;
+              if (reportFailures === 0) {
+                matchFailed("\",\"");
+              }
+            }
+            if (result3 !== null) {
+              result4 = parse__();
+              if (result4 !== null) {
+                result5 = parse_formalParameter();
+                if (result5 !== null) {
+                  result2 = [result2, result3, result4, result5];
+                } else {
+                  result2 = null;
+                  pos = clone(pos4);
+                }
+              } else {
+                result2 = null;
+                pos = clone(pos4);
+              }
+            } else {
+              result2 = null;
+              pos = clone(pos4);
+            }
+          } else {
+            result2 = null;
+            pos = clone(pos4);
+          }
+          if (result2 !== null) {
+            result2 = (function(offset, line, column, s) { return s; })(pos3.offset, pos3.line, pos3.column, result2[3]);
+          }
+          if (result2 === null) {
+            pos = clone(pos3);
+          }
+          while (result2 !== null) {
+            result1.push(result2);
+            pos3 = clone(pos);
+            pos4 = clone(pos);
+            result2 = parse__();
+            if (result2 !== null) {
+              if (input.charCodeAt(pos.offset) === 44) {
+                result3 = ",";
+                advance(pos, 1);
+              } else {
+                result3 = null;
+                if (reportFailures === 0) {
+                  matchFailed("\",\"");
+                }
+              }
+              if (result3 !== null) {
+                result4 = parse__();
+                if (result4 !== null) {
+                  result5 = parse_formalParameter();
+                  if (result5 !== null) {
+                    result2 = [result2, result3, result4, result5];
+                  } else {
+                    result2 = null;
+                    pos = clone(pos4);
+                  }
+                } else {
+                  result2 = null;
+                  pos = clone(pos4);
+                }
+              } else {
+                result2 = null;
+                pos = clone(pos4);
+              }
+            } else {
+              result2 = null;
+              pos = clone(pos4);
+            }
+            if (result2 !== null) {
+              result2 = (function(offset, line, column, s) { return s; })(pos3.offset, pos3.line, pos3.column, result2[3]);
+            }
+            if (result2 === null) {
+              pos = clone(pos3);
+            }
+          }
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = clone(pos2);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos2);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, f, fs) {
+                  fs.unshift(f);
+                  return fs;
+                })(pos1.offset, pos1.line, pos1.column, result0[0], result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos1);
+        }
+        result0 = result0 !== null ? result0 : "";
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, ps) {
+              return ps || [];
+            })(pos0.offset, pos0.line, pos0.column, result0);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_functionInterface() {
+        var result0, result1, result2, result3, result4, result5, result6, result7, result8, result9, result10, result11, result12;
+        var pos0, pos1, pos2, pos3;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.substr(pos.offset, 8) === "function") {
+          result0 = "function";
+          advance(pos, 8);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"function\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse___();
+          if (result1 !== null) {
+            result2 = parse_identifier();
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                if (input.charCodeAt(pos.offset) === 40) {
+                  result4 = "(";
+                  advance(pos, 1);
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\"(\"");
+                  }
+                }
+                if (result4 !== null) {
+                  result5 = parse__();
+                  if (result5 !== null) {
+                    result6 = parse_formalParameters();
+                    if (result6 !== null) {
+                      result7 = parse__();
+                      if (result7 !== null) {
+                        if (input.charCodeAt(pos.offset) === 41) {
+                          result8 = ")";
+                          advance(pos, 1);
+                        } else {
+                          result8 = null;
+                          if (reportFailures === 0) {
+                            matchFailed("\")\"");
+                          }
+                        }
+                        if (result8 !== null) {
+                          pos2 = clone(pos);
+                          pos3 = clone(pos);
+                          result9 = parse__();
+                          if (result9 !== null) {
+                            if (input.charCodeAt(pos.offset) === 58) {
+                              result10 = ":";
+                              advance(pos, 1);
+                            } else {
+                              result10 = null;
+                              if (reportFailures === 0) {
+                                matchFailed("\":\"");
+                              }
+                            }
+                            if (result10 !== null) {
+                              result11 = parse__();
+                              if (result11 !== null) {
+                                result12 = parse_type();
+                                if (result12 !== null) {
+                                  result9 = [result9, result10, result11, result12];
+                                } else {
+                                  result9 = null;
+                                  pos = clone(pos3);
+                                }
+                              } else {
+                                result9 = null;
+                                pos = clone(pos3);
+                              }
+                            } else {
+                              result9 = null;
+                              pos = clone(pos3);
+                            }
+                          } else {
+                            result9 = null;
+                            pos = clone(pos3);
+                          }
+                          if (result9 !== null) {
+                            result9 = (function(offset, line, column, t) {return t; })(pos2.offset, pos2.line, pos2.column, result9[3]);
+                          }
+                          if (result9 === null) {
+                            pos = clone(pos2);
+                          }
+                          result9 = result9 !== null ? result9 : "";
+                          if (result9 !== null) {
+                            result10 = parse__();
+                            if (result10 !== null) {
+                              if (input.charCodeAt(pos.offset) === 59) {
+                                result11 = ";";
+                                advance(pos, 1);
+                              } else {
+                                result11 = null;
+                                if (reportFailures === 0) {
+                                  matchFailed("\";\"");
+                                }
+                              }
+                              if (result11 !== null) {
+                                result0 = [result0, result1, result2, result3, result4, result5, result6, result7, result8, result9, result10, result11];
+                              } else {
+                                result0 = null;
+                                pos = clone(pos1);
+                              }
+                            } else {
+                              result0 = null;
+                              pos = clone(pos1);
+                            }
+                          } else {
+                            result0 = null;
+                            pos = clone(pos1);
+                          }
+                        } else {
+                          result0 = null;
+                          pos = clone(pos1);
+                        }
+                      } else {
+                        result0 = null;
+                        pos = clone(pos1);
+                      }
+                    } else {
+                      result0 = null;
+                      pos = clone(pos1);
+                    }
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, name, params, ret) {
+              return {
+                interfaceKind: "function",
+                name: name,
+                parameters: params,
+                returnType: ret || undefined
+              };
+            })(pos0.offset, pos0.line, pos0.column, result0[2], result0[6], result0[9]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_eventInterface() {
+        var result0, result1, result2, result3, result4, result5, result6, result7, result8, result9, result10;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.substr(pos.offset, 5) === "event") {
+          result0 = "event";
+          advance(pos, 5);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"event\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse___();
+          if (result1 !== null) {
+            result2 = parse_identifier();
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                if (input.charCodeAt(pos.offset) === 40) {
+                  result4 = "(";
+                  advance(pos, 1);
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\"(\"");
+                  }
+                }
+                if (result4 !== null) {
+                  result5 = parse__();
+                  if (result5 !== null) {
+                    result6 = parse_formalParameters();
+                    if (result6 !== null) {
+                      result7 = parse__();
+                      if (result7 !== null) {
+                        if (input.charCodeAt(pos.offset) === 41) {
+                          result8 = ")";
+                          advance(pos, 1);
+                        } else {
+                          result8 = null;
+                          if (reportFailures === 0) {
+                            matchFailed("\")\"");
+                          }
+                        }
+                        if (result8 !== null) {
+                          result9 = parse__();
+                          if (result9 !== null) {
+                            if (input.charCodeAt(pos.offset) === 59) {
+                              result10 = ";";
+                              advance(pos, 1);
+                            } else {
+                              result10 = null;
+                              if (reportFailures === 0) {
+                                matchFailed("\";\"");
+                              }
+                            }
+                            if (result10 !== null) {
+                              result0 = [result0, result1, result2, result3, result4, result5, result6, result7, result8, result9, result10];
+                            } else {
+                              result0 = null;
+                              pos = clone(pos1);
+                            }
+                          } else {
+                            result0 = null;
+                            pos = clone(pos1);
+                          }
+                        } else {
+                          result0 = null;
+                          pos = clone(pos1);
+                        }
+                      } else {
+                        result0 = null;
+                        pos = clone(pos1);
+                      }
+                    } else {
+                      result0 = null;
+                      pos = clone(pos1);
+                    }
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, name, params) {
+              return {
+                interfaceKind: "event",
+                name: name,
+                parameters: params
+              };
+            })(pos0.offset, pos0.line, pos0.column, result0[2], result0[6]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_structDefintion() {
+        var result0, result1, result2, result3, result4, result5, result6, result7, result8;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.substr(pos.offset, 6) === "struct") {
+          result0 = "struct";
+          advance(pos, 6);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"struct\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse___();
+          if (result1 !== null) {
+            result2 = parse_identifier();
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                if (input.charCodeAt(pos.offset) === 123) {
+                  result4 = "{";
+                  advance(pos, 1);
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\"{\"");
+                  }
+                }
+                if (result4 !== null) {
+                  result5 = parse__();
+                  if (result5 !== null) {
+                    result6 = parse_attributes();
+                    if (result6 !== null) {
+                      result7 = parse__();
+                      if (result7 !== null) {
+                        if (input.charCodeAt(pos.offset) === 125) {
+                          result8 = "}";
+                          advance(pos, 1);
+                        } else {
+                          result8 = null;
+                          if (reportFailures === 0) {
+                            matchFailed("\"}\"");
+                          }
+                        }
+                        if (result8 !== null) {
+                          result0 = [result0, result1, result2, result3, result4, result5, result6, result7, result8];
+                        } else {
+                          result0 = null;
+                          pos = clone(pos1);
+                        }
+                      } else {
+                        result0 = null;
+                        pos = clone(pos1);
+                      }
+                    } else {
+                      result0 = null;
+                      pos = clone(pos1);
+                    }
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, name, as) {
+                return {
+                    typeKind: "struct",
+                    name: name,
+                    members: as
+                };
+            })(pos0.offset, pos0.line, pos0.column, result0[2], result0[6]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_aliasDefinition() {
+        var result0, result1, result2, result3, result4, result5, result6, result7, result8, result9, result10;
+        var pos0, pos1, pos2, pos3, pos4, pos5;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.substr(pos.offset, 4) === "type") {
+          result0 = "type";
+          advance(pos, 4);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"type\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse___();
+          if (result1 !== null) {
+            result2 = parse_identifier();
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                if (input.charCodeAt(pos.offset) === 61) {
+                  result4 = "=";
+                  advance(pos, 1);
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\"=\"");
+                  }
+                }
+                if (result4 !== null) {
+                  result5 = parse__();
+                  if (result5 !== null) {
+                    pos2 = clone(pos);
+                    pos3 = clone(pos);
+                    if (input.substr(pos.offset, 4) === "list") {
+                      result6 = "list";
+                      advance(pos, 4);
+                    } else {
+                      result6 = null;
+                      if (reportFailures === 0) {
+                        matchFailed("\"list\"");
+                      }
+                    }
+                    if (result6 !== null) {
+                      result7 = parse___();
+                      if (result7 !== null) {
+                        if (input.substr(pos.offset, 2) === "of") {
+                          result8 = "of";
+                          advance(pos, 2);
+                        } else {
+                          result8 = null;
+                          if (reportFailures === 0) {
+                            matchFailed("\"of\"");
+                          }
+                        }
+                        if (result8 !== null) {
+                          result9 = parse___();
+                          if (result9 !== null) {
+                            result10 = parse_type();
+                            if (result10 !== null) {
+                              result6 = [result6, result7, result8, result9, result10];
+                            } else {
+                              result6 = null;
+                              pos = clone(pos3);
+                            }
+                          } else {
+                            result6 = null;
+                            pos = clone(pos3);
+                          }
+                        } else {
+                          result6 = null;
+                          pos = clone(pos3);
+                        }
+                      } else {
+                        result6 = null;
+                        pos = clone(pos3);
+                      }
+                    } else {
+                      result6 = null;
+                      pos = clone(pos3);
+                    }
+                    if (result6 !== null) {
+                      result6 = (function(offset, line, column, t) {
+                            return {
+                              isList: true,
+                              elementType: t
+                            };   
+                          })(pos2.offset, pos2.line, pos2.column, result6[4]);
+                    }
+                    if (result6 === null) {
+                      pos = clone(pos2);
+                    }
+                    if (result6 === null) {
+                      pos2 = clone(pos);
+                      pos3 = clone(pos);
+                      result6 = parse_type();
+                      if (result6 !== null) {
+                        pos4 = clone(pos);
+                        pos5 = clone(pos);
+                        result7 = parse__();
+                        if (result7 !== null) {
+                          if (input.substr(pos.offset, 2) === "in") {
+                            result8 = "in";
+                            advance(pos, 2);
+                          } else {
+                            result8 = null;
+                            if (reportFailures === 0) {
+                              matchFailed("\"in\"");
+                            }
+                          }
+                          if (result8 !== null) {
+                            result9 = parse___();
+                            if (result9 !== null) {
+                              result10 = parse_restriction();
+                              if (result10 !== null) {
+                                result7 = [result7, result8, result9, result10];
+                              } else {
+                                result7 = null;
+                                pos = clone(pos5);
+                              }
+                            } else {
+                              result7 = null;
+                              pos = clone(pos5);
+                            }
+                          } else {
+                            result7 = null;
+                            pos = clone(pos5);
+                          }
+                        } else {
+                          result7 = null;
+                          pos = clone(pos5);
+                        }
+                        if (result7 !== null) {
+                          result7 = (function(offset, line, column, r) { return r; })(pos4.offset, pos4.line, pos4.column, result7[3]);
+                        }
+                        if (result7 === null) {
+                          pos = clone(pos4);
+                        }
+                        result7 = result7 !== null ? result7 : "";
+                        if (result7 !== null) {
+                          result6 = [result6, result7];
+                        } else {
+                          result6 = null;
+                          pos = clone(pos3);
+                        }
+                      } else {
+                        result6 = null;
+                        pos = clone(pos3);
+                      }
+                      if (result6 !== null) {
+                        result6 = (function(offset, line, column, type, res) {
+                              return {
+                                isList: false,
+                                alias: type,
+                                restriction: res || undefined
+                              };   
+                            })(pos2.offset, pos2.line, pos2.column, result6[0], result6[1]);
+                      }
+                      if (result6 === null) {
+                        pos = clone(pos2);
+                      }
+                    }
+                    if (result6 !== null) {
+                      result0 = [result0, result1, result2, result3, result4, result5, result6];
+                    } else {
+                      result0 = null;
+                      pos = clone(pos1);
+                    }
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, name, alias) { 
+              alias.typeKind = "alias";
+              alias.name = name;
+              return alias; 
+            })(pos0.offset, pos0.line, pos0.column, result0[2], result0[6]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_enumDefinition() {
+        var result0, result1, result2, result3, result4, result5, result6, result7, result8;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.substr(pos.offset, 4) === "enum") {
+          result0 = "enum";
+          advance(pos, 4);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"enum\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse___();
+          if (result1 !== null) {
+            result2 = parse_identifier();
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                if (input.charCodeAt(pos.offset) === 123) {
+                  result4 = "{";
+                  advance(pos, 1);
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\"{\"");
+                  }
+                }
+                if (result4 !== null) {
+                  result5 = parse__();
+                  if (result5 !== null) {
+                    result6 = parse_identifiers();
+                    if (result6 !== null) {
+                      result7 = parse__();
+                      if (result7 !== null) {
+                        if (input.charCodeAt(pos.offset) === 125) {
+                          result8 = "}";
+                          advance(pos, 1);
+                        } else {
+                          result8 = null;
+                          if (reportFailures === 0) {
+                            matchFailed("\"}\"");
+                          }
+                        }
+                        if (result8 !== null) {
+                          result0 = [result0, result1, result2, result3, result4, result5, result6, result7, result8];
+                        } else {
+                          result0 = null;
+                          pos = clone(pos1);
+                        }
+                      } else {
+                        result0 = null;
+                        pos = clone(pos1);
+                      }
+                    } else {
+                      result0 = null;
+                      pos = clone(pos1);
+                    }
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, name, ids) {
+              return {
+                typeKind: "enum",
+                name: name,
+                values: ids
+              };
+            })(pos0.offset, pos0.line, pos0.column, result0[2], result0[6]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_interfaceDefinition() {
+        var result0, result1, result2, result3, result4, result5, result6, result7, result8;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.substr(pos.offset, 9) === "interface") {
+          result0 = "interface";
+          advance(pos, 9);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"interface\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse___();
+          if (result1 !== null) {
+            result2 = parse_identifier();
+            if (result2 !== null) {
+              result3 = parse__();
+              if (result3 !== null) {
+                if (input.charCodeAt(pos.offset) === 123) {
+                  result4 = "{";
+                  advance(pos, 1);
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\"{\"");
+                  }
+                }
+                if (result4 !== null) {
+                  result5 = parse__();
+                  if (result5 !== null) {
+                    result6 = parse_interfaces();
+                    if (result6 !== null) {
+                      result7 = parse__();
+                      if (result7 !== null) {
+                        if (input.charCodeAt(pos.offset) === 125) {
+                          result8 = "}";
+                          advance(pos, 1);
+                        } else {
+                          result8 = null;
+                          if (reportFailures === 0) {
+                            matchFailed("\"}\"");
+                          }
+                        }
+                        if (result8 !== null) {
+                          result0 = [result0, result1, result2, result3, result4, result5, result6, result7, result8];
+                        } else {
+                          result0 = null;
+                          pos = clone(pos1);
+                        }
+                      } else {
+                        result0 = null;
+                        pos = clone(pos1);
+                      }
+                    } else {
+                      result0 = null;
+                      pos = clone(pos1);
+                    }
+                  } else {
+                    result0 = null;
+                    pos = clone(pos1);
+                  }
+                } else {
+                  result0 = null;
+                  pos = clone(pos1);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, name, ins) {
+              return {
+                typeKind: "interface",
+                name: name,
+                interfaces: ins
+              };
+            })(pos0.offset, pos0.line, pos0.column, result0[2], result0[6]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse__() {
+        var result0, result1;
+        
+        result0 = [];
+        result1 = parse_whitespace();
+        while (result1 !== null) {
+          result0.push(result1);
+          result1 = parse_whitespace();
+        }
+        return result0;
+      }
+      
+      function parse___() {
+        var result0, result1;
+        
+        result1 = parse_whitespace();
+        if (result1 !== null) {
+          result0 = [];
+          while (result1 !== null) {
+            result0.push(result1);
+            result1 = parse_whitespace();
+          }
+        } else {
+          result0 = null;
+        }
+        return result0;
+      }
+      
+      function parse_whitespace() {
+        var result0, result1, result2;
+        var pos0;
+        
+        if (/^[" "\n\t\r]/.test(input.charAt(pos.offset))) {
+          result0 = input.charAt(pos.offset);
+          advance(pos, 1);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("[\" \"\\n\\t\\r]");
+          }
+        }
+        if (result0 === null) {
+          pos0 = clone(pos);
+          if (input.substr(pos.offset, 2) === "//") {
+            result0 = "//";
+            advance(pos, 2);
+          } else {
+            result0 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"//\"");
+            }
+          }
+          if (result0 !== null) {
+            result1 = [];
+            if (/^[^\r\n]/.test(input.charAt(pos.offset))) {
+              result2 = input.charAt(pos.offset);
+              advance(pos, 1);
+            } else {
+              result2 = null;
+              if (reportFailures === 0) {
+                matchFailed("[^\\r\\n]");
+              }
+            }
+            while (result2 !== null) {
+              result1.push(result2);
+              if (/^[^\r\n]/.test(input.charAt(pos.offset))) {
+                result2 = input.charAt(pos.offset);
+                advance(pos, 1);
+              } else {
+                result2 = null;
+                if (reportFailures === 0) {
+                  matchFailed("[^\\r\\n]");
+                }
+              }
+            }
+            if (result1 !== null) {
+              result0 = [result0, result1];
+            } else {
+              result0 = null;
+              pos = clone(pos0);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos0);
+          }
+          if (result0 === null) {
+            pos0 = clone(pos);
+            if (input.substr(pos.offset, 2) === "/*") {
+              result0 = "/*";
+              advance(pos, 2);
+            } else {
+              result0 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"/*\"");
+              }
+            }
+            if (result0 !== null) {
+              result1 = [];
+              if (/^[^"*\/"]/.test(input.charAt(pos.offset))) {
+                result2 = input.charAt(pos.offset);
+                advance(pos, 1);
+              } else {
+                result2 = null;
+                if (reportFailures === 0) {
+                  matchFailed("[^\"*\\/\"]");
+                }
+              }
+              while (result2 !== null) {
+                result1.push(result2);
+                if (/^[^"*\/"]/.test(input.charAt(pos.offset))) {
+                  result2 = input.charAt(pos.offset);
+                  advance(pos, 1);
+                } else {
+                  result2 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("[^\"*\\/\"]");
+                  }
+                }
+              }
+              if (result1 !== null) {
+                if (input.substr(pos.offset, 2) === "*/") {
+                  result2 = "*/";
+                  advance(pos, 2);
+                } else {
+                  result2 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\"*/\"");
+                  }
+                }
+                if (result2 !== null) {
+                  result0 = [result0, result1, result2];
+                } else {
+                  result0 = null;
+                  pos = clone(pos0);
+                }
+              } else {
+                result0 = null;
+                pos = clone(pos0);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos0);
+            }
+          }
+        }
+        return result0;
+      }
+      
+      function parse_SourceCharacter() {
+        var result0;
+        
+        if (input.length > pos.offset) {
+          result0 = input.charAt(pos.offset);
+          advance(pos, 1);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("any character");
+          }
+        }
+        return result0;
+      }
+      
+      function parse_LineTerminator() {
+        var result0;
+        
+        if (/^[\n\r\u2028\u2029]/.test(input.charAt(pos.offset))) {
+          result0 = input.charAt(pos.offset);
+          advance(pos, 1);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("[\\n\\r\\u2028\\u2029]");
+          }
+        }
+        return result0;
+      }
+      
+      function parse_regex() {
+        var result0, result1, result2, result3;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.charCodeAt(pos.offset) === 47) {
+          result0 = "/";
+          advance(pos, 1);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"/\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse_RegularExpressionBody();
+          if (result1 !== null) {
+            if (input.charCodeAt(pos.offset) === 47) {
+              result2 = "/";
+              advance(pos, 1);
+            } else {
+              result2 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"/\"");
+              }
+            }
+            if (result2 !== null) {
+              result3 = parse_RegularExpressionFlags();
+              if (result3 !== null) {
+                result0 = [result0, result1, result2, result3];
+              } else {
+                result0 = null;
+                pos = clone(pos1);
+              }
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, body, flags) {
+              return "/"+body+"/"+flags;
+            })(pos0.offset, pos0.line, pos0.column, result0[1], result0[3]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_RegularExpressionBody() {
+        var result0, result1;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        result0 = parse_RegularExpressionFirstChar();
+        if (result0 !== null) {
+          result1 = parse_RegularExpressionChars();
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, char_, chars) {
+              return char_ + chars;
+            })(pos0.offset, pos0.line, pos0.column, result0[0], result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_RegularExpressionChars() {
+        var result0, result1;
+        var pos0;
+        
+        pos0 = clone(pos);
+        result0 = [];
+        result1 = parse_RegularExpressionChar();
+        while (result1 !== null) {
+          result0.push(result1);
+          result1 = parse_RegularExpressionChar();
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, chars) { return chars.join(""); })(pos0.offset, pos0.line, pos0.column, result0);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_RegularExpressionFirstChar() {
+        var result0, result1;
+        var pos0, pos1, pos2;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        pos2 = clone(pos);
+        reportFailures++;
+        if (/^[*\\\/[]/.test(input.charAt(pos.offset))) {
+          result0 = input.charAt(pos.offset);
+          advance(pos, 1);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("[*\\\\\\/[]");
+          }
+        }
+        reportFailures--;
+        if (result0 === null) {
+          result0 = "";
+        } else {
+          result0 = null;
+          pos = clone(pos2);
+        }
+        if (result0 !== null) {
+          result1 = parse_RegularExpressionNonTerminator();
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, char_) { return char_; })(pos0.offset, pos0.line, pos0.column, result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        if (result0 === null) {
+          result0 = parse_RegularExpressionBackslashSequence();
+          if (result0 === null) {
+            result0 = parse_RegularExpressionClass();
+          }
+        }
+        return result0;
+      }
+      
+      function parse_RegularExpressionChar() {
+        var result0, result1;
+        var pos0, pos1, pos2;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        pos2 = clone(pos);
+        reportFailures++;
+        if (/^[\\\/[]/.test(input.charAt(pos.offset))) {
+          result0 = input.charAt(pos.offset);
+          advance(pos, 1);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("[\\\\\\/[]");
+          }
+        }
+        reportFailures--;
+        if (result0 === null) {
+          result0 = "";
+        } else {
+          result0 = null;
+          pos = clone(pos2);
+        }
+        if (result0 !== null) {
+          result1 = parse_RegularExpressionNonTerminator();
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, char_) { return char_; })(pos0.offset, pos0.line, pos0.column, result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        if (result0 === null) {
+          result0 = parse_RegularExpressionBackslashSequence();
+          if (result0 === null) {
+            result0 = parse_RegularExpressionClass();
+          }
+        }
+        return result0;
+      }
+      
+      function parse_RegularExpressionBackslashSequence() {
+        var result0, result1;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.charCodeAt(pos.offset) === 92) {
+          result0 = "\\";
+          advance(pos, 1);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"\\\\\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse_RegularExpressionNonTerminator();
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, char_) { return "\\" + char_; })(pos0.offset, pos0.line, pos0.column, result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_RegularExpressionNonTerminator() {
+        var result0, result1;
+        var pos0, pos1, pos2;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        pos2 = clone(pos);
+        reportFailures++;
+        result0 = parse_LineTerminator();
+        reportFailures--;
+        if (result0 === null) {
+          result0 = "";
+        } else {
+          result0 = null;
+          pos = clone(pos2);
+        }
+        if (result0 !== null) {
+          result1 = parse_SourceCharacter();
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, char_) { return char_; })(pos0.offset, pos0.line, pos0.column, result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_RegularExpressionClass() {
+        var result0, result1, result2;
+        var pos0, pos1;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        if (input.charCodeAt(pos.offset) === 91) {
+          result0 = "[";
+          advance(pos, 1);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"[\"");
+          }
+        }
+        if (result0 !== null) {
+          result1 = parse_RegularExpressionClassChars();
+          if (result1 !== null) {
+            if (input.charCodeAt(pos.offset) === 93) {
+              result2 = "]";
+              advance(pos, 1);
+            } else {
+              result2 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"]\"");
+              }
+            }
+            if (result2 !== null) {
+              result0 = [result0, result1, result2];
+            } else {
+              result0 = null;
+              pos = clone(pos1);
+            }
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, chars) { return "[" + chars + "]"; })(pos0.offset, pos0.line, pos0.column, result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_RegularExpressionClassChars() {
+        var result0, result1;
+        var pos0;
+        
+        pos0 = clone(pos);
+        result0 = [];
+        result1 = parse_RegularExpressionClassChar();
+        while (result1 !== null) {
+          result0.push(result1);
+          result1 = parse_RegularExpressionClassChar();
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, chars) { return chars.join(""); })(pos0.offset, pos0.line, pos0.column, result0);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_RegularExpressionClassChar() {
+        var result0, result1;
+        var pos0, pos1, pos2;
+        
+        pos0 = clone(pos);
+        pos1 = clone(pos);
+        pos2 = clone(pos);
+        reportFailures++;
+        if (/^[\]\\]/.test(input.charAt(pos.offset))) {
+          result0 = input.charAt(pos.offset);
+          advance(pos, 1);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("[\\]\\\\]");
+          }
+        }
+        reportFailures--;
+        if (result0 === null) {
+          result0 = "";
+        } else {
+          result0 = null;
+          pos = clone(pos2);
+        }
+        if (result0 !== null) {
+          result1 = parse_RegularExpressionNonTerminator();
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = clone(pos1);
+          }
+        } else {
+          result0 = null;
+          pos = clone(pos1);
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, char_) { return char_; })(pos0.offset, pos0.line, pos0.column, result0[1]);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        if (result0 === null) {
+          result0 = parse_RegularExpressionBackslashSequence();
+        }
+        return result0;
+      }
+      
+      function parse_RegularExpressionFlags() {
+        var result0, result1;
+        var pos0;
+        
+        pos0 = clone(pos);
+        result0 = [];
+        result1 = parse_IdentifierStart();
+        while (result1 !== null) {
+          result0.push(result1);
+          result1 = parse_IdentifierStart();
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, line, column, parts) { return parts.join(""); })(pos0.offset, pos0.line, pos0.column, result0);
+        }
+        if (result0 === null) {
+          pos = clone(pos0);
+        }
+        return result0;
+      }
+      
+      function parse_IdentifierStart() {
+        var result0;
+        
+        if (/^[a-zA-Z]/.test(input.charAt(pos.offset))) {
+          result0 = input.charAt(pos.offset);
+          advance(pos, 1);
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("[a-zA-Z]");
+          }
+        }
+        if (result0 === null) {
+          if (input.charCodeAt(pos.offset) === 36) {
+            result0 = "$";
+            advance(pos, 1);
+          } else {
+            result0 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"$\"");
+            }
+          }
+          if (result0 === null) {
+            if (input.charCodeAt(pos.offset) === 95) {
+              result0 = "_";
+              advance(pos, 1);
+            } else {
+              result0 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"_\"");
+              }
+            }
+          }
+        }
+        return result0;
+      }
+      
+      
+      function cleanupExpected(expected) {
+        expected.sort();
+        
+        var lastExpected = null;
+        var cleanExpected = [];
+        for (var i = 0; i < expected.length; i++) {
+          if (expected[i] !== lastExpected) {
+            cleanExpected.push(expected[i]);
+            lastExpected = expected[i];
+          }
+        }
+        return cleanExpected;
+      }
+      
+      
+      
+      var result = parseFunctions[startRule]();
+      
+      /*
+       * The parser is now in one of the following three states:
+       *
+       * 1. The parser successfully parsed the whole input.
+       *
+       *    - |result !== null|
+       *    - |pos.offset === input.length|
+       *    - |rightmostFailuresExpected| may or may not contain something
+       *
+       * 2. The parser successfully parsed only a part of the input.
+       *
+       *    - |result !== null|
+       *    - |pos.offset < input.length|
+       *    - |rightmostFailuresExpected| may or may not contain something
+       *
+       * 3. The parser did not successfully parse any part of the input.
+       *
+       *   - |result === null|
+       *   - |pos.offset === 0|
+       *   - |rightmostFailuresExpected| contains at least one failure
+       *
+       * All code following this comment (including called functions) must
+       * handle these states.
+       */
+      if (result === null || pos.offset !== input.length) {
+        var offset = Math.max(pos.offset, rightmostFailuresPos.offset);
+        var found = offset < input.length ? input.charAt(offset) : null;
+        var errorPosition = pos.offset > rightmostFailuresPos.offset ? pos : rightmostFailuresPos;
+        
+        throw new this.SyntaxError(
+          cleanupExpected(rightmostFailuresExpected),
+          found,
+          offset,
+          errorPosition.line,
+          errorPosition.column
+        );
+      }
+      
+      return result;
+    },
+    
+    /* Returns the parser source code. */
+    toSource: function() { return this._source; }
+  };
+  
+  /* Thrown when a parser encounters a syntax error. */
+  
+  result.SyntaxError = function(expected, found, offset, line, column) {
+    function buildMessage(expected, found) {
+      var expectedHumanized, foundHumanized;
+      
+      switch (expected.length) {
+        case 0:
+          expectedHumanized = "end of input";
+          break;
+        case 1:
+          expectedHumanized = expected[0];
+          break;
+        default:
+          expectedHumanized = expected.slice(0, expected.length - 1).join(", ")
+            + " or "
+            + expected[expected.length - 1];
+      }
+      
+      foundHumanized = found ? quote(found) : "end of input";
+      
+      return "Expected " + expectedHumanized + " but " + foundHumanized + " found.";
+    }
+    
+    this.name = "SyntaxError";
+    this.expected = expected;
+    this.found = found;
+    this.message = buildMessage(expected, found);
+    this.offset = offset;
+    this.line = line;
+    this.column = column;
+  };
+  
+  result.SyntaxError.prototype = Error.prototype;
+  
+  return result;
+})();
+
+},{}]},{},[7])
 ;

@@ -32,21 +32,21 @@ type ActionId = BigInteger
 type ActionIds = list of ActionId
 
 struct Action {
-	type: ActionType match {
-		case BRUSH:
-			color: Color;
-			width: StrokeWidth;
-			opacity: StrokeOpacity;
-			stroke: Stroke;
-		case ERASER:
-			width: StrokeWidth;
-			opacity: StrokeOpacity;
-			stroke: Stroke;
-		case UNDO:
-            actionId: ActionId;
-        case REDO:
-            actionId: ActionId;
-	};
+  type: ActionType match {
+    case BRUSH:
+      color: Color;
+      width: StrokeWidth;
+      opacity: StrokeOpacity;
+      stroke: Stroke;
+    case ERASER:
+      width: StrokeWidth;
+      opacity: StrokeOpacity;
+      stroke: Stroke;
+    case UNDO:
+      actionId: ActionId;
+    case REDO:
+      actionId: ActionId;
+  };
 }
 
 struct StoredAction {
@@ -73,7 +73,7 @@ struct Image {
 interface Main {
   //function setWindow(position : Point, width: WindowWidth, height: WindowHeight);
   //function sendAction(action: Action): ActionId;
-  //event onAction(userId: UserId, actionId: ActionId, action: Action, region: TileLocations);
+  event onAction(userId: UserId, actionId: ActionId, action: Action, region: TileLocations);
   //function getName(userId: UserId): String;
   function setName(name: String);
 }
