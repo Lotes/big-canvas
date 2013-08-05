@@ -1,0 +1,9 @@
+{
+  "name": "big-canvas",
+  "description": "All about the internals of big-canvas.",
+  "version": "0.2",
+  "url": "http://openstoryboards.org:8080/",
+  "options": {
+    "outdir": "doc"
+  }
+}

@@ -2,6 +2,12 @@ var Types = require("../Types");
 var Point = Types.Point;
 var TileLocation = Types.TileLocation;
 
+/**
+ A window is the spectator area of a user at the endless canvas.
+
+ @class Window
+ @constructor
+ **/
 function Window(x, y, width, height) {
   this.x = BigInteger(x);
   this.y = BigInteger(y);
@@ -25,6 +31,12 @@ Window.prototype.toData = function() {
   };
 };
 
+/**
+ A window tree collects a set of all active windows plus their ids and returns all window ids for a given tile location.
+
+ @class WindowTree
+ @constructor
+ **/
 function WindowTree() {
   this.tree = {};
 }

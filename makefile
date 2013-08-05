@@ -6,10 +6,13 @@ browserify:
 
 init:
 	npm install connect canvas ws cookie-signature ejs path big-integer underscore backbone redis expect.js
-	npm install -g browserify pegjs mocha
+	npm install -g browserify pegjs mocha yuidocjs
 
 run:
 	node src/main/node/server/main.js
 
 test:
 	mocha src/test/node/TestTypes.js
+
+doc:
+	yuidoc src/main/node/
