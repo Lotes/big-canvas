@@ -2,5 +2,5 @@ bin
 target
 node_modules
 src/main/node/rpc/json-rpc-parser.js
-.idea
-public/bigcanvas.js
+/.idea
+/public/bigcanvas.js
