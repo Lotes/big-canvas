@@ -69,7 +69,7 @@ struct TileUpdate {
 type TileUpdates = list of TileUpdate
 
 /* images */
-type ImageId = String int /^[a-zA-Z0-9]+$/;
+type ImageId = String in /^[a-zA-Z0-9]+$/
 type ImageWidth = Integer in 1..4096
 type ImageHeight = Integer in 1..4096
 

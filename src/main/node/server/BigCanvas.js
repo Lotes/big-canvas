@@ -4,6 +4,7 @@ var fs = require("fs");
 var definitionsText = fs.readFileSync(Config.RPC_DEFINITIONS_PATH, { encoding: "utf8" });
 var generator = new Generator(definitionsText);
 var BigInteger = require("big-integer");
+var Types = require("./ServerTypes");
 
 var socketIds = BigInteger(0);
 function BigCanvasSocket(wsSocket, userId) {
