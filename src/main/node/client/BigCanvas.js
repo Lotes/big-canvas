@@ -10,6 +10,9 @@ var BigCanvas = function(callback) {
       self.Client = new generator.Interfaces.Main.Client({
         onAction: function(userId, actionId, action, region) {
           console.log(userId);
+        },
+        onUpdate: function(updates) {
+
         }
       });
       //setup web socket

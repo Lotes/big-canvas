@@ -49,31 +49,45 @@ struct Action {
   };
 }
 
-struct StoredAction {
-  action: Action;
-  undone: Boolean;
-  userId: UserId;
-  region: TileLocations;
-}
-
 /* window */
 type WindowWidth = Integer in 1..4096
 type WindowHeight = Integer in 1..4096
 
+/* update message */
+struct TileUpdate {
+  location: TileLocation;
+  valid: Boolean match {
+    case true:
+      empty: Boolean;
+      //if true, load the "empty" tile
+      //if false, load /tiles/col_row.png
+    case false:
+      //load the "loading" tile
+      operationsLeft: Integer;
+  };
+}
+type TileUpdates = list of TileUpdate
+
 /* images */
+type ImageId = String int /^[a-zA-Z0-9]+$/;
 type ImageWidth = Integer in 1..4096
 type ImageHeight = Integer in 1..4096
-struct Image {
-	position: Point;
-	width: ImageWidth;
-	height: ImageHeight;
-}
+
 
 /* interface */
 interface Main {
-  //function setWindow(position : Point, width: WindowWidth, height: WindowHeight);
-  //function sendAction(action: Action): ActionId;
+  //window update
+  function setWindow(x: BigInteger, y: BigInteger, width: WindowWidth, height: WindowHeight);
+  event onUpdate(updates: TileUpdates);
+
+  //sending and receiving actions
+  function sendAction(action: Action): ActionId;
   event onAction(userId: UserId, actionId: ActionId, action: Action, region: TileLocations);
-  //function getName(userId: UserId): String;
+
+  //user names
+  function getName(userId: UserId): String;
   function setName(name: String);
+
+  //images
+  function defineImage(x: BigInteger, y: BigInteger, width: ImageWidth, height: ImageHeight): ImageId;
 }

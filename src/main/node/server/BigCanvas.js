@@ -16,20 +16,35 @@ function BigCanvasSocket(wsSocket, userId) {
 }
 
 var BigCanvas = function() {
+  var self = this;
+  self.sockets = {};
   //setup server stub
-  this.Types = generator.Types;
-  this.Server = new generator.Interfaces.Main.Server({
-    constructor: function() {
-      this.sockets = {};
-    },
+  self.Types = generator.Types;
+  self.Server = new generator.Interfaces.Main.Server({
     connect: function(socket) {
-      this.sockets[socket.getId()] = socket;
+      self.sockets[socket.getId()] = socket;
     },
     disconnect: function(socket) {
-      delete this.sockets[socket.getId()];
+      delete self.sockets[socket.getId()];
     },
     //remote procedure call implementations
+    setWindow: function(socket, x, y, width, height, callback) {
+      console.log("set window...");
+      callback();
+    },
+    sendAction: function(socket, action, callback) {
+      console.log("send action...");
+      callback(null, -1); //returns actionId
+    },
+    getName: function(socket, userId, callback) {
+      console.log("get name...");
+      callback(null, "username");
+    },
     setName: function(socket, name, callback) {
+      console.log("set name of user "+socket.getUserId()+" to '"+name+"'.");
+      callback();
+    },
+    defineImage: function(socket, x, y, width, height, callback) {
       console.log("set name of user "+socket.getUserId()+" to '"+name+"'.");
       callback();
     }

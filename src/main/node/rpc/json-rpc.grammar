@@ -76,9 +76,9 @@ caseClause
     }
 
 value
-  = variableValue
+  = booleanValue
+  / variableValue
   / numericValue
-  / booleanValue
   
 variableValue
   = id:identifier 

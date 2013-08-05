@@ -175,10 +175,12 @@ var Generator = function(schemeText) {
                             throw new Error("'"+match.value.name+"' is not a member of type '"+member.type+"'.");
                           caseChecker.value = match.value.name;
                           break;
+                        case "boolean":
                         case "number":
                           if(!memberType.validate(match.value.value))
                             throw new Error("'"+match.value.name+"' is not a member of type '"+member.type+"'.");
                           caseChecker.value = match.value.value;
+                          break;
                       }
                     }
                     caseChecker.membersChecker = typeCheckMembers(match.members);
