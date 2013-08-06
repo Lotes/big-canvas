@@ -16,6 +16,9 @@ type TileLocations = list of TileLocation
 
 /* users */
 type UserId = BigInteger
+struct UserData {
+  name: String;
+}
 
 /* action */
 enum ActionType {
