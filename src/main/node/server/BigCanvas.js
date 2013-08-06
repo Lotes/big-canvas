@@ -18,15 +18,14 @@ function BigCanvasSocket(wsSocket, userId) {
 
 var BigCanvas = function() {
   var self = this;
-  self.sockets = {};
+  var sockets = {};
   //setup server stub
-  self.Types = generator.Types;
   self.Server = new generator.Interfaces.Main.Server({
     connect: function(socket) {
-      self.sockets[socket.getId()] = socket;
+      sockets[socket.getId()] = socket;
     },
     disconnect: function(socket) {
-      delete self.sockets[socket.getId()];
+      delete sockets[socket.getId()];
     },
     //remote procedure call implementations
     setWindow: function(socket, x, y, width, height, callback) {
@@ -54,5 +53,6 @@ var BigCanvas = function() {
 
 module.exports = {
   BigCanvasSocket: BigCanvasSocket,
-  BigCanvas: BigCanvas
+  BigCanvas: BigCanvas,
+  BigCanvasTypes: generator.Types
 };
