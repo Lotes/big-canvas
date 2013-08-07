@@ -1,12 +1,19 @@
-compile:
-	pegjs --track-line-and-column src/main/node/rpc/json-rpc.grammar src/main/node/rpc/json-rpc-parser.js
+all:
+	build-parser build-client run
 
-browserify:
-	browserify src/main/node/client/main.js -o public/bigcanvas.js
-
-init:
+dependencies:
+	apt-get install nodejs redis-server
 	npm install connect canvas ws cookie-signature ejs path big-integer underscore backbone redis expect.js redis-lock
 	npm install -g browserify pegjs mocha yuidocjs
+
+build-doc:
+	yuidoc src/main/node/
+
+build-parser:
+	pegjs --track-line-and-column src/main/node/rpc/json-rpc.grammar src/main/node/rpc/json-rpc-parser.js
+
+build-client:
+	browserify src/main/node/client/main.js -o public/bigcanvas.js
 
 run:
 	node src/main/node/server/main.js
@@ -14,6 +21,3 @@ run:
 test:
 	mocha src/test/node/TestTypes.js \
 	      src/test/node/server/data/TestUsers.js
-
-doc:
-	yuidoc src/main/node/
