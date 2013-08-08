@@ -194,13 +194,16 @@ eventInterface
     }
     
 structDefintion
-  = "struct" __ name:identifier _ "{" 
+  = "struct" __ name:identifier
+    superType:(_ ":" _ t:type { return t; })? _
+    "{"
        _ as:attributes _    
     "}"  
     {
         return {
             typeKind: "struct",
             name: name,
+            superType: superType || null,
             members: as
         };
     }

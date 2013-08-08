@@ -212,14 +212,17 @@ var Generator = function(schemeText) {
               return true;
             }
             var checker = typeCheckMembers(def.members);
+            var superValidate = null;
+            if(def.superType)
+              superValidate = resolveType(def.superType).validate;
             types[name] = {
               baseType: "STRUCT",
               name: name,
-              validate: (function(ch){
+              validate: (function(ch, vali){
                 return function(obj) {
-                  return validateMembers(ch, obj);
+                  return (vali == null || vali(obj)) && validateMembers(ch, obj);
                 };
-              })(checker)
+              })(checker, superValidate)
             };
             break;
         }

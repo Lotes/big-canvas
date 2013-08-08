@@ -1,5 +1,5 @@
 /* basic types */
-type BigInteger = String in /^[+-]?[0-9]+$/
+type BigInteger = String in /^[-]?[0-9]+$/
 type Color = String in /^#[0-9a-fA-F]{6}$/
 
 struct Point {
@@ -50,6 +50,10 @@ struct Action {
     case REDO:
       actionId: ActionId;
   };
+}
+
+struct ActionData: Action {
+  userId: UserId;
 }
 
 /* window */

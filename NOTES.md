@@ -1,7 +1,9 @@
 NOTES
 =====
 
-Objekte in big-canvas:
+Objekte
+-------
+```
 * Users                                          ==> users/<userId>
 * Sessions                                       ==> sessions/<sessionId>
 
@@ -14,13 +16,15 @@ Objekte in big-canvas:
 * Jobs (siehe unten)
 
 * Images (x,y,width,height,backgroundColor?)     ==> images/<imageId>
+```
 
 Jobs:
 * Job-Scheduling sollte vollkommen über die Datenbank laufen, damit bei einem Absturz des Servers die Jobs weitergeführt werden können
 * Render-Job (tileLocation, actionIds, dependencies to other jobs?)
 * Delta-Job (actionId)
 
-Routen:
+Routen
+------
 *  /tiles/:column_:row.png
   *  schlägt die Kachel im private/tiles-Ordner nach und gibt sie aus, falls sie existiert, oder sendet leere Kachel falls nicht
   *  im Arbeitspeicher cachen
@@ -32,4 +36,5 @@ Routen:
   *  maximale Beschränkung 4096x4096?
 
 Andere Ideen
+------------
 * Websocket-Antworten je Benutzer sammeln (Batch-Antwort alle 500ms)

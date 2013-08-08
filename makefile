@@ -20,4 +20,5 @@ run:
 
 test:
 	mocha src/test/node/TestTypes.js \
-	      src/test/node/server/data/TestUsers.js
+	      src/test/node/server/data/TestUsers.js \
+	      src/test/node/rpc/TestGenerator.js
