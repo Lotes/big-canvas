@@ -30,7 +30,7 @@ var BigCanvas = function(callback) {
       };
       socket.onclose = function() {
         connected = false;
-        console.log("WebSocket closed!");
+        console.log("WebSocket closed!"); //TODO callback?
       };
       socket.onmessage = function(msg) {
         try {
