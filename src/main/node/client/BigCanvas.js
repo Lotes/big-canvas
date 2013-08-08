@@ -15,6 +15,7 @@ var BigCanvas = function(callback) {
 
         }
       });
+
       //setup web socket
       var connected = false;
       var url = "ws://"+document.location.hostname+":"+Config.SERVER_SOCKET_PORT+"/"+Config.SERVER_SOCKET_PATH;
@@ -47,6 +48,12 @@ var BigCanvas = function(callback) {
         else
           console.log("Could not send message: "+msg+".");
       })
+
+      //functions
+      self.moveTo = function(center) {
+        console.log("moving to (x: "+ center.x.toString()+";y: "+center.y.toString()+")");
+      };
+
     })
     .fail(function(jqXHR, textStatus) {
       callback(new Error(textStatus));

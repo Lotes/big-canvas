@@ -54,6 +54,8 @@ struct Action {
 
 struct ActionData: Action {
   userId: UserId;
+  undone: Boolean;
+  region: TileLocations;
 }
 
 /* window */

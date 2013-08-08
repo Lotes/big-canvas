@@ -1,31 +1,3 @@
-var config = {
-    TILES_SIZE: 128,
-    TILES_PATH: "/tiles/",
-    UNAVAILABLE_TILE_PATH: "/tiles/unavailable.png",
-    WEBSOCKET_URL: 'ws://' + document.location.hostname + ':8081/big-canvas'
-};
-
-function Point(x, y) {
-  this.x = x;
-  this.y = y; 
-}
-Point.prototype.toLocation = function() {
-  var size = config.TILES_SIZE,
-      x = this.x,
-      y = this.y;
-  col = (x >= 0) ? Math.floor(x/size) : Math.floor(x/size)-1,
-  row = (y >= 0) ? Math.floor(y/size) : Math.floor(y/size)-1;
-  return new TileLocation(col, row);
-};
-
-function TileLocation(column, row) {
-  this.column = column;
-  this.row = row;
-}
-TileLocation.prototype.toFileName = function() {
-  return this.column+"_"+this.row+".png";
-};
-
 /**
  * a tile is a small, fixed-size part of the big canvas
  * @param location the coordinates of this tile
@@ -384,27 +356,6 @@ $(function() {
   var moveButton = $("#moveButton");
   var pencilButton = $("#pencilButton");
   var colorPicker = $('#colorPicker');
-  var router = new Router();
-  router.on('route:setOrigin', function (x, y) {
-    var xx = parseInt(x),
-        yy = parseInt(y);
-    if(!isNaN(xx) && !isNaN(yy)) {
-      console.log("moving to (x: "+xx+";y: "+yy+")");
-      canvas.moveTo(new Point(xx, yy))
-    }
-  });
-  Backbone.history.start();
-  var navigate = function(x, y) {
-    router.navigate("#x="+x+"&y="+y, {trigger: true});
-  };
-  if(document.location.toString().indexOf("#") == -1) {
-    var x = getRandom32BitNumber(), 
-        y = getRandom32BitNumber();
-    navigate(x, y);
-  }
-  canvas.on("move", function(origin) {
-    navigate(origin.x, origin.y);
-  });
   
   $(window).resize(function() {
     canvas.resize(window.innerWidth, window.innerHeight);

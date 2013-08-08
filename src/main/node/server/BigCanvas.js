@@ -46,7 +46,7 @@ var BigCanvas = function() {
     },
     defineImage: function(socket, x, y, width, height, callback) {
       console.log("set name of user "+socket.getUserId()+" to '"+name+"'.");
-      callback();
+      callback(null, "123");
     }
   });
 };
