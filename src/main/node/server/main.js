@@ -2,7 +2,7 @@ var config = require("./Config");
 var express = require("express");
 var SessionStore = require("./SessionStore")(express);
 var WebSocketServer = require('ws').Server;
-var UserStore = require("./UserStore");
+var Users = require("./data/Users");
 var NameGenerator = require("./NameGenerator");
 var signature = require('cookie-signature');
 var BigCanvas = require("./BigCanvas").BigCanvas;
@@ -12,9 +12,6 @@ var bigCanvas = new BigCanvas();
 var webServer = express();
 var sessionStore = new SessionStore({
   path: config.SERVER_SESSIONS_PATH
-});
-var userStore = new UserStore({
-  path: config.SERVER_USERS_PATH
 });
 var parseCookie = express.cookieParser();
 
@@ -34,9 +31,7 @@ webServer.configure(function(){
   webServer.use(webServer.router);
   webServer.use(function(req, res, next) {
     if(!req.session.userId) {
-      userStore.create({
-        name: NameGenerator.generate()
-      }, function(err, uid) {
+      Users.create(function(err, uid) {
         if(!err)
           req.session.userId = uid;
         else

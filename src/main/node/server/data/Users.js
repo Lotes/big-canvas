@@ -18,7 +18,7 @@ function userIdToKey(userId) {
 module.exports = {
   create: function(callback) {
     var counterKey = "users/counter";
-    var lockKey = counterKey+".lock";
+    var lockKey = "locks/"+counterKey;
     lock(lockKey, function(done) {
       redisClient.get(counterKey, function(err, data) {
         if(err) {

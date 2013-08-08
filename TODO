@@ -3,6 +3,7 @@ TODO
 
 v0.2?
 -zu Node.js konvertieren
+-Session-Expiration-Datum berücksichtigen
 -Bildlink-Generator (/images/u8Ik1lwz --> x/y/width/height)
 -32-bit-Begrenzung aufheben (endlose Karte --> big-integer)
 -transparenter Pinsel + Radierer mit einstellbarer Breite
