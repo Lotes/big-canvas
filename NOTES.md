@@ -3,6 +3,7 @@ NOTES
 
 Objekte
 -------
+
 ```
 * Users                                          ==> users/<userId>
 * Sessions                                       ==> sessions/<sessionId>
@@ -18,16 +19,19 @@ Objekte
 * Images (x,y,width,height,backgroundColor?)     ==> images/<imageId>
 ```
 
-Jobs:
+Jobs
+----
+
+```
 * Job-Scheduling sollte vollkommen über die Datenbank laufen, damit bei einem Absturz des Servers die Jobs weitergeführt werden können
 * Render-Job (tileLocation, actionIds, dependencies to other jobs?)
 * Delta-Job (actionId)
+   * produziert am Ende Render-Jobs
+   * benachrichtigt am Ende alle Sockets über die neue Aktion
+```
 
 Routen
 ------
-*  /tiles/:column_:row.png
-  *  schlägt die Kachel im private/tiles-Ordner nach und gibt sie aus, falls sie existiert, oder sendet leere Kachel falls nicht
-  *  im Arbeitspeicher cachen
 *  /images/:id
   *  schlägt das Bild im private/images-Ordner nach
   *  dort ist in einer Datei x/y/width/height hinterlegt
@@ -38,3 +42,11 @@ Routen
 Andere Ideen
 ------------
 * Websocket-Antworten je Benutzer sammeln (Batch-Antwort alle 500ms)
+
+Grafiken
+--------
+* Radierer, Pinsel, Undo, Redo
+* Ladebild, Nicht-verfügbar-Bild
+* Undo-Manager-Icon
+  * Mini-Pinsel mit verwendeten Farbe
+  * Mini-Radierer

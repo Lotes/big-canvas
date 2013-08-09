@@ -190,40 +190,7 @@ function BigCanvas(element, originPoint) {
       }
     }
   });
-  
-  //setup socket
-  var socket = new WebSocket(config.WEBSOCKET_URL);
-  socket.onopen = function() {
-    connected = true;
-    that.resize(window.innerWidth, window.innerHeight);
-  };
-  socket.onerror = function() {
-    console.log("Websocket error!");
-  };
-  socket.onclose = function() {
-    connected = false;
-    alert("Connection closed! Please refresh this page.");
-  };
-  socket.onmessage = function(msg) {
-    var packet = null;
-    try {
-      packet = JSON.parse(msg.data);
-    } catch(e) {
-      alert("Bad JSON syntax: "+msg.data);
-      return;
-    }
-    if(packet.kind == "draw")
-      that.drawLine(packet.line, packet.color);
-    else if(packet.kind == "update")
-      that.update(packet.location, packet.tiles);
-  };
-  var send = function(kind, object) {
-    if(connected) {
-      object["kind"] = kind;
-      socket.send(JSON.stringify(object));
-    }
-  };
-  
+
   //setup tiles cache
   tilesCache.on("ready", function() {
     enabled = true;

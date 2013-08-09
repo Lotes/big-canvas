@@ -11,7 +11,7 @@ var BigCanvas = function(callback) {
         onAction: function(userId, actionId, action, region) {
           console.log(userId);
         },
-        onUpdate: function(updates) {
+        onWindowUpdated: function(updates) {
 
         }
       });
@@ -51,9 +51,11 @@ var BigCanvas = function(callback) {
 
       //functions
       self.moveTo = function(center) {
-        console.log("moving to (x: "+ center.x.toString()+";y: "+center.y.toString()+")");
+        console.log("moving to (x: "+ center.x.toString()+"; y: "+center.y.toString()+")");
       };
-
+      self.resize = function(width, height) {
+        console.log("resizing to (width: "+ width+"; height: "+height+")");
+      };
     })
     .fail(function(jqXHR, textStatus) {
       callback(new Error(textStatus));

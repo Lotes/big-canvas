@@ -23,12 +23,12 @@ $(function() {
       throw err;
 
     //setup router
-    var Router = Backbone.Router.extend({ routes: { "x=:x&y=:y": "setOrigin" } });
+    var Router = Backbone.Router.extend({ routes: { "x=:x&y=:y": "moveTo" } });
     var router = new Router();
     function navigate(x, y, trigger) {
       router.navigate("#x="+x.toString()+"&y="+y.toString(), {trigger: trigger});
     };
-    router.on('route:setOrigin', function (strX, strY) {
+    router.on('route:moveTo', function (strX, strY) {
       var x, y;
       try {
         x = BigInteger(strX);
