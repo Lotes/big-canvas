@@ -5,3 +5,4 @@ src/main/node/rpc/json-rpc-parser.js
 /.idea
 /public/bigcanvas.js
 /doc
+src/main/node/rpc/big-canvas.js

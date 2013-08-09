@@ -7,6 +7,5 @@ Config.SERVER_VIEW_PATH = __dirname + "/../../../../private/views";
 Config.SERVER_USERS_PATH = __dirname + "/../../../../private/users";
 Config.SERVER_SESSION_SECRET = "keyboard cat";
 Config.SERVER_SESSION_ID = "SESSION_ID";
-Config.RPC_DEFINITIONS_PATH = Config.SERVER_WEB_PATH + "/big-canvas.types";
 
 module.exports = Config;

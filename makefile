@@ -9,6 +9,9 @@ dependencies:
 build-doc:
 	yuidoc src/main/node/
 
+build-definition:
+	./src/main/node/tools/stringify ./src/main/node/rpc/big-canvas.types ./src/main/node/rpc/big-canvas.js
+
 build-parser:
 	pegjs --track-line-and-column src/main/node/rpc/json-rpc.grammar src/main/node/rpc/json-rpc-parser.js
 

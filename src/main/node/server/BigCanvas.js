@@ -1,7 +1,6 @@
 var Config = require("./Config");
 var Generator = require("./../rpc/json-rpc-generator");
-var fs = require("fs");
-var definitionsText = fs.readFileSync(Config.RPC_DEFINITIONS_PATH, { encoding: "utf8" });
+var definitionsText = require("../rpc/big-canvas");
 var generator = new Generator(definitionsText);
 var BigInteger = require("big-integer");
 var Types = require("./ServerTypes");
