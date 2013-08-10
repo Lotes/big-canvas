@@ -63,6 +63,7 @@ struct ActionData: Action {
   userId: UserId;
   undone: Boolean;
   region: TileLocations;
+  timestamp: BigInteger;
 }
 
 /* jobs */
@@ -82,8 +83,8 @@ struct JobData {
 }
 
 /* window */
-type WindowWidth = Integer in 1..4096
-type WindowHeight = Integer in 1..4096
+type WindowWidth = Integer in 0..4096
+type WindowHeight = Integer in 0..4096
 
 /* update message */
 struct TileUpdate {

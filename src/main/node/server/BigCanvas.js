@@ -28,7 +28,7 @@ var BigCanvas = function() {
     },
     //remote procedure call implementations
     setWindow: function(socket, x, y, width, height, callback) {
-      console.log("set window...");
+      console.log("set window... x="+x+", y="+y+", w="+width+", h="+height);
       callback();
     },
     sendAction: function(socket, action, callback) {

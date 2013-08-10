@@ -30,6 +30,33 @@ Jobs
    * benachrichtigt am Ende alle Sockets über die neue Aktion
 ```
 
+
+Aktionen
+--------
+
+BRUSH/ERASER-Aktion:
+* wenn Linienzug > BoundingBox(4096x4096) => Fehler
+* BoundingBox zu Region umrechnen um betroffenes Gebiet abzuschätzen
+* betroffene Kacheln als ungültig markieren (=> Meldung an die Nutzer)
+* großes Delta darauf zeichnen
+* Delta in Kacheldeltas aufsplitten
+* Delta speichern (PNGs und DB-Einträge)
+* betroffene Kacheln neu rendern (=> Meldung an die Nutzer über den Fortschritt)
+* Aktions-Bit-String aller betroffenen Kacheln aktualisieren (String notwendig)?
+* Kacheln als gültig markieren (=> Meldung an die Nutzer)
+Was ist mit den Versionen?
+
+UNDO/REDO-Aktion:
+* lade Region der zu ändernden Aktion
+* betroffene Kacheln als ungültig markieren (=> Meldung an die Nutzer)
+* BitString der Kacheln aktualisieren
+* suche Version mit längsten gemeinsamen Aktions-Bit-String
+* Meldung an die Nutzer
+
+* verstichene Zeit zum Zeichnen mitprotokollieren
+* in gewissen Zeitabständen Versionen speichern
+* Canvases serverseitig cachen
+
 Routen
 ------
 *  /images/:id

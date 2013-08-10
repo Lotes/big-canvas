@@ -18,7 +18,36 @@ function randomBigInteger() {
 }
 
 $(function() {
-  var bigCanvas = new BigCanvas();
+  var bigCanvasElement = $("#big-canvas")[0];
+  var bigCanvas = new BigCanvas(bigCanvasElement);
+  var $moveButton = $("#moveButton");
+  var $brushButton = $("#brushButton");
+  var $eraserButton = $("#eraserButton");
+  var modeButtons = [$moveButton, $brushButton, $eraserButton];
+
+  //resize event
+  $(window).resize(function() { bigCanvas.resize(); });
+
+  //configure buttons
+  function activateButton($button) {
+    for(var i=0; i<modeButtons.length; i++)
+      modeButtons[i].removeClass("activated");
+    $button.addClass("activated");
+  };
+  $("#undoButton").click(function() { bigCanvas.undo(); });
+  $("#redoButton").click(function() { bigCanvas.redo(); });
+  $moveButton.click(function() {
+    bigCanvas.setMode("MOVE");
+    activateButton($moveButton);
+  });
+  $brushButton.click(function() {
+    bigCanvas.setMode("BRUSH");
+    activateButton($brushButton);
+  });
+  $eraserButton.click(function() {
+    bigCanvas.setMode("ERASER");
+    activateButton($eraserButton);
+  });
 
   //setup router
   var Router = Backbone.Router.extend({ routes: { "x=:x&y=:y": "moveTo" } });

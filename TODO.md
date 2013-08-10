@@ -17,6 +17,7 @@ v0.3?
 * Undo/Redo für beliebigen Benutzer
 * Aktionsliste für Region
 * Onlineliste für Region
+* Selektion und Füllen
 
 v0.x?
 * verteiltes System, mehrere Rechner

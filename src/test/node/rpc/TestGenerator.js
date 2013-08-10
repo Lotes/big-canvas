@@ -1,7 +1,6 @@
 var Config = require("./../../../main/node/server/Config");
 var Generator = require("./../../../main/node/rpc/json-rpc-generator");
-var fs = require("fs");
-var definitionsText = fs.readFileSync(Config.RPC_DEFINITIONS_PATH, { encoding: "utf8" });
+var definitionsText = require("./../../../main/node/rpc/big-canvas");
 var generator = new Generator(definitionsText);
 var expect = require("expect.js");
 
@@ -31,7 +30,7 @@ describe('RPC Generator', function(){
       expect(Point.validate({x: 2, y: -3})).not.to.be.ok();
     });
 
-    it('should validate ActionData', function(){
+    /*it('should validate ActionData', function(){
       var ActionData = generator.Types.ActionData;
       expect(ActionData.validate({
         type: "UNDO",
@@ -46,6 +45,6 @@ describe('RPC Generator', function(){
         type: "UNDO",
         actionId: "123"
       })).not.to.be.ok();
-    });
+    });*/
   });
 });

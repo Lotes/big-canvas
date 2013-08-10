@@ -52,15 +52,10 @@ webServer.configure('production', function(){
   webServer.use(express.errorHandler());
 });
 
-webServer.get('/tiles/:x_:y.png', function(req, res){
+/*webServer.get('/tiles/:x_:y.png', function(req, res){
   //TODO
   res.end("nothing");
-});
-
-webServer.get('/images/:id.png', function(req, res){
-  //TODO
-  res.end("nothing");
-});
+});*/
 
 webServer.listen(config.SERVER_WEB_PORT);
 
