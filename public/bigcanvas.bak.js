@@ -134,62 +134,6 @@ function BigCanvas(element, originPoint) {
   
   //setup empty image
   unavailableImage.src = config.UNAVAILABLE_TILE_PATH;
-  
-  //setup canvas
-  var endDraw = function() {
-    if(line.length > 0) {
-      that.sendLine(line, that.color);
-      line = [];
-    }
-  };
-  var stroke = function(pointA, pointB) {
-    var origin = that.origin,
-        pixelHalfWidth = Math.floor(element.width / 2),
-        pixelHalfHeight = Math.floor(element.height / 2),
-        from = new Point(pointA.x - pixelHalfWidth + origin.x, pointA.y - pixelHalfHeight + origin.y),
-        to = new Point(pointB.x - pixelHalfWidth + origin.x, pointB.y - pixelHalfHeight + origin.y);
-    if(line.length == 0)
-      line.push(from);
-    line.push(to);
-    that.drawLine([from, to], that.color);
-  };
-  $(element).mousedown(function(event){
-    mouseDown = true;
-    oldPos = new Point(event.pageX, event.pageY);
-    oldOrigin = that.origin;
-    if(that.drawMode && enabled)
-      line = [];
-  });
-  $(element).mouseup(function(event){
-    mouseDown = false;
-    if(that.drawMode) {
-      if(enabled)
-        endDraw();
-    }     
-  });
-  $(element).mouseleave(function(event) {
-    if(that.drawMode && enabled)
-      endDraw();
-  });
-  $(element).mousemove(function(event){
-    if(mouseDown)
-    {
-      var newPos = new Point(event.pageX, event.pageY);
-      if(that.drawMode) {
-        if(enabled) {
-          stroke(oldPos, newPos);    
-          oldPos = newPos;
-        }
-      } else {
-        that.moveTo(
-            new Point(
-                oldOrigin.x - (newPos.x - oldPos.x),
-                oldOrigin.y - (newPos.y - oldPos.y)
-            )
-        );
-      }
-    }
-  });
 
   //setup tiles cache
   tilesCache.on("ready", function() {
@@ -301,42 +245,9 @@ function BigCanvas(element, originPoint) {
   };
 }
 
-var Router = Backbone.Router.extend({
-  routes: {
-    "x=:x&y=:y": "setOrigin"
-  }
-});
-
-function getRandom32BitNumber() {
-  var result = 0;
-  for(var i = 0; i < 30; i++) //bad style: only 30 not 31 to avoid shutdown of the connection at the border
-    if(Math.random() <= 0.5)
-      result |= 1 << i;
-  if(Math.random() <= 0.5)
-    result *= -1;
-  return result;
-}
-
 $(function() {
-  var element = $("#bigcanvas")[0];
-  var canvas = new BigCanvas(element, new Point(0, 0));
-  var moveButton = $("#moveButton");
-  var pencilButton = $("#pencilButton");
   var colorPicker = $('#colorPicker');
-  
-  $(window).resize(function() {
-    canvas.resize(window.innerWidth, window.innerHeight);
-  }); 
-  moveButton.click(function() {
-    moveButton.addClass("activated");
-    pencilButton.removeClass("activated");
-    canvas.drawMode = false;
-  });
-  pencilButton.click(function() {
-    moveButton.removeClass("activated");
-    pencilButton.addClass("activated");
-    canvas.drawMode = true;
-  });
+
   colorPicker.palette({
     color: '#FF0000',
     onChange: function() {

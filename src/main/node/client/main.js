@@ -25,8 +25,10 @@ $(function() {
   var $eraserButton = $("#eraserButton");
   var modeButtons = [$moveButton, $brushButton, $eraserButton];
 
-  //resize event
-  $(window).resize(function() { bigCanvas.resize(); });
+  //configure shortcuts
+  Mousetrap.bind(['command+z', 'ctrl+z'], function() {
+    bigCanvas.undo();
+  });
 
   //configure buttons
   function activateButton($button) {
@@ -73,5 +75,8 @@ $(function() {
         y = randomBigInteger();
     navigate(x, y, true);
   }
+  bigCanvas.on("move", function(center) {
+    navigate(center.x, center.y, true);
+  })
 });
 
