@@ -76,7 +76,7 @@ socketServer.on('connection', function(socket) {
     var sessionID = socket.upgradeReq.cookies[config.SERVER_SESSION_ID];
     sessionID = signature.unsign(sessionID.slice(2), config.SERVER_SESSION_SECRET);
     sessionStore.get(sessionID, function(err, session) {
-      if(err || !session.userId) {
+      if(err || !session || !session.userId) {
         socket.close();
         return;
       }

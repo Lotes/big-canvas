@@ -45,6 +45,7 @@ Andere Ideen
 
 Grafiken
 --------
+* http://openiconlibrary.sourceforge.net/gallery2/?./Icons/actions&200
 * Radierer, Pinsel, Undo, Redo
 * Ladebild, Nicht-verfügbar-Bild
 * Undo-Manager-Icon

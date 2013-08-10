@@ -1,5 +1,5 @@
 all:
-	build-parser build-client run
+	build-definition build-parser build-client run
 
 dependencies:
 	apt-get install nodejs npm redis-server

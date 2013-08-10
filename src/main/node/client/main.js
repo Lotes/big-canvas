@@ -18,41 +18,31 @@ function randomBigInteger() {
 }
 
 $(function() {
-  var bigCanvas = new BigCanvas(function(err) {
-    if(err)
-      throw err;
+  var bigCanvas = new BigCanvas();
 
-    //setup router
-    var Router = Backbone.Router.extend({ routes: { "x=:x&y=:y": "moveTo" } });
-    var router = new Router();
-    function navigate(x, y, trigger) {
-      router.navigate("#x="+x.toString()+"&y="+y.toString(), {trigger: trigger});
-    };
-    router.on('route:moveTo', function (strX, strY) {
-      var x, y;
-      try {
-        x = BigInteger(strX);
-        y = BigInteger(strY);
-      } catch(ex) {
-        x = BigInteger.zero;
-        y = BigInteger.zero;
-        navigate(x, y, false);
-      }
-      bigCanvas.moveTo(new Point(x, y))
-    });
-    Backbone.history.start();
-    if(document.location.toString().indexOf("#") == -1) {
-      var x = randomBigInteger(),
-          y = randomBigInteger();
-      navigate(x, y, true);
+  //setup router
+  var Router = Backbone.Router.extend({ routes: { "x=:x&y=:y": "moveTo" } });
+  var router = new Router();
+  function navigate(x, y, trigger) {
+    router.navigate("#x="+x.toString()+"&y="+y.toString(), {trigger: trigger});
+  };
+  router.on('route:moveTo', function (strX, strY) {
+    var x, y;
+    try {
+      x = BigInteger(strX);
+      y = BigInteger(strY);
+    } catch(ex) {
+      x = BigInteger.zero;
+      y = BigInteger.zero;
+      navigate(x, y, false);
     }
-
-    /*bigCanvas.Client.setName("Test", function(err) {
-      if(err)
-        console.log(err);
-      else
-        console.log("success");
-    })*/
+    bigCanvas.moveTo(new Point(x, y))
   });
+  Backbone.history.start();
+  if(document.location.toString().indexOf("#") == -1) {
+    var x = randomBigInteger(),
+        y = randomBigInteger();
+    navigate(x, y, true);
+  }
 });
 
