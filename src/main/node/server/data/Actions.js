@@ -1,7 +1,7 @@
-var BigCanvasTypes = require("../BigCanvas").BigCanvasTypes;
 var redis = require("redis");
 var client = redis.createClient();
 var lock = require("redis-lock")(client);
+var BigCanvasTypes = require("../BigCanvas").BigCanvasTypes;
 var BigInteger = require("big-integer");
 
 client.on("error", function(err) {

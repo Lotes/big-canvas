@@ -3,11 +3,10 @@ var Point = Types.Point;
 var TileLocation = Types.TileLocation;
 
 /**
- A window is the spectator area of a user at the endless canvas.
-
- @class Window
- @constructor
- **/
+ * A window is the spectator area of a user at the endless canvas.
+ * @class Window
+ * @constructor
+ */
 function Window(x, y, width, height) {
   this.x = BigInteger(x);
   this.y = BigInteger(y);
@@ -22,6 +21,11 @@ function Window(x, y, width, height) {
       this.region.push(new TileLocation(col, row));
 }
 
+/**
+ * Transforms this object into a small data object just containing strings.
+ * @method toData
+ * @returns {Object} A small data object.
+ */
 Window.prototype.toData = function() {
   return {
     x: this.x.toString(),
@@ -32,15 +36,20 @@ Window.prototype.toData = function() {
 };
 
 /**
- A window tree collects a set of all active windows plus their ids and returns all window ids for a given tile location.
-
- @class WindowTree
- @constructor
- **/
+ * A window tree collects a set of all active windows plus their ids and returns all window ids for a given tile location.
+ * @class WindowTree
+ * @constructor
+ */
 function WindowTree() {
   this.tree = {};
 }
 
+/**
+ * Annotates this tree at the given location with the given id.
+ * @method set
+ * @param {TileLocation} tileLocation
+ * @param {String, Number} id any id to associated data
+ */
 WindowTree.prototype.set = function(tileLocation, id) {
   var data = tileLocation.toData();
   if(!(data.column in this.tree))
@@ -59,6 +68,12 @@ function isEmptyObject(obj) {
   return true;
 }
 
+/**
+ * Un-annotates this tree at the given location from the given id.
+ * @method unset
+ * @param {TileLocation} tileLocation
+ * @param {String, Number} id any id to associated data
+ */
 WindowTree.prototype.unset = function(tileLocation, id) {
   var data = tileLocation.toData();
   if(data.column in this.tree
@@ -73,6 +88,12 @@ WindowTree.prototype.unset = function(tileLocation, id) {
   }
 };
 
+/**
+ * Annotates this tree at the tile locations of the given window with the given id.
+ * @method addWindow
+ * @param {Window} win
+ * @param {String, Number} id any id to associated data
+ */
 WindowTree.prototype.addWindow = function(win, winId) {
   var region = win.region;
   for(var i=0; i<region.length; i++) {
@@ -81,6 +102,12 @@ WindowTree.prototype.addWindow = function(win, winId) {
   }
 };
 
+/**
+ * Un-annotates this tree at the tile locations of the given window from the given id.
+ * @method removeWindow
+ * @param {Window} win
+ * @param {String, Number} id any id to associated data
+ */
 WindowTree.prototype.removeWindow = function(win, winId) {
   var region = win.region;
   for(var i=0; i<region.length; i++) {
@@ -89,6 +116,12 @@ WindowTree.prototype.removeWindow = function(win, winId) {
   }
 };
 
+/**
+ * Queries for all window ids at a given tile location.
+ * @method getWindows
+ * @param {TileLocation} tileLocation
+ * @returns {[Number, String]} returns all ids at the given location
+ */
 WindowTree.prototype.getWindows = function(tileLocation) {
   //returns all windowIds whose region intersects the given tile
   var data = tileLocation.toData();

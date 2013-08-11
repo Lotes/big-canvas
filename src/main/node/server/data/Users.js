@@ -60,6 +60,11 @@ module.exports = {
       });
     });
   },
+  lock: function(userId, callback) {
+    var userKey = userIdToKey(userId),
+        lockKey = "locks/"+userKey;
+    lock(lockKey, callback);
+  },
   get: function(userId, callback) {
     try {
       var userKey = userIdToKey(userId);
@@ -72,6 +77,16 @@ module.exports = {
     try {
       var userKey = userIdToKey(userId);
       client.hset(userKey, "name", name, callback);
+    } catch(ex) {
+      callback(ex);
+    }
+  },
+  setLastActionId: function(userId, lastActionId, callback) {
+    try {
+      var userKey = userIdToKey(userId);
+      if(!BigCanvasTypes.ActionId.validate(lastActionId))
+        throw new Error("Invalid action id: "+lastActionId);
+      client.hset(userKey, "lastActionId", lastActionId, callback);
     } catch(ex) {
       callback(ex);
     }

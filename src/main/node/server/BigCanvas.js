@@ -1,3 +1,7 @@
+var redis = require("redis");
+var client = redis.createClient();
+var lock = require("redis-lock")(client);
+
 var Config = require("./Config");
 var Generator = require("./../rpc/json-rpc-generator");
 var definitionsText = require("../rpc/big-canvas");
@@ -26,6 +30,12 @@ function BigCanvas() {
   var self = this;
   var sockets = {};
   var windowTree = new WindowTree();
+
+  function lockCanvas(callback) {
+    var lockKey = "locks/canvas";
+    lock(lockKey, callback);
+  }
+
   //setup server stub
   this.Server = new generator.Interfaces.Main.Server({
     connect: function(socket) {

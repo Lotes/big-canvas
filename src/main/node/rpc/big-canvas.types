@@ -21,12 +21,6 @@ struct TileLocation {
 }
 type TileLocations = list of TileLocation
 
-/* users */
-type UserId = BigInteger
-struct UserData {
-  name: String;
-}
-
 /* action */
 enum ActionType {
   BRUSH,
@@ -64,6 +58,13 @@ struct ActionData: Action {
   timestamp: BigInteger;
   previous: ActionId;
   next: ActionId;
+}
+
+/* users */
+type UserId = BigInteger
+struct UserData {
+  name: String;
+  lastActionId: ActionId;
 }
 
 /* jobs */
