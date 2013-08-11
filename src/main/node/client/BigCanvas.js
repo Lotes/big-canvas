@@ -1,6 +1,7 @@
 var Types = require("../Types");
 var Point = Types.Point;
 var TileLocation = Types.TileLocation;
+var BoundingBox = Types.BoundingBox;
 var Config = require("./Config");
 var Generator = require("./../rpc/json-rpc-generator");
 var rpcDefinition = require("./../rpc/big-canvas");
@@ -97,7 +98,7 @@ function BigCanvas(element) {
     transparentPoster.width = width;
     transparentPoster.height = height;
     var g = transparentPoster.getContext("2d");
-    var size = 8;
+    var size = Config.TRANSPARENT_POSTER_TILE_SIZE;
     for(var x=0; x<width/size; x++)
       for(var y=0; y<height/size; y++) {
         g.fillStyle = (x+y)%2==0 ? "white" : "gray";
@@ -112,14 +113,7 @@ function BigCanvas(element) {
       }
     }
 
-    /*var overlay = document.createElement("canvas");
-    var $overlay = $(overlay);
-    overlay.width = width;
-    overlay.height = height;
-    $overlay.css("position", "absolute");
-    $overlay.css("left", "0px");
-    $overlay.css("top", "0px");*/
-
+    //fill the element with new content
     $element.html("");
     $element.append(transparentPoster);
     $element.append(table);
@@ -207,7 +201,42 @@ function BigCanvas(element) {
         g.stroke();
         break;
       case Mode.ERASER:
+        var bb = new BoundingBox();
+        bb.addPoint(from);
+        bb.addPoint(to);
+        bb.extend(Math.ceil(strokeWidth/2));
+        var bbRelPosition = bb.getMin().minus(leftTop);
+        var bbWidth = bb.getWidth().toJSNumber();
+        var bbHeight = bb.getHeight().toJSNumber();
+        var bbX = bbRelPosition.x.toJSNumber();
+        var bbY = bbRelPosition.y.toJSNumber()
 
+        g.globalAlpha = strokeOpacity;
+        g.globalCompositeOperation = "xor";
+        g.strokeStyle = "#FFFFFF";
+        g.lineWidth = strokeWidth;
+        g.lineCap = "round";
+        g.beginPath();
+        g.moveTo(relativeFrom.x.toJSNumber(), relativeFrom.y.toJSNumber());
+        g.lineTo(relativeTo.x.toJSNumber(), relativeTo.y.toJSNumber());
+        g.stroke();
+
+        var size = Config.TRANSPARENT_POSTER_TILE_SIZE;
+        var imageData = g.getImageData(bbX, bbY, bbWidth, bbHeight);
+        var data = imageData.data;
+        for(var w=0; w<bbWidth; w++) {
+          var x = bbX + w;
+          var col = Math.floor(x / size);
+          for(var h=0; h<bbHeight; h++) {
+            var y = bbY + h;
+            var row = Math.floor(y / size);
+            var dataIndex = 4*(h * bbWidth + w);
+            var color = (row+col)%2==0 ? [128, 128, 128] : [255,255,255];
+            for(var i=0; i<3; i++)
+              data[dataIndex+i] = color[i];
+          }
+        }
+        g.putImageData(imageData, bbX, bbY);
         break;
     }
   }
@@ -236,8 +265,8 @@ function BigCanvas(element) {
     }
     action.stroke = _.map(line, function(point) { return point.toData(); });
     client.sendAction(action, function(err, actionId) {
-      console.log(err);
-      console.log(actionId);
+      //console.log(err);
+      console.log("action acknowledged");
     });
   }
 
