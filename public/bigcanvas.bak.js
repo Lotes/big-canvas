@@ -222,27 +222,6 @@ function BigCanvas(element, originPoint) {
       drawTile(ctx, tile);
     });
   };
-  
-  var windowChanged = function() {
-    send("move", {
-      origin: that.origin,
-      width: element.width,
-      height: element.height
-    });
-  };
-  
-  this.resize = function(width, height) {
-    element.width = width;
-    element.height = height;
-    windowChanged();
-    this.repaint();
-  };
-  this.moveTo = function(newOriginPoint) {
-    this.origin = newOriginPoint;
-    windowChanged();
-    this.trigger("move", this.origin);
-    this.repaint();
-  };
 }
 
 $(function() {

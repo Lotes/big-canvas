@@ -6,6 +6,14 @@ function Point(x, y) {
   this.y = BigInteger(y);
 }
 
+Point.prototype.equals = function(other) {
+  return this.x.equals(other.x) && this.y.equals(other.y);
+};
+
+Point.prototype.minus = function(other) {
+  return new Point(this.x.minus(other.x), this.y.minus(other.y));
+};
+
 Point.prototype.toData = function() {
   return {
     x: this.x.toString(),
@@ -15,10 +23,10 @@ Point.prototype.toData = function() {
 
 Point.prototype.toLocation = function() {
   var size = Config.TILE_SIZE,
-    x = this.x,
-    y = this.y,
-    col,
-    row;
+      x = this.x,
+      y = this.y,
+      col,
+      row;
   //determine the column
   if(!x.isNegative()) {
     col = x.divide(size);
@@ -50,6 +58,11 @@ TileLocation.prototype.toData = function() {
     column: this.column.toString(),
     row: this.row.toString()
   };
+};
+
+TileLocation.prototype.toPoint = function() {
+  var size = Config.TILE_SIZE;
+  return new Point(this.column * size, this.row * size);
 };
 
 module.exports = {

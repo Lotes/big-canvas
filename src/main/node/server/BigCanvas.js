@@ -33,7 +33,7 @@ var BigCanvas = function() {
     },
     sendAction: function(socket, action, callback) {
       console.log("send action...");
-      callback(null, -1); //returns actionId
+      callback(null, "-1"); //returns actionId
     },
     getName: function(socket, userId, callback) {
       console.log("get name...");
