@@ -1,11 +1,11 @@
 var BigCanvasTypes = require("../BigCanvas").BigCanvasTypes;
 var redis = require("redis");
-var redisClient = redis.createClient();
-var lock = require("redis-lock")(redisClient);
+var client = redis.createClient();
+var lock = require("redis-lock")(client);
 var BigInteger = require("big-integer");
 var NameGenerator = require("../NameGenerator");
 
-redisClient.on("error", function(err) {
+client.on("error", function(err) {
   console.error("[Users] "+err);
 });
 
@@ -20,7 +20,7 @@ module.exports = {
     var counterKey = "users/counter";
     var lockKey = "locks/"+counterKey;
     lock(lockKey, function(done) {
-      redisClient.get(counterKey, function(err, data) {
+      client.get(counterKey, function(err, data) {
         if(err) {
           callback(err);
           done();
@@ -28,7 +28,7 @@ module.exports = {
           try {
             var id = BigInteger(data || "0");
             var nextId = id.next();
-            redisClient.set(counterKey, nextId.toString(), function(err) {
+            client.set(counterKey, nextId.toString(), function(err) {
               if(err) {
                 callback(err);
                 done();
@@ -39,7 +39,7 @@ module.exports = {
                   };
                   var userId = id.toString();
                   var userKey = userIdToKey(userId);
-                  redisClient.hmset(userKey, user, function(err) {
+                  client.hmset(userKey, user, function(err) {
                     if(err)
                       callback(err);
                     else
@@ -63,7 +63,7 @@ module.exports = {
   get: function(userId, callback) {
     try {
       var userKey = userIdToKey(userId);
-      redisClient.hgetall(userKey, callback);
+      client.hgetall(userKey, callback);
     } catch(ex) {
       callback(ex);
     }
@@ -71,7 +71,7 @@ module.exports = {
   setName: function(userId, name, callback) {
     try {
       var userKey = userIdToKey(userId);
-      redisClient.hset(userKey, "name", name, callback);
+      client.hset(userKey, "name", name, callback);
     } catch(ex) {
       callback(ex);
     }

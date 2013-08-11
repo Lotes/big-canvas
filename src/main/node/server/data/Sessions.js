@@ -1,7 +1,7 @@
 var redis = require("redis");
-var redisClient = redis.createClient();
+var client = redis.createClient();
 
-redisClient.on("error", function(err) {
+client.on("error", function(err) {
   console.error("[Sessions] "+err);
 });
 
@@ -12,11 +12,11 @@ function sessionIdToKey(sessionId) {
 module.exports = {
   destroy: function(sessionId, callback) {
     var key = sessionIdToKey(sessionId);
-    redisClient.del(key, callback);
+    client.del(key, callback);
   },
   get: function(sessionId, callback) {
     var key = sessionIdToKey(sessionId);
-    redisClient.get(key, function(err, result) {
+    client.get(key, function(err, result) {
       if(err)
         callback(err);
       else {
@@ -40,7 +40,7 @@ module.exports = {
       //{"cookie":{"originalMaxAge":null,"expires":null,"httpOnly":true,"path":"/"},"userId":16}
       var ttl = 60;
       var data = JSON.stringify(sessionObj);
-      redisClient.setex(key, ttl, data, callback);
+      client.setex(key, ttl, data, callback);
     } catch (err) {
       fn && fn(err);
     }

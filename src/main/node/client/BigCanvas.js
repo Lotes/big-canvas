@@ -342,12 +342,26 @@ function BigCanvas(element) {
 
   //editor
   self.setMode = function(md) {
-    console.log("set mode to "+md);
+    console.log("set editor mode to '"+md+"'");
     mode = md;
-    //TODO
+    pressed = false;
   };
-  self.undo = function() { console.log("UNDO"); };
-  self.redo = function() { console.log("REDO"); };
+  self.undo = function() {
+    var action = {
+      type: "UNDO"
+    };
+    client.sendAction(action, function(err, actionId) {
+      if(err) console.log(err);
+    });
+  };
+  self.redo = function() {
+    var action = {
+      type: "REDO"
+    };
+    client.sendAction(action, function(err, actionId) {
+      if(err) console.log(err);
+    });
+  };
 
   { //setup web socket
     var connected = false;
