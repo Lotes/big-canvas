@@ -36,6 +36,9 @@ function BigCanvas(element) {
   var unacknowledgedCanvasStack = [];
   var currentUnacknowledgedCanvas = null;
 
+  this.getColor = function() { return strokeColor; };
+  this.setColor = function(color) { strokeColor = color; };
+
   //setup client stub
   var generator = new Generator(rpcDefinition);
   var Types = generator.Types;
@@ -104,14 +107,6 @@ function BigCanvas(element) {
         g.fillStyle = (x+y)%2==0 ? "white" : "gray";
         g.fillRect(x*size, y*size, size, size);
       }
-
-    //TODO erase this block
-    for(var r=0; r<rows; r++) {
-      for(var c=0; c<columns; c++) {
-        if((c+r)%2==0)
-          $(cells[r][c]).css("background-color", "blue");
-      }
-    }
 
     //fill the element with new content
     $element.html("");
@@ -231,7 +226,7 @@ function BigCanvas(element) {
             var y = bbY + h;
             var row = Math.floor(y / size);
             var dataIndex = 4*(h * bbWidth + w);
-            var color = (row+col)%2==0 ? [128, 128, 128] : [255,255,255];
+            var color = (row+col)%2==0 ? Config.TRANSPARENT_POSTER_COLOR2 : Config.TRANSPARENT_POSTER_COLOR1;
             for(var i=0; i<3; i++)
               data[dataIndex+i] = color[i];
           }

@@ -223,16 +223,3 @@ function BigCanvas(element, originPoint) {
     });
   };
 }
-
-$(function() {
-  var colorPicker = $('#colorPicker');
-
-  colorPicker.palette({
-    color: '#FF0000',
-    onChange: function() {
-      var color = "#"+colorPicker.data('palette').palette.data("palette").color.hex;
-      canvas.color = color;
-      colorPicker.css("background-color", color);
-    }
-  });
-});

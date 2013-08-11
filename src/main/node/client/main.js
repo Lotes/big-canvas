@@ -20,10 +20,6 @@ function randomBigInteger() {
 $(function() {
   var bigCanvasElement = $("#big-canvas")[0];
   var bigCanvas = new BigCanvas(bigCanvasElement);
-  var $moveButton = $("#moveButton");
-  var $brushButton = $("#brushButton");
-  var $eraserButton = $("#eraserButton");
-  var modeButtons = [$moveButton, $brushButton, $eraserButton];
 
   //configure shortcuts
   Mousetrap.bind(['command+z', 'ctrl+z'], function() {
@@ -31,6 +27,10 @@ $(function() {
   });
 
   //configure buttons
+  var $moveButton = $("#moveButton");
+  var $brushButton = $("#brushButton");
+  var $eraserButton = $("#eraserButton");
+  var modeButtons = [$moveButton, $brushButton, $eraserButton];
   function activateButton($button) {
     for(var i=0; i<modeButtons.length; i++)
       modeButtons[i].removeClass("activated");
@@ -49,6 +49,17 @@ $(function() {
   $eraserButton.click(function() {
     bigCanvas.setMode("ERASER");
     activateButton($eraserButton);
+  });
+
+  //configure options
+  var $colorPicker = $('#colorPicker');
+  $colorPicker.palette({
+    color: bigCanvas.getColor(),
+    onChange: function() {
+      var color = "#"+$colorPicker.data('palette').palette.data("palette").color.hex;
+      bigCanvas.setColor(color);
+      $colorPicker.css("background-color", color);
+    }
   });
 
   //setup router
