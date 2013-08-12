@@ -1,3 +1,4 @@
+var BigInteger = require("big-integer");
 var Types = require("../Types");
 var Point = Types.Point;
 var TileLocation = Types.TileLocation;

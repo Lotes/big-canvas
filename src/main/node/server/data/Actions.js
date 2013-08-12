@@ -1,7 +1,7 @@
 var redis = require("redis");
 var client = redis.createClient();
 var lock = require("redis-lock")(client);
-var BigCanvasTypes = require("../BigCanvas").BigCanvasTypes;
+var BigCanvasTypes = require("../BigCanvasDefinitions").Types;
 var BigInteger = require("big-integer");
 
 client.on("error", function(err) {
@@ -50,6 +50,37 @@ module.exports = {
     var lockKey = "locks/"+actionKey;
     lock(lockKey, callback);
   },
-  set: function(actionId, actionData, callback) {},
-  get: function(actionId, callback) {}
+  get: function(actionId, callback) {
+    try {
+      var actionKey = actionIdToKey(actionId);
+      client.hgetall(userKey, function(err, action) {
+        if(err)
+          callback(err);
+        else {
+          try{
+            for(var name in action)
+              action[name] = JSON.parse(action[name]);
+            if(!BigCanvasTypes.ActionData.validate(action))
+              throw new Error("Action has bad format (actionId: "+actionId+").");
+            callback(null, action);
+          } catch(ex) {
+            callback(ex);
+          }
+        }
+      });
+    } catch(ex) {
+      callback(ex);
+    }
+  },
+  setUndone: function(actionId, undone, callback) {
+    try {
+      var actionKey = actionIdToKey(actionId);
+      if(typeof(undone) !== "boolean")
+        throw new Error("Bad format for boolean: "+undone);
+      var value = JSON.stringify(undone);
+      client.hset(actionKey, "undone", value, callback);
+    } catch(ex) {
+      callback(ex);
+    }
+  }
 };

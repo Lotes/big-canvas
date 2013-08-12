@@ -1,17 +1,17 @@
 var redis = require("redis");
 var client = redis.createClient();
 var lock = require("redis-lock")(client);
-
 var Config = require("./Config");
-var Generator = require("./../rpc/json-rpc-generator");
-var definitionsText = require("../rpc/big-canvas");
-var generator = new Generator(definitionsText);
 var BigInteger = require("big-integer");
 var Types = require("./ServerTypes");
 var Point = Types.Point;
 var BoundingBox = Types.BoundingBox;
 var Window = Types.Window;
 var WindowTree = Types.WindowTree;
+var BigCanvasDefinitions = require("./BigCanvasDefinitions");
+var Users = require("./data/Users");
+var Actions = require("./data/Actions");
+var _ = require("underscore");
 
 var socketIds = BigInteger(0);
 function BigCanvasSocket(wsSocket, userId) {
@@ -37,7 +37,7 @@ function BigCanvas() {
   }
 
   //setup server stub
-  this.Server = new generator.Interfaces.Main.Server({
+  this.Server = new BigCanvasDefinitions.Interfaces.Main.Server({
     connect: function(socket) {
       sockets[socket.getId()] = socket;
     },
@@ -66,6 +66,13 @@ function BigCanvas() {
       }
     },
     sendAction: function(socket, action, callback) {
+      var locks = [],
+          userId = socket.getUserId();
+      function unlock() {
+        _.each(locks, function(done) { done(); });
+        locks = [];
+      }
+      console.log("performing "+action.type+" (userID: "+userId+")");
       switch(action.type) {
         case "BRUSH":
         case "ERASER":
@@ -105,18 +112,81 @@ function BigCanvas() {
           break;
         case "UNDO":
           //lock user
-          //get users last action (read user[id].lastAction)
-          //lock action
-          //read action
-          //if action.undone==true then abort, error
-          //write action (undone=true)
-          //write user (lastAction=action.previous)
-          //foreach(location in action.region)
-          //  get index of actionId in tiles[location].actions
-          //  set bitStrings index-th entry to "0"
-          //  (re-)create a render job for location
-          //unlock action
-          //unlock user
+          Users.lock(userId, function(userDone) {
+            //save unlock callback
+            locks.unshift(userDone);
+            //get user
+            Users.get(userId, function(err, user) {
+              //handle error
+              if(err) {
+                callback(err);
+                unlock();
+                return;
+              }
+              try {
+                //get users last action
+                var lastActionId = user.lastActionId || "-1";
+                if(lastActionId === "-1")
+                  throw new Error("No last action found (userId: "+userId+")!");
+                if(!generator.Types.ActionId.validate(lastActionId))
+                  throw new Error("Last action id has bad format (userId: "+userId+").");
+                //lock action
+                Actions.lock(lastActionId, function(actionDone) {
+                  //save unlock callback
+                  locks.unshift(actionDone);
+                  //read action
+                  Actions.get(lastActionId, function(err, lastAction) {
+                    //handle error
+                    if(err) {
+                      callback(err);
+                      unlock();
+                      return;
+                    }
+                    try {
+                      //check type
+                      if(!generator.Types.ActionData.validate(lastAction))
+                        throw new Error("Last action has bad format (actionId: "+lastActionId+").");
+                      //if action.undone==true then abort, error
+                      if(lastAction.undone)
+                        throw new Error("Last action is already undone (userId: "+userId+"; actionId: "+lastActionId+").");
+                      //write action (undone=true)
+                      Actions.setUndone(lastActionId, true, function(err) {
+                        //handle error
+                        if(err) {
+                          callback(err);
+                          unlock();
+                          return;
+                        }
+                        //write user (lastAction=action.previous)
+                        Users.setLastActionId(userId, action.previous, function(err) {
+                          //handle error
+                          if(err) {
+                            callback(err);
+                            unlock();
+                            return;
+                          }
+                          //TODO
+                          //foreach(location in action.region)
+                          //  get index of actionId in tiles[location].actions
+                          //  set bitStrings index-th entry to "0"
+                          //  (re-)create a render job for location
+                          console.log("UNDO was sucessfully performed (userId: "+userId+")");
+                          callback(null, "-1");
+                          unlock();
+                        });
+                      });
+                    } catch(ex) {
+                      callback(ex);
+                      unlock();
+                    }
+                  });
+                });
+              } catch(ex) {
+                callback(ex);
+                unlock();
+              }
+            });
+          });
           break;
         case "REDO":
           //lock user
@@ -138,7 +208,6 @@ function BigCanvas() {
           //unlock user
           break;
       }
-      console.log("send action...");
       callback(null, "-1"); //returns actionId
     },
     getName: function(socket, userId, callback) {
@@ -158,6 +227,5 @@ function BigCanvas() {
 
 module.exports = {
   BigCanvasSocket: BigCanvasSocket,
-  BigCanvas: BigCanvas,
-  BigCanvasTypes: generator.Types
+  BigCanvas: BigCanvas
 };

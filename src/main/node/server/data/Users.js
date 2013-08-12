@@ -1,4 +1,4 @@
-var BigCanvasTypes = require("../BigCanvas").BigCanvasTypes;
+var BigCanvasTypes = require("../BigCanvasDefinitions").Types;
 var redis = require("redis");
 var client = redis.createClient();
 var lock = require("redis-lock")(client);
@@ -35,8 +35,12 @@ module.exports = {
               } else {
                 try {
                   var user = {
-                    name: NameGenerator.generate()
+                    name: NameGenerator.generate(),
+                    lastActionId: "-1",
+                    firstActionId: "-1"
                   };
+                  for(var name in user)
+                    user[name] = JSON.stringify(user[name]);
                   var userId = id.toString();
                   var userKey = userIdToKey(userId);
                   client.hmset(userKey, user, function(err) {
@@ -68,7 +72,21 @@ module.exports = {
   get: function(userId, callback) {
     try {
       var userKey = userIdToKey(userId);
-      client.hgetall(userKey, callback);
+      client.hgetall(userKey, function(err, user) {
+        if(err)
+          callback(err);
+        else {
+          try{
+            for(var name in user)
+              user[name] = JSON.parse(user[name]);
+            if(!BigCanvasTypes.UserData.validate(user))
+              throw new Error("Action has bad format (actionId: "+userId+").");
+            callback(null, user);
+          } catch(ex) {
+            callback(ex);
+          }
+        }
+      }); //TODO JSON.parse on items
     } catch(ex) {
       callback(ex);
     }
@@ -76,7 +94,8 @@ module.exports = {
   setName: function(userId, name, callback) {
     try {
       var userKey = userIdToKey(userId);
-      client.hset(userKey, "name", name, callback);
+      var value = JSON.stringify(name);
+      client.hset(userKey, "name", value, callback);
     } catch(ex) {
       callback(ex);
     }
@@ -86,7 +105,8 @@ module.exports = {
       var userKey = userIdToKey(userId);
       if(!BigCanvasTypes.ActionId.validate(lastActionId))
         throw new Error("Invalid action id: "+lastActionId);
-      client.hset(userKey, "lastActionId", lastActionId, callback);
+      var value = JSON.stringify(lastActionId);
+      client.hset(userKey, "lastActionId", value, callback);
     } catch(ex) {
       callback(ex);
     }

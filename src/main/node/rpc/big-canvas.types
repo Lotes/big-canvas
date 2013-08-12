@@ -28,7 +28,7 @@ enum ActionType {
   UNDO,
   REDO
 }
-
+type UserId = BigInteger
 type StrokeWidth = Integer in 1..100
 type StrokeOpacity = Float in 0.0..1.0
 type Stroke = list of Point
@@ -61,10 +61,10 @@ struct ActionData: Action {
 }
 
 /* users */
-type UserId = BigInteger
 struct UserData {
   name: String;
   lastActionId: ActionId;
+  firstActionId: ActionId;
 }
 
 /* jobs */

@@ -35,7 +35,7 @@ webServer.configure(function(){
         if(!err)
           req.session.userId = uid;
         else
-          req.session.userId = -1;
+          req.session.userId = "-1";
         next();
       });
     } else
