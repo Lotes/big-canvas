@@ -72,6 +72,37 @@ module.exports = {
       callback(ex);
     }
   },
+  /**
+   * adds a new action
+   * @method addNew
+   * @param actionId {String} the id of the new action
+   * @param action {Object} an action object, see "Action" definition in the RPC definition file
+   * @param userId {String} id of the user performing this action
+   * @param previousActionId {String} the id of the previous action performed by the same user
+   * @param callback
+   */
+  addNew: function(actionId, action, userId, previousActionId, callback) {
+    try {
+      var actionKey = actionIdToKey(actionId);
+      if(!BigCanvasTypes.UserId.validate(userId))
+        throw new Error("Bad format for user id (="+userId+").");
+      if(!BigCanvasTypes.ActionId.validate(previousActionId))
+        throw new Error("Bad format for previous action id (="+previousActionId+").");
+      var actionData = Utils.copy(action);
+      actionData.userId = userId;
+      actionData.undone = false;
+      actionData.region = [];
+      actionData.timestamp = new Date().getTime().toString();
+      actionData.previousActionId = previousActionId;
+      actionData.nextActionId = "-1";
+      if(!BigCanvasTypes.ActionData.validate(actionData))
+        throw new Error("Bad format for action data (="+JSON.stringify(actionData)+").");
+      actionData = Utils.stringifyMembers(actionData);
+      client.hmset(actionKey, actionData, callback);
+    } catch(ex) {
+      callback(ex);
+    }
+  },
   setUndone: function(actionId, undone, callback) {
     try {
       var actionKey = actionIdToKey(actionId);

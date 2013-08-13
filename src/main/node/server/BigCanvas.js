@@ -101,25 +101,52 @@ function BigCanvas() {
             callback(new Error("The stroke was too big."));
             return;
           }
+
+          function performAction(newActionId, previousActionId) {
+            Actions.addNew(newActionId, action, userId, previousActionId, function(err) {
+              if(err) { fail(err); return; }
+              success("-1");
+            });
+            //create canvas (MOD TILE_SIZE, keep position and tile location in mind)
+            //draw stroke
+            //determine affected region
+            //write action (region)
+            //split and save n images
+            //write n deltas (tileLocation, actionId, path)
+            //(re-)create n render jobs
+            //write previous action (next)
+            //write user.lastAction
+
+          }
+
           //lock canvas
-          //get new action id
-          //lock user
-          //read user.lastAction
-          //lock action and previous action
-          //write action (undone, stroke, width, color, opacity, userId, timestamp, previous, but no region!)
-          //create canvas (MOD TILE_SIZE, keep position and tile location in mind)
-          //draw stroke
-          //determine affected region
-          //write action (region)
-          //split and save n images
-          //write n deltas (tileLocation, actionId, path)
-          //(re-)create n render jobs
-          //write previous action (next)
-          //write user.lastAction
-          //unlock action and previous action
-          //unlock user
-          //unlock canvas
-          callback(null, "-1"); //returns actionId
+          lockCanvas(function(canvasDone) {
+            locks.unshift(canvasDone);
+            //get new action id
+            Actions.generateId(function(err, newActionId) {
+              if(err) { fail(err); return; }
+              //lock user
+              Users.lock(userId, function(userDone) {
+                locks.unshift(userDone);
+                //read user.lastAction
+                Users.get(userId, function(err, user) {
+                  if(err) { fail(err); return; }
+                  var noLastAction = user.lastActionId === "-1";
+                  //lock new Action
+                  Actions.lock(newActionId, function(newActionDone) {
+                    locks.unshift(newActionDone);
+                    if(!noLastAction) {
+                      Actions.lock(user.lastActionId, function(previousActionDone) {
+                        locks.unshift(previousActionDone);
+                        performAction(newActionId, user.lastActionId);
+                      });
+                    } else
+                      performAction(newActionId, "-1");
+                  });
+                });
+              });
+            });
+          });
           break;
         case "UNDO":
           //lock user
@@ -151,8 +178,8 @@ function BigCanvas() {
                       Actions.setUndone(lastActionId, true, function(err) {
                         //handle error
                         if(err) { fail(err); return; }
-                        //write user (lastAction=action.previous)
-                        Users.setLastActionId(userId, action.previous, function(err) {
+                        //write user
+                        Users.setLastActionId(userId, action.previousActionId, function(err) {
                           //handle error
                           if(err) { fail(err); return; }
                           //commit jobs

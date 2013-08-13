@@ -1,4 +1,11 @@
 module.exports = {
+  copy: function(obj) {
+    var result = {};
+    for(var name in obj)
+      if(obj.hasOwnProperty(name))
+        result[name] = obj[name];
+    return result;
+  },
   stringify: function(obj) {
     return JSON.stringify(obj);
   },
