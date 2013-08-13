@@ -3,6 +3,7 @@ var client = redis.createClient();
 var lock = require("redis-lock")(client);
 var BigCanvasTypes = require("../BigCanvasDefinitions").Types;
 var BigInteger = require("big-integer");
+var Utils = require("../ServerUtils");
 
 client.on("error", function(err) {
   console.error("[Actions] "+err);
@@ -58,8 +59,7 @@ module.exports = {
           callback(err);
         else {
           try{
-            for(var name in action)
-              action[name] = JSON.parse(action[name]);
+            action = Utils.parseMembers(action);
             if(!BigCanvasTypes.ActionData.validate(action))
               throw new Error("Action has bad format (actionId: "+actionId+").");
             callback(null, action);
@@ -75,9 +75,9 @@ module.exports = {
   setUndone: function(actionId, undone, callback) {
     try {
       var actionKey = actionIdToKey(actionId);
-      if(typeof(undone) !== "boolean")
+      if(!BigCanvasTypes.Boolean.validate(undone))
         throw new Error("Bad format for boolean: "+undone);
-      var value = JSON.stringify(undone);
+      var value = Utils.stringify(undone);
       client.hset(actionKey, "undone", value, callback);
     } catch(ex) {
       callback(ex);

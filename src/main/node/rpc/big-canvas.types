@@ -56,8 +56,8 @@ struct ActionData: Action {
   undone: Boolean;
   region: TileLocations;
   timestamp: BigInteger;
-  previous: ActionId;
-  next: ActionId;
+  previousActionId: ActionId;
+  nextActionId: ActionId;
 }
 
 /* users */

@@ -351,7 +351,10 @@ function BigCanvas(element) {
       type: "UNDO"
     };
     client.sendAction(action, function(err, actionId) {
-      if(err) console.log(err);
+      if(err)
+        console.log(err);
+      else
+        console.log(actionId);
     });
   };
   self.redo = function() {
@@ -359,7 +362,10 @@ function BigCanvas(element) {
       type: "REDO"
     };
     client.sendAction(action, function(err, actionId) {
-      if(err) console.log(err);
+      if(err)
+        console.log(err);
+      else
+        console.log(actionId);
     });
   };
 

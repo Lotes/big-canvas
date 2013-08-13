@@ -10,6 +10,7 @@ v0.2?
 * Standardtool soll "Verschieben" sein
 * Undo/Redo pro Benutzer (Strg+Z)
 * Touch-Events für iPad/Handys
+* UNDO/REDO in Transaktionen packen
 
 v0.3?
 * mehrere Ebenen (max. 5)

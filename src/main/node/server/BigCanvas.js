@@ -9,9 +9,11 @@ var BoundingBox = Types.BoundingBox;
 var Window = Types.Window;
 var WindowTree = Types.WindowTree;
 var BigCanvasDefinitions = require("./BigCanvasDefinitions");
+var _ = require("underscore");
+
 var Users = require("./data/Users");
 var Actions = require("./data/Actions");
-var _ = require("underscore");
+var Jobs = require("./data/Jobs");
 
 var socketIds = BigInteger(0);
 function BigCanvasSocket(wsSocket, userId) {
@@ -72,6 +74,14 @@ function BigCanvas() {
         _.each(locks, function(done) { done(); });
         locks = [];
       }
+      function success(actionId) {
+        unlock();
+        callback(null, actionId);
+      }
+      function fail(ex) {
+        unlock();
+        callback(ex);
+      }
       console.log("performing "+action.type+" (userID: "+userId+")");
       switch(action.type) {
         case "BRUSH":
@@ -109,6 +119,7 @@ function BigCanvas() {
           //unlock action and previous action
           //unlock user
           //unlock canvas
+          callback(null, "-1"); //returns actionId
           break;
         case "UNDO":
           //lock user
@@ -118,18 +129,12 @@ function BigCanvas() {
             //get user
             Users.get(userId, function(err, user) {
               //handle error
-              if(err) {
-                callback(err);
-                unlock();
-                return;
-              }
+              if(err) { fail(err); return; }
               try {
                 //get users last action
                 var lastActionId = user.lastActionId || "-1";
                 if(lastActionId === "-1")
                   throw new Error("No last action found (userId: "+userId+")!");
-                if(!generator.Types.ActionId.validate(lastActionId))
-                  throw new Error("Last action id has bad format (userId: "+userId+").");
                 //lock action
                 Actions.lock(lastActionId, function(actionDone) {
                   //save unlock callback
@@ -137,78 +142,108 @@ function BigCanvas() {
                   //read action
                   Actions.get(lastActionId, function(err, lastAction) {
                     //handle error
-                    if(err) {
-                      callback(err);
-                      unlock();
-                      return;
-                    }
+                    if(err) { fail(err); return; }
                     try {
-                      //check type
-                      if(!generator.Types.ActionData.validate(lastAction))
-                        throw new Error("Last action has bad format (actionId: "+lastActionId+").");
                       //if action.undone==true then abort, error
                       if(lastAction.undone)
                         throw new Error("Last action is already undone (userId: "+userId+"; actionId: "+lastActionId+").");
                       //write action (undone=true)
                       Actions.setUndone(lastActionId, true, function(err) {
                         //handle error
-                        if(err) {
-                          callback(err);
-                          unlock();
-                          return;
-                        }
+                        if(err) { fail(err); return; }
                         //write user (lastAction=action.previous)
                         Users.setLastActionId(userId, action.previous, function(err) {
                           //handle error
-                          if(err) {
-                            callback(err);
-                            unlock();
-                            return;
-                          }
-                          //TODO
-                          //foreach(location in action.region)
-                          //  get index of actionId in tiles[location].actions
-                          //  set bitStrings index-th entry to "0"
-                          //  (re-)create a render job for location
-                          console.log("UNDO was sucessfully performed (userId: "+userId+")");
-                          callback(null, "-1");
-                          unlock();
+                          if(err) { fail(err); return; }
+                          //commit jobs
+                          Jobs.commit(lastAction.region, lastActionId, false, function(err) {
+                            //handle error
+                            if(err) { fail(err); return; }
+                            console.log("UNDO was successfully performed (userId: "+userId+")");
+                            success("-1");
+                          });
                         });
                       });
-                    } catch(ex) {
-                      callback(ex);
-                      unlock();
-                    }
+                    } catch(ex) { fail(ex); }
                   });
                 });
-              } catch(ex) {
-                callback(ex);
-                unlock();
-              }
+              } catch(ex) { fail(ex); }
             });
           });
           break;
         case "REDO":
+          function redoAction(actionId) {
+            Actions.lock(actionId, function(actionDone) {
+              //save unlock callback
+              locks.unshift(actionDone);
+              //read action
+              Actions.get(actionId, function(err, action) {
+                //handle error
+                if(err) { fail(err); return; }
+                try {
+                  if(!action.undone)
+                    throw new Error("Cannot redo action (userId: "+userId+"; actionId: "+actionId+").");
+                  //write action (undone=true)
+                  Actions.setUndone(actionId, false, function(err) {
+                    //handle error
+                    if(err) { fail(err); return; }
+                    //write user
+                    Users.setLastActionId(userId, actionId, function(err) {
+                      //handle error
+                      if(err) { fail(err); return; }
+                      //commit jobs
+                      Jobs.commit(action.region, actionId, true, function(err) {
+                        //handle error
+                        if(err) { fail(err); return; }
+                        console.log("REDO was successfully performed (userId: "+userId+")");
+                        success("-1");
+                      });
+                    });
+                  });
+                } catch(ex) { fail(ex); }
+              });
+            });
+          }
           //lock user
-          //read user.lastAction
-          //lock lastAction
-          //read lastAction.next
-          //if next is undefined then abort, error
-          //unlock lastAction
-          //lock nextAction
-          //read nextAction (undone)
-          //if nextAction.undone==false then abort, error
-          //write nextAction (undone=false)
-          //write user (lastAction)
-          //foreach(location in nextAction.region)
-          //  get index of actionId in tiles[location].actions
-          //  set bitStrings index-th entry to "1"
-          //  (re-)create a render job for location
-          //unlock nextAction
-          //unlock user
+          Users.lock(userId, function(userDone) {
+            //save unlock callback
+            locks.unshift(userDone);
+            //get user
+            Users.get(userId, function(err, user) {
+              //handle error
+              if(err) { fail(err); return; }
+              try {
+                //get users last action
+                var lastActionId = user.lastActionId || "-1";
+                //if there is no last action, check first action (next candidate for redoing)
+                if(lastActionId === "-1") {
+                  var firstActionId = user.firstActionId || "-1";
+                  if(firstActionId === "-1")
+                    throw new Error("No redoable action found (userId: "+userId+")!");
+                  redoAction(firstActionId);
+                } else {
+                  //lock action
+                  Actions.lock(lastActionId, function(actionDone) {
+                    //save unlock callback
+                    locks.unshift(actionDone);
+                    //read action
+                    Actions.get(lastActionId, function(err, lastAction) {
+                      //handle error
+                      if(err) { fail(err); return; }
+                      try {
+                        var nextActionId = lastAction.nextActionId;
+                        if(nextActionId === "-1")
+                          throw new Error("No next action found (userId: "+userId+"; actionId: "+lastActionId+").");
+                        redoAction(nextActionId);
+                      } catch(ex) { fail(ex); }
+                    });
+                  });
+                }
+              } catch(ex) { fail(ex); }
+            });
+          });
           break;
       }
-      callback(null, "-1"); //returns actionId
     },
     getName: function(socket, userId, callback) {
       console.log("get name...");

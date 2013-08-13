@@ -4,6 +4,7 @@ var client = redis.createClient();
 var lock = require("redis-lock")(client);
 var BigInteger = require("big-integer");
 var NameGenerator = require("../NameGenerator");
+var Utils = require("../ServerUtils");
 
 client.on("error", function(err) {
   console.error("[Users] "+err);
@@ -39,8 +40,7 @@ module.exports = {
                     lastActionId: "-1",
                     firstActionId: "-1"
                   };
-                  for(var name in user)
-                    user[name] = JSON.stringify(user[name]);
+                  user = Utils.stringifyMembers(user);
                   var userId = id.toString();
                   var userKey = userIdToKey(userId);
                   client.hmset(userKey, user, function(err) {
@@ -77,8 +77,7 @@ module.exports = {
           callback(err);
         else {
           try{
-            for(var name in user)
-              user[name] = JSON.parse(user[name]);
+            user = Utils.parseMembers(user);
             if(!BigCanvasTypes.UserData.validate(user))
               throw new Error("Action has bad format (actionId: "+userId+").");
             callback(null, user);
@@ -86,7 +85,7 @@ module.exports = {
             callback(ex);
           }
         }
-      }); //TODO JSON.parse on items
+      });
     } catch(ex) {
       callback(ex);
     }
@@ -94,7 +93,7 @@ module.exports = {
   setName: function(userId, name, callback) {
     try {
       var userKey = userIdToKey(userId);
-      var value = JSON.stringify(name);
+      var value = Utils.stringify(name);
       client.hset(userKey, "name", value, callback);
     } catch(ex) {
       callback(ex);
@@ -105,7 +104,7 @@ module.exports = {
       var userKey = userIdToKey(userId);
       if(!BigCanvasTypes.ActionId.validate(lastActionId))
         throw new Error("Invalid action id: "+lastActionId);
-      var value = JSON.stringify(lastActionId);
+      var value = Utils.stringify(lastActionId);
       client.hset(userKey, "lastActionId", value, callback);
     } catch(ex) {
       callback(ex);
