@@ -3,7 +3,7 @@ all:
 
 dependencies:
 	apt-get install nodejs npm redis-server
-	npm install canvas ws cookie-signature ejs path big-integer underscore backbone redis expect.js redis-lock
+	npm install canvas ws cookie-signature ejs path big-integer underscore backbone redis expect.js
 	npm install -g browserify pegjs mocha yuidocjs
 
 build-doc:

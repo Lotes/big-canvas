@@ -11,6 +11,7 @@ var WindowTree = Types.WindowTree;
 var BigCanvasDefinitions = require("./BigCanvasDefinitions");
 var _ = require("underscore");
 
+var Tiles = require("./data/Tiles");
 var Users = require("./data/Users");
 var Actions = require("./data/Actions");
 var Jobs = require("./data/Jobs");
@@ -105,18 +106,32 @@ function BigCanvas() {
           function performAction(newActionId, previousActionId) {
             Actions.addNew(newActionId, action, userId, previousActionId, function(err) {
               if(err) { fail(err); return; }
-              success("-1");
+              //create and save deltas
+              Jobs.createDeltas(newActionId, action, function(err, region) {
+                if(err) { fail(err); return; }
+                //set region of new action
+                Actions.setRegion(newActionId, region, function(err) {
+                  if(err) { fail(err); return; }
+                  //update tiles
+                  Tiles.addActionBatch(region, newActionId, function(err) {
+                    if(err) { fail(err); return; }
+                    //write previous action (prevAction.next)
+                    Actions.setNextActionId(previousActionId, newActionId, function(err) {
+                      if(err) { fail(err); return; }
+                      //write user.lastAction
+                      Users.setLastActionId(userId, newActionId, function(err) {
+                        if(err) { fail(err); return; }
+                        //(re-)create n render jobs
+                        Jobs.commit(region, newActionId, true, function(err) {
+                          if(err) { fail(err); return; }
+                          success(newActionId);
+                        });
+                      });
+                    });
+                  })
+                });
+              });
             });
-            //create canvas (MOD TILE_SIZE, keep position and tile location in mind)
-            //draw stroke
-            //determine affected region
-            //write action (region)
-            //split and save n images
-            //write n deltas (tileLocation, actionId, path)
-            //(re-)create n render jobs
-            //write previous action (next)
-            //write user.lastAction
-
           }
 
           //lock canvas

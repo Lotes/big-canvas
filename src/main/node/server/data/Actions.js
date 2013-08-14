@@ -1,6 +1,6 @@
 var redis = require("redis");
 var client = redis.createClient();
-var lock = require("redis-lock")(client);
+var lock = require("../lock");
 var BigCanvasTypes = require("../BigCanvasDefinitions").Types;
 var BigInteger = require("big-integer");
 var Utils = require("../ServerUtils");
@@ -110,6 +110,28 @@ module.exports = {
         throw new Error("Bad format for boolean: "+undone);
       var value = Utils.stringify(undone);
       client.hset(actionKey, "undone", value, callback);
+    } catch(ex) {
+      callback(ex);
+    }
+  },
+  setRegion: function(actionId, region, callback) {
+    try {
+      var actionKey = actionIdToKey(actionId);
+      if(!BigCanvasTypes.TileLocations.validate(region))
+        throw new Error("Bad format for region: "+JSON.stringify(region));
+      var value = Utils.stringify(region);
+      client.hset(actionKey, "region", value, callback);
+    } catch(ex) {
+      callback(ex);
+    }
+  },
+  setNextActionId: function(actionId, nextActionId, callback) {
+    try {
+      var actionKey = actionIdToKey(actionId);
+      if(!BigCanvasTypes.ActionId.validate(nextActionId))
+        throw new Error("Bad format for action id: "+nextActionId);
+      var value = Utils.stringify(nextActionId);
+      client.hset(actionKey, "nextActionId", value, callback);
     } catch(ex) {
       callback(ex);
     }
