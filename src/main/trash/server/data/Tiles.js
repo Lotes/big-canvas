@@ -32,16 +32,42 @@ function tileExists(location, callback) {
   }
 }
 
+function tileCreate(location, callback) {
+  try {
+    var tileKey = locationToKey(location),
+        tileActionBitStringKey = tileKey+"/bitString",
+        tileValidKey = tileKey+"/valid";
+    client.set(tileValidKey, Utils.stringify(true), function(err) {
+      if(err) { callback(err); return; }
+      client.set(tileActionBitStringKey, "", callback)
+    });
+  } catch(ex) {
+    callback(ex);
+  }
+}
+
 function addAction(location, actionId, callback) {
   lockTile(location, function(done) {
-    tileExists(location, function(err, exists) {
-      if(err) { callback(err); return; }
-      if(exists) {
-
-      } else {
-
-      }
+    function success() {
       callback();
+      done();
+    }
+    function fail(ex) {
+      callback(ex);
+      done();
+    }
+    function appendAction() {
+      success();
+    }
+    tileExists(location, function(err, exists) {
+      if(err) { fail(err); return; }
+      if(!exists) {
+        tileCreate(location, function(err) {
+          if(err) { fail(err); return; }
+          appendAction();
+        });
+      } else
+        appendAction();
     });
   });
 }
@@ -49,6 +75,7 @@ function addAction(location, actionId, callback) {
 module.exports = {
   lock: lockTile,
   exists: tileExists,
+  create: tileCreate,
 
   addAction: addAction,
 

@@ -1,20 +1,16 @@
-var redis = require("redis");
-var client = redis.createClient();
-var lock = require("redis-lock")(client);
 var Config = require("./Config");
+
+var lock = require("./lock");
+
 var BigInteger = require("big-integer");
 var Types = require("./ServerTypes");
 var Point = Types.Point;
 var BoundingBox = Types.BoundingBox;
 var Window = Types.Window;
 var WindowTree = Types.WindowTree;
+
 var BigCanvasDefinitions = require("./BigCanvasDefinitions");
 var _ = require("underscore");
-
-var Tiles = require("./data/Tiles");
-var Users = require("./data/Users");
-var Actions = require("./data/Actions");
-var Jobs = require("./data/Jobs");
 
 var socketIds = BigInteger(0);
 function BigCanvasSocket(wsSocket, userId) {
@@ -83,11 +79,14 @@ function BigCanvas() {
         unlock();
         callback(ex);
       }
-      console.log("performing "+action.type+" (userID: "+userId+")");
+
+      success("-1");
+      return;
+
       switch(action.type) {
         case "BRUSH":
         case "ERASER":
-          //check if stroke <= BoundingBox(4096x4096)
+          /*//check if stroke <= BoundingBox(4096x4096)
           var maxSize = Config.ACTION_MAX_STROKE_SIZE,
               width = BigInteger(action.width),
               opacity = parseFloat(action.opacity),
@@ -161,10 +160,10 @@ function BigCanvas() {
                 });
               });
             });
-          });
+          });  */
           break;
         case "UNDO":
-          //lock user
+          /*//lock user
           Users.lock(userId, function(userDone) {
             //save unlock callback
             locks.unshift(userDone);
@@ -211,10 +210,10 @@ function BigCanvas() {
                 });
               } catch(ex) { fail(ex); }
             });
-          });
+          });*/
           break;
         case "REDO":
-          function redoAction(actionId) {
+          /*function redoAction(actionId) {
             Actions.lock(actionId, function(actionDone) {
               //save unlock callback
               locks.unshift(actionDone);
@@ -283,7 +282,7 @@ function BigCanvas() {
                 }
               } catch(ex) { fail(ex); }
             });
-          });
+          });*/
           break;
       }
     },

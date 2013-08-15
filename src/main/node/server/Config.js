@@ -3,6 +3,11 @@
  */
 var Config = require("../Config");
 
+Config.DATABASE_HOST = "localhost";
+Config.DATABASE_USERNAME = "root";
+Config.DATABASE_PASSWORD = "";
+Config.DATABASE_NAME = "bigcanvas";
+
 /**
  * the port of the web server
  * @property SERVER_WEB_PORT

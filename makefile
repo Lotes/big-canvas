@@ -2,8 +2,8 @@ all:
 	build-definition build-parser build-client run
 
 dependencies:
-	apt-get install nodejs npm redis-server
-	npm install canvas ws cookie-signature ejs path big-integer underscore backbone redis expect.js
+	apt-get install nodejs npm
+	npm install canvas ws cookie-signature ejs big-integer underscore backbone mysql mysql-queues expect.js
 	npm install -g browserify pegjs mocha yuidocjs
 
 build-doc:
