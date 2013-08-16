@@ -1,4 +1,5 @@
 var config = require("./Config");
+
 var express = require("express");
 var SessionStore = require("./SessionStore")(express);
 var WebSocketServer = require('ws').Server;
@@ -7,6 +8,10 @@ var signature = require('cookie-signature');
 var BigCanvas = require("./BigCanvas").BigCanvas;
 var BigCanvasSocket = require("./BigCanvas").BigCanvasSocket;
 var bigCanvas = new BigCanvas();
+
+var DatabaseConnection = require("./DatabaseConnection");
+
+var Users = require("./data/Users");
 
 var webServer = express();
 var sessionStore = new SessionStore({
@@ -30,14 +35,16 @@ webServer.configure(function(){
   webServer.use(webServer.router);
   webServer.use(function(req, res, next) {
     if(!req.session.userId) {
-      /*Users.create(function(err, uid) {
-        if(!err)
-          req.session.userId = uid;
-        else
-          req.session.userId = "-1";
-        next();
-      });*/
-      next();
+      var connection = new DatabaseConnection();
+      connection.connect(function(err) {
+        if(err) { connection.end(); next(); return; }
+        Users.create(connection, function(err, uid) {
+          connection.end();
+          if(!err)
+            req.session.userId = uid;
+          next();
+        });
+      });
     } else
       next();
   });

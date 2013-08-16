@@ -33,12 +33,70 @@ Scheme.prototype.addTable = function(name) {
   return table;
 };
 
+function columnTypeToMySQLType(type) {
+  switch(type) {
+    case ColumnType.STRING: return "VARCHAR(255)";
+    case ColumnType.BOOLEAN: return "TINYINT";
+    case ColumnType.INTEGER: return "INT";
+    case ColumnType.TEXT: return "LONGTEXT";
+    default: throw new Error("Unknown type: "+type);
+  }
+}
+
+function join(list, separator) {
+  var result = "";
+  for(var i=0; i<list.length; i++) {
+    if(i==0)
+      result = list[0];
+    else
+      result += separator + list[i];
+  }
+  return result;
+}
+
 Scheme.prototype.createMySQLDatabase = function(client, callback) {
   var error = null;
+  var tableCount = 0;
+  var finished = false;
   for(var tableName in this.tables) {
     var table = this.tables[tableName];
-    var sql = "";
+    tableCount++;
+    (function(table) {
+      var tableName = table.getName();
+      client.query("DROP TABLE IF EXISTS "+tableName, [], function(err) {
+        if(err) {
+          error = err;
+          console.log(err.message);
+        }
+        var columns = [],
+          primaries = [];
+        for(var columnName in table.columns) {
+          var column = table.columns[columnName];
+          var nullPhrase = column.canBeNull() ? "NULL" : "NOT NULL";
+          var typePhrase = columnTypeToMySQLType(column.getType());
+          if(column.isPrimaryKey())
+            primaries.push(columnName);
+          columns.push(columnName+" "+typePhrase+" "+nullPhrase);
+        }
+        columns.push("PRIMARY KEY ("+join(primaries, ", ")+")");
+        var sql = "CREATE TABLE "+tableName+" ("+join(columns, ", ")+")";
+        client.query(sql, [], function(err) {
+          if(err) {
+            error = err;
+            console.log(err.message);
+          }
+          tableCount--;
+          if(tableCount == 0 && finished) {
+            if(error)
+              callback(error);
+            else
+              callback();
+          }
+        });
+      });
+    })(table);
   }
+  finished = true;
 };
 
 module.exports = {

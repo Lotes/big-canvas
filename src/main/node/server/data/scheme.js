@@ -5,6 +5,12 @@ var ColumnType = DatabaseScheme.ColumnType;
 var scheme = new Scheme();
 
 scheme
+  .addTable("counters")
+    .addColumn("name", ColumnType.STRING, false, true)
+    .addColumn("value")
+;
+
+scheme
   .addTable("sessions")
     .addColumn("id", ColumnType.STRING, false, true)
     .addColumn("content")
@@ -31,10 +37,10 @@ scheme
   .addTable("actions")
     .addColumn("id", ColumnType.STRING, false, true)
     .addColumn("type")
-    .addColumn("actionObject")
+    .addColumn("actionObject", ColumnType.TEXT)
     .addColumn("userId")
     .addColumn("undone", ColumnType.BOOLEAN)
-    .addColumn("region")
+    .addColumn("region", ColumnType.TEXT)
     .addColumn("timestamp", ColumnType.INTEGER)
     //links for history
     .addColumn("previousActionId")
@@ -43,7 +49,7 @@ scheme
 
 scheme
   .addTable("deltas")
-    .addColumn("column", ColumnType.STRING, false, true)
+    .addColumn("col", ColumnType.STRING, false, true)
     .addColumn("row", ColumnType.STRING, false, true)
     .addColumn("actionId", ColumnType.STRING, false, true)
     .addColumn("imagePath")
@@ -61,7 +67,7 @@ scheme
 
 scheme
   .addTable("tiles")
-    .addColumn("column", ColumnType.STRING, false, true)
+    .addColumn("col", ColumnType.STRING, false, true)
     .addColumn("row", ColumnType.STRING, false, true)
     .addColumn("isValid", ColumnType.BOOLEAN)
     .addColumn("actionBitString", ColumnType.TEXT)
@@ -70,7 +76,7 @@ scheme
 
 scheme
   .addTable("tileActions")
-    .addColumn("column", ColumnType.STRING, false, true)
+    .addColumn("col", ColumnType.STRING, false, true)
     .addColumn("row", ColumnType.STRING, false, true)
     .addColumn("orderIndex", ColumnType.INTEGER, false, true)
     .addColumn("actionId")
@@ -78,7 +84,7 @@ scheme
 
 scheme
   .addTable("versions")
-    .addColumn("column", ColumnType.STRING, false, true)
+    .addColumn("col", ColumnType.STRING, false, true)
     .addColumn("row", ColumnType.STRING, false, true)
     .addColumn("revision", ColumnType.INTEGER, false, true)
     .addColumn("actionBitString", ColumnType.TEXT)

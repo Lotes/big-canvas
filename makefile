@@ -6,6 +6,9 @@ dependencies:
 	npm install canvas ws cookie-signature ejs big-integer underscore backbone mysql mysql-queues expect.js
 	npm install -g browserify pegjs mocha yuidocjs
 
+init-database:
+	./src/main/node/tools/initdb
+
 build-doc:
 	yuidoc src/main/node/
 
@@ -23,5 +26,6 @@ run:
 
 test:
 	mocha src/test/node/TestTypes.js \
+	      src/test/node/server/data/TestCounters.js \
 	      src/test/node/server/data/TestUsers.js \
 	      src/test/node/rpc/TestGenerator.js

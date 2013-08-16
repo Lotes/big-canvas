@@ -51,38 +51,6 @@ struct Action {
   };
 }
 
-struct ActionData: Action {
-  userId: UserId;
-  undone: Boolean;
-  region: TileLocations;
-  timestamp: BigInteger;
-  previousActionId: ActionId;
-  nextActionId: ActionId;
-}
-
-/* users */
-struct UserData {
-  name: String;
-  lastActionId: ActionId;
-  firstActionId: ActionId;
-}
-
-/* jobs */
-enum JobType {
-  DELTA,
-  UPDATE
-}
-
-struct JobData {
-  type: JobType match {
-    case DELTA:
-      actionId: ActionId;
-    case UPDATE:
-      location: TileLocation;
-      outstandingActions: ActionIds;
-  };
-}
-
 /* window */
 type WindowWidth = Integer in 0..4096
 type WindowHeight = Integer in 0..4096
@@ -107,6 +75,17 @@ type ImageId = String in /^[a-zA-Z0-9]+$/
 type ImageWidth = Integer in 1..4096
 type ImageHeight = Integer in 1..4096
 
+
+/* data */
+struct UserData {
+  name: String;
+  firstActionId: ActionId;
+  lastActionId: ActionId;
+  numBrushStrokes: BigInteger;
+  numEraserStrokes: BigInteger;
+  numUndos: BigInteger;
+  numRedos: BigInteger;
+}
 
 /* interface */
 interface Main {

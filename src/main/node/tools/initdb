@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+
+var DatabaseConnection = require("../server/DatabaseConnection");
+var connection = new DatabaseConnection();
+var scheme = require("../server/data/scheme");
+
+connection.connect(function(err) {
+  //handle error
+  if(err) {
+    console.log('Connection error: ' + err.message);
+    return;
+  }
+  //create scheme
+  scheme.createMySQLDatabase(connection, function(err) {
+    //handle error
+    if(err) {
+      console.log("Could not create scheme: " + err.message);
+    } else {
+      console.log("Scheme was successfully created.");
+    }
+    connection.end();
+  });
+});
