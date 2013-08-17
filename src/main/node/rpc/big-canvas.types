@@ -87,6 +87,17 @@ struct UserData {
   numRedos: BigInteger;
 }
 
+struct ActionData {
+  type: ActionType;
+  actionObject: Action;
+  userId: UserId;
+  undone: Boolean;
+  region: TileLocations;
+  timestamp: Integer;
+  previousActionId: ActionId;
+  nextActionId: ActionId;
+}
+
 /* interface */
 interface Main {
   //window update

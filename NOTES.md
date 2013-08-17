@@ -5,18 +5,18 @@ Objekte
 -------
 
 ```
-* Users                                          ==> users/<userId>
-* Sessions                                       ==> sessions/<sessionId>
+* Users
+* Sessions
 
-* Actions (userId, region, undone, type, stroke, width, color, opacity) ==> actions/<actionId>
+* Actions (userId, region, undone, type, stroke, width, color, opacity)
 
-* Tiles (actionIds)                              ==> tiles/<column>:<row>
-* (Tile)Versions (actionsBitString, picturePath) ==> versions/<revision>@<column>:<row>
-* (Tile)Deltas (picturePath)                     ==> deltas/<actionId>@<column>:<row>
+* Tiles (actionIds)
+* (Tile)Versions (actionsBitString, picturePath)
+* (Tile)Deltas (picturePath)
 
 * Jobs (siehe unten)
 
-* Images (x,y,width,height,backgroundColor?)     ==> images/<imageId>
+* Images (x,y,width,height,backgroundColor?)
 ```
 
 Jobs

@@ -11,6 +11,7 @@ v0.2?
 * Undo/Redo pro Benutzer (Strg+Z)
 * Touch-Events für iPad/Handys
 * UNDO/REDO in Transaktionen packen
+* teste Zeichnen für große Koordinaten
 
 v0.3?
 * mehrere Ebenen (max. 5)

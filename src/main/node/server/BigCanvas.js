@@ -2,6 +2,8 @@ var Config = require("./Config");
 
 var lock = require("./lock");
 
+var DatabaseConnection = require("./DatabaseConnection");
+
 var BigInteger = require("big-integer");
 var Types = require("./ServerTypes");
 var Point = Types.Point;
@@ -11,6 +13,11 @@ var WindowTree = Types.WindowTree;
 
 var BigCanvasDefinitions = require("./BigCanvasDefinitions");
 var _ = require("underscore");
+
+var Users = require("./data/Users");
+var Actions = require("./data/Actions");
+var Tiles = require("./data/Tiles");
+var Deltas = require("./data/Deltas");
 
 var socketIds = BigInteger(0);
 function BigCanvasSocket(wsSocket, userId) {
@@ -65,226 +72,250 @@ function BigCanvas() {
       }
     },
     sendAction: function(socket, action, callback) {
-      var locks = [],
-          userId = socket.getUserId();
-      function unlock() {
-        _.each(locks, function(done) { done(); });
-        locks = [];
-      }
-      function success(actionId) {
-        unlock();
-        callback(null, actionId);
-      }
-      function fail(ex) {
-        unlock();
-        callback(ex);
-      }
+      var connection = new DatabaseConnection();
+      connection.connect(function(err) {
+        if(err) { connection.end(); callback(err); return; }
+        var locks = [],
+            userId = socket.getUserId();
+        function unlock() {
+          connection.end();
+          _.each(locks, function(done) { done(); });
+          locks = [];
+        }
+        function success(actionId) {
+          unlock();
+          callback(null, actionId);
+        }
+        function fail(ex) {
+          unlock();
+          callback(ex);
+        }
 
-      success("-1");
-      return;
-
-      switch(action.type) {
-        case "BRUSH":
-        case "ERASER":
-          /*//check if stroke <= BoundingBox(4096x4096)
-          var maxSize = Config.ACTION_MAX_STROKE_SIZE,
-              width = BigInteger(action.width),
-              opacity = parseFloat(action.opacity),
-              bb = new BoundingBox(),
-              stroke = _.map(action.stroke, function(point) {
-                return new Point(point.x, point.y);
-              });
-          _.each(stroke, function(point) { bb.addPoint(point); });
-          bb.extend(Math.ceil(width / 2));
-          if(bb.getWidth().greater(maxSize)
-             || bb.getHeight().greater(maxSize)) {
-            callback(new Error("The stroke was too big."));
-            return;
-          }
-
-          function performAction(newActionId, previousActionId) {
-            Actions.addNew(newActionId, action, userId, previousActionId, function(err) {
-              if(err) { fail(err); return; }
-              //create and save deltas
-              Jobs.createDeltas(newActionId, action, function(err, region) {
-                if(err) { fail(err); return; }
-                //set region of new action
-                Actions.setRegion(newActionId, region, function(err) {
-                  if(err) { fail(err); return; }
-                  //update tiles
-                  Tiles.addActionBatch(region, newActionId, function(err) {
-                    if(err) { fail(err); return; }
-                    //write previous action (prevAction.next)
-                    Actions.setNextActionId(previousActionId, newActionId, function(err) {
-                      if(err) { fail(err); return; }
-                      //write user.lastAction
-                      Users.setLastActionId(userId, newActionId, function(err) {
-                        if(err) { fail(err); return; }
-                        //(re-)create n render jobs
-                        Jobs.commit(region, newActionId, true, function(err) {
-                          if(err) { fail(err); return; }
-                          success(newActionId);
-                        });
-                      });
-                    });
-                  })
-                });
-              });
-            });
-          }
-
-          //lock canvas
-          lockCanvas(function(canvasDone) {
-            locks.unshift(canvasDone);
-            //get new action id
-            Actions.generateId(function(err, newActionId) {
-              if(err) { fail(err); return; }
-              //lock user
-              Users.lock(userId, function(userDone) {
-                locks.unshift(userDone);
-                //read user.lastAction
-                Users.get(userId, function(err, user) {
-                  if(err) { fail(err); return; }
-                  var noLastAction = user.lastActionId === "-1";
-                  //lock new Action
-                  Actions.lock(newActionId, function(newActionDone) {
-                    locks.unshift(newActionDone);
-                    if(!noLastAction) {
-                      Actions.lock(user.lastActionId, function(previousActionDone) {
-                        locks.unshift(previousActionDone);
-                        performAction(newActionId, user.lastActionId);
-                      });
-                    } else
-                      performAction(newActionId, "-1");
-                  });
-                });
-              });
-            });
-          });  */
-          break;
-        case "UNDO":
-          /*//lock user
-          Users.lock(userId, function(userDone) {
-            //save unlock callback
-            locks.unshift(userDone);
-            //get user
-            Users.get(userId, function(err, user) {
-              //handle error
-              if(err) { fail(err); return; }
-              try {
-                //get users last action
-                var lastActionId = user.lastActionId || "-1";
-                if(lastActionId === "-1")
-                  throw new Error("No last action found (userId: "+userId+")!");
-                //lock action
-                Actions.lock(lastActionId, function(actionDone) {
-                  //save unlock callback
-                  locks.unshift(actionDone);
-                  //read action
-                  Actions.get(lastActionId, function(err, lastAction) {
-                    //handle error
-                    if(err) { fail(err); return; }
-                    try {
-                      //if action.undone==true then abort, error
-                      if(lastAction.undone)
-                        throw new Error("Last action is already undone (userId: "+userId+"; actionId: "+lastActionId+").");
-                      //write action (undone=true)
-                      Actions.setUndone(lastActionId, true, function(err) {
-                        //handle error
-                        if(err) { fail(err); return; }
-                        //write user
-                        Users.setLastActionId(userId, action.previousActionId, function(err) {
-                          //handle error
-                          if(err) { fail(err); return; }
-                          //commit jobs
-                          Jobs.commit(lastAction.region, lastActionId, false, function(err) {
-                            //handle error
-                            if(err) { fail(err); return; }
-                            console.log("UNDO was successfully performed (userId: "+userId+")");
-                            success("-1");
-                          });
-                        });
-                      });
-                    } catch(ex) { fail(ex); }
-                  });
-                });
-              } catch(ex) { fail(ex); }
-            });
-          });*/
-          break;
-        case "REDO":
-          /*function redoAction(actionId) {
-            Actions.lock(actionId, function(actionDone) {
-              //save unlock callback
-              locks.unshift(actionDone);
-              //read action
-              Actions.get(actionId, function(err, action) {
-                //handle error
-                if(err) { fail(err); return; }
-                try {
-                  if(!action.undone)
-                    throw new Error("Cannot redo action (userId: "+userId+"; actionId: "+actionId+").");
-                  //write action (undone=true)
-                  Actions.setUndone(actionId, false, function(err) {
-                    //handle error
-                    if(err) { fail(err); return; }
-                    //write user
-                    Users.setLastActionId(userId, actionId, function(err) {
-                      //handle error
-                      if(err) { fail(err); return; }
-                      //commit jobs
-                      Jobs.commit(action.region, actionId, true, function(err) {
-                        //handle error
-                        if(err) { fail(err); return; }
-                        console.log("REDO was successfully performed (userId: "+userId+")");
-                        success("-1");
-                      });
-                    });
-                  });
-                } catch(ex) { fail(ex); }
-              });
-            });
-          }
+        //lock canvas
+        lockCanvas(function(canvasDone) {
+          locks.unshift(canvasDone);
           //lock user
           Users.lock(userId, function(userDone) {
             //save unlock callback
             locks.unshift(userDone);
             //get user
-            Users.get(userId, function(err, user) {
+            Users.get(connection, userId, function(err, user) {
               //handle error
               if(err) { fail(err); return; }
-              try {
-                //get users last action
-                var lastActionId = user.lastActionId || "-1";
-                //if there is no last action, check first action (next candidate for redoing)
-                if(lastActionId === "-1") {
-                  var firstActionId = user.firstActionId || "-1";
-                  if(firstActionId === "-1")
-                    throw new Error("No redoable action found (userId: "+userId+")!");
-                  redoAction(firstActionId);
-                } else {
-                  //lock action
-                  Actions.lock(lastActionId, function(actionDone) {
+              //handle action
+              switch(action.type) {
+                case "BRUSH":
+                case "ERASER":
+                  //check if stroke <= BoundingBox(4096x4096)
+                  var maxSize = Config.ACTION_MAX_STROKE_SIZE,
+                    width = BigInteger(action.width),
+                    opacity = action.opacity,
+                    bb = new BoundingBox(),
+                    stroke = _.map(action.stroke, function(point) {
+                      return new Point(point.x, point.y);
+                    });
+                  _.each(stroke, function(point) { bb.addPoint(point); });
+                  bb.extend(Math.ceil(width / 2));
+                  if(bb.getWidth().greater(maxSize) || bb.getHeight().greater(maxSize)) {
+                    fail(new Error("Stroke is too big."));
+                    return;
+                  }
+
+                  function performAction(newActionId, previousActionId) {
+                    Deltas.draw(connection, action, function(err, regionPaths) {
+                      if(err) { fail(err); return; }
+                      try {
+                        //get region
+                        var region = _.map(regionPaths, function(path, location) { return location; });
+                        //start transaction
+                        var transaction = connection.startTransaction();
+                        function rollback(err) {
+                          transaction.rollback();
+                          Deltas.deleteRegionPaths(regionPaths);
+                          fail(err);
+                        }
+                        function commit(rslt) {
+                          transaction.commit();
+                          success(rslt);
+                        }
+                        Actions.create(transaction, newActionId, action, userId, previousActionId, region, function(err) {
+                          if(err) { rollback(err); return; }
+                          Users.setLastActionId(transaction, userId, newActionId, function(err) {
+                            if(err) { rollback(err); return; }
+                            //Actions.setNextActionId
+                          });
+                        });
+                        transaction.execute();
+                      } catch(ex) {
+                        fail(ex);
+                      }
+                    });
+                    /*  //update tiles
+                        Tiles.addActionBatch(region, newActionId, function(err) {
+                          if(err) { fail(err); return; }
+                          //write previous action (prevAction.next)
+                          Actions.setNextActionId(previousActionId, newActionId, function(err) {
+                            if(err) { fail(err); return; }
+                              //(re-)create n render jobs
+                              Jobs.commit(region, newActionId, true, function(err) {
+                                if(err) { fail(err); return; }
+                                success(newActionId);
+                              });
+                          });
+                    });*/
+                  }
+                  //get new action id
+                  Actions.newId(function(err, newActionId) {
+                    if(err) { fail(err); return; }
+                    //read user.lastAction
+                    Users.get(userId, function(err, user) {
+                      if(err) { fail(err); return; }
+                      var noLastAction = user.lastActionId === "-1";
+                      //lock new Action
+                      Actions.lock(newActionId, function(newActionDone) {
+                        locks.unshift(newActionDone);
+                        if(!noLastAction) {
+                          Actions.lock(user.lastActionId, function(previousActionDone) {
+                            locks.unshift(previousActionDone);
+                            performAction(newActionId, user.lastActionId);
+                          });
+                        } else
+                          performAction(newActionId, "-1");
+                      });
+                    });
+                  });
+                  break;
+                case "UNDO":
+                  try {
+                    //get users last action
+                    var lastActionId = user.lastActionId;
+                    if(lastActionId === "-1")
+                      throw new Error("No last action found (userId: "+userId+")!");
+                    //lock action
+                    Actions.lock(lastActionId, function(actionDone) {
+                      //save unlock callback
+                      locks.unshift(actionDone);
+                      //read action
+                      Actions.get(connection, lastActionId, function(err, lastAction) {
+                        //handle error
+                        if(err) { fail(err); return; }
+                        try {
+                          //if action.undone==true then abort, error
+                          if(lastAction.undone)
+                            throw new Error("Last action is already undone. Debug please: userId="+userId+", actionId="+lastActionId+".");
+                          //lock tiles
+                          Tiles.lock(lastAction.region, function(tilesDone) {
+                            //save unlock callback
+                            locks.unshift(tilesDone);
+
+                            success("-1");
+
+                            /*//write action (undone=true)
+                            Actions.setUndone(lastActionId, true, function(err) {
+                              //handle error
+                              if(err) { fail(err); return; }
+                              //write user
+                              Users.setLastActionId(userId, action.previousActionId, function(err) {
+                                //handle error
+                                if(err) { fail(err); return; }
+                                //commit jobs
+                                Jobs.commit(lastAction.region, lastActionId, false, function(err) {
+                                  //handle error
+                                  if(err) { fail(err); return; }
+                                  console.log("UNDO was successfully performed (userId: "+userId+")");
+                                  success("-1");
+                                });
+                              });
+                            });*/
+
+
+
+
+                          });
+                        } catch(ex) { fail(ex); }
+                      });
+                    });
+                  } catch(ex) { fail(ex); }
+                  break;
+                case "REDO":
+                  success("-1");
+                  return;
+                /*function redoAction(actionId) {
+                  Actions.lock(actionId, function(actionDone) {
                     //save unlock callback
                     locks.unshift(actionDone);
                     //read action
-                    Actions.get(lastActionId, function(err, lastAction) {
+                    Actions.get(actionId, function(err, action) {
                       //handle error
                       if(err) { fail(err); return; }
                       try {
-                        var nextActionId = lastAction.nextActionId;
-                        if(nextActionId === "-1")
-                          throw new Error("No next action found (userId: "+userId+"; actionId: "+lastActionId+").");
-                        redoAction(nextActionId);
+                        if(!action.undone)
+                          throw new Error("Cannot redo action (userId: "+userId+"; actionId: "+actionId+").");
+                        //write action (undone=true)
+                        Actions.setUndone(actionId, false, function(err) {
+                          //handle error
+                          if(err) { fail(err); return; }
+                          //write user
+                          Users.setLastActionId(userId, actionId, function(err) {
+                            //handle error
+                            if(err) { fail(err); return; }
+                            //commit jobs
+                            Jobs.commit(action.region, actionId, true, function(err) {
+                              //handle error
+                              if(err) { fail(err); return; }
+                              console.log("REDO was successfully performed (userId: "+userId+")");
+                              success("-1");
+                            });
+                          });
+                        });
                       } catch(ex) { fail(ex); }
                     });
                   });
                 }
-              } catch(ex) { fail(ex); }
+                  //lock user
+                  Users.lock(userId, function(userDone) {
+                    //save unlock callback
+                    locks.unshift(userDone);
+                    //get user
+                    Users.get(userId, function(err, user) {
+                      //handle error
+                      if(err) { fail(err); return; }
+                      try {
+                        //get users last action
+                        var lastActionId = user.lastActionId || "-1";
+                        //if there is no last action, check first action (next candidate for redoing)
+                        if(lastActionId === "-1") {
+                          var firstActionId = user.firstActionId || "-1";
+                          if(firstActionId === "-1")
+                            throw new Error("No redoable action found (userId: "+userId+")!");
+                          redoAction(firstActionId);
+                        } else {
+                          //lock action
+                          Actions.lock(lastActionId, function(actionDone) {
+                            //save unlock callback
+                            locks.unshift(actionDone);
+                            //read action
+                            Actions.get(lastActionId, function(err, lastAction) {
+                              //handle error
+                              if(err) { fail(err); return; }
+                              try {
+                                var nextActionId = lastAction.nextActionId;
+                                if(nextActionId === "-1")
+                                  throw new Error("No next action found (userId: "+userId+"; actionId: "+lastActionId+").");
+                                redoAction(nextActionId);
+                              } catch(ex) { fail(ex); }
+                            });
+                          });
+                        }
+                      } catch(ex) { fail(ex); }
+                    });
+                  });
+                  break;*/
+              }
             });
-          });*/
-          break;
-      }
+          });
+        });
+      });
     },
     getName: function(socket, userId, callback) {
       console.log("get name...");
