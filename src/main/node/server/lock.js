@@ -44,7 +44,7 @@ var mutexes = {};
 module.exports = function(key, callback) {
   if(!mutexes[key])
     mutexes[key] = new Mutex();
-  var mutex = mutex = mutexes[key];
+  var mutex = mutexes[key];
   mutex.acquire(function() {
     callback(function() {
       mutex.release();

@@ -1,6 +1,6 @@
 var ColumnType = {
   STRING: "STRING",   //VARCHAR(255)
-  INTEGER: "INTEGER", //INT (4 bytes)
+  INTEGER: "INTEGER", //BIGINT (4 bytes)
   BOOLEAN: "BOOLEAN", //TINYINT (1 byte)
   TEXT: "TEXT"        //LONGTEXT
 };
@@ -37,7 +37,7 @@ function columnTypeToMySQLType(type) {
   switch(type) {
     case ColumnType.STRING: return "VARCHAR(255)";
     case ColumnType.BOOLEAN: return "TINYINT";
-    case ColumnType.INTEGER: return "INT";
+    case ColumnType.INTEGER: return "BIGINT";
     case ColumnType.TEXT: return "LONGTEXT";
     default: throw new Error("Unknown type: "+type);
   }

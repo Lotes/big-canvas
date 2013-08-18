@@ -116,17 +116,21 @@ module.exports = {
    * @param undone
    * @param callback
    */
-  /*setUndone: function(client, actionId, undone, callback) {
+  setUndone: function(client, actionId, undone, callback) {
     try {
-      var actionKey = actionIdToKey(actionId);
+      if(!BigCanvasTypes.ActionId.validate(actionId))
+        throw new Error("Bad format for action id: "+actionId);
       if(!BigCanvasTypes.Boolean.validate(undone))
         throw new Error("Bad format for boolean: "+undone);
-      var value = Utils.stringify(undone);
-      client.hset(actionKey, "undone", value, callback);
+      client.query("UPDATE actions SET undone=? WHERE id=?", [undone ? 1 : 0, actionId], function(err, result) {
+        if(err) callback(err);
+        else if(result.affectedRows == 0) callback(new Error("No action updated."));
+        else callback();
+      });
     } catch(ex) {
       callback(ex);
     }
-  },                  */
+  },
   /**
    * @method setNextActionId
    * @param client

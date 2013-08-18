@@ -38,8 +38,7 @@ function BigCanvas() {
   var windowTree = new WindowTree();
 
   function lockCanvas(callback) {
-    var lockKey = "locks/canvas";
-    lock(lockKey, callback);
+    lock("canvas", callback);
   }
 
   //setup server stub
@@ -77,7 +76,8 @@ function BigCanvas() {
         var socketIds = windowTree.getWindowsByRegion(region);
         _.each(socketIds, function(socketId) {
           var socket = sockets[socketId];
-          server.onAction(socket, userId, actionId, action, region);
+          if(socket) //TODO dirty...
+            server.onAction(socket, userId, actionId, action, region);
         });
       }
 
@@ -136,48 +136,57 @@ function BigCanvas() {
                       try {
                         //get region
                         var region = _.map(regionPaths, function(location, path) { return location; });
-                        //start transaction
-                        var transaction = connection.startTransaction();
-                        function rollback(err) {
-                          transaction.rollback();
-                          Deltas.deleteRegionPaths(regionPaths);
-                          fail(err);
-                        }
-                        function commit(rslt) {
-                          transaction.commit(function(err, info) {
-                            if(err) {
-                              Deltas.deleteRegionPaths(regionPaths);
-                              fail(err);
-                            } else {
-                              success(rslt);
-                              broadcastAction(newActionId, action, userId, region);
-                            }
-                          });
-                        }
-                        //TODO commit jobs
-                        Deltas.commit(transaction, regionPaths, newActionId, function(err) {
-                          if(err) { rollback(err); return; }
-                          Actions.create(transaction, newActionId, action, userId, previousActionId, region, function(err) {
+                        //lock region
+                        Tiles.lock(region, function(tilesDone) {
+                          //save unlock callback
+                          locks.unshift(tilesDone);
+                          //start transaction
+                          var transaction = connection.startTransaction();
+                          function rollback(err) {
+                            transaction.rollback();
+                            Deltas.deleteRegionPaths(regionPaths);
+                            fail(err);
+                          }
+                          function commit(rslt) {
+                            transaction.commit(function(err, info) {
+                              if(err) {
+                                Deltas.deleteRegionPaths(regionPaths);
+                                fail(err);
+                              } else {
+                                success(rslt);
+                                broadcastAction(newActionId, action, userId, region);
+                              }
+                            });
+                          }
+                          //TODO commit jobs
+                          Deltas.commit(transaction, regionPaths, newActionId, function(err) {
                             if(err) { rollback(err); return; }
-                            Users.setLastActionId(transaction, userId, newActionId, function(err) {
+                            Actions.create(transaction, newActionId, action, userId, previousActionId, region, function(err) {
                               if(err) { rollback(err); return; }
-                              Tiles.appendAction(transaction, region, newActionId, function(err) {
+                              Users.setLastActionId(transaction, userId, newActionId, function(err) {
                                 if(err) { rollback(err); return; }
-                                Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
+                                Tiles.appendAction(transaction, region, newActionId, function(err) {
                                   if(err) { rollback(err); return; }
-                                  if(previousActionId !== "-1") {
-                                    Actions.setNextActionId(transaction, previousActionId, newActionId, function(err) {
-                                      if(err) { rollback(err); return; }
-                                      commit(newActionId);
-                                    });
-                                  } else
-                                    commit(newActionId);
+                                  Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
+                                    if(err) { rollback(err); return; }
+                                    if(previousActionId !== "-1") {
+                                      Actions.setNextActionId(transaction, previousActionId, newActionId, function(err) {
+                                        if(err) { rollback(err); return; }
+                                        commit(newActionId);
+                                      });
+                                    } else {
+                                      Users.setFirstActionId(transaction, userId, newActionId, function(err) {
+                                        if(err) { rollback(err); return; }
+                                        commit(newActionId);
+                                      });
+                                    }
+                                  });
                                 });
                               });
                             });
                           });
+                          transaction.execute();
                         });
-                        transaction.execute();
                       } catch(ex) {
                         fail(ex);
                       }
@@ -205,8 +214,6 @@ function BigCanvas() {
                   });
                   break;
                 case "UNDO":
-                  success("-1");
-                  return;
                   try {
                     //get users last action
                     var lastActionId = user.lastActionId;
@@ -223,35 +230,43 @@ function BigCanvas() {
                         try {
                           //if action.undone==true then abort, error
                           if(lastAction.undone)
-                            throw new Error("Last action is already undone. Debug please: userId="+userId+", actionId="+lastActionId+".");
+                            throw new Error("Last action is already undone. Debug please (userId="+userId+", actionId="+lastActionId+").");
                           //lock tiles
                           Tiles.lock(lastAction.region, function(tilesDone) {
                             //save unlock callback
                             locks.unshift(tilesDone);
 
-                            success("-1");
-
-                            /*//write action (undone=true)
-                            Actions.setUndone(lastActionId, true, function(err) {
-                              //handle error
-                              if(err) { fail(err); return; }
-                              //write user
-                              Users.setLastActionId(userId, action.previousActionId, function(err) {
-                                //handle error
-                                if(err) { fail(err); return; }
-                                //commit jobs
-                                Jobs.commit(lastAction.region, lastActionId, false, function(err) {
-                                  //handle error
-                                  if(err) { fail(err); return; }
-                                  console.log("UNDO was successfully performed (userId: "+userId+")");
-                                  success("-1");
+                            //start transaction
+                            var transaction = connection.startTransaction();
+                            function rollback(err) {
+                              transaction.rollback();
+                              fail(err);
+                            }
+                            function commit(rslt) {
+                              transaction.commit(function(err, info) {
+                                if(err) {
+                                  fail(err);
+                                } else {
+                                  success(rslt);
+                                  broadcastAction(lastActionId, action, userId, lastAction.region);
+                                }
+                              });
+                            }
+                            //TODO commit jobs
+                            Actions.setUndone(transaction, lastActionId, true, function(err) {
+                              if(err) { rollback(err); return; }
+                              Users.setLastActionId(transaction, userId, lastAction.previousActionId, function(err) {
+                                if(err) { rollback(err); return; }
+                                Tiles.toggleAction(transaction, lastAction.region, lastActionId, false, function(err) {
+                                  if(err) { rollback(err); return; }
+                                  Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
+                                    if(err) { rollback(err); return; }
+                                    commit(lastActionId);
+                                  });
                                 });
                               });
-                            });*/
-
-
-
-
+                            });
+                            transaction.execute();
                           });
                         } catch(ex) { fail(ex); }
                       });
@@ -259,79 +274,81 @@ function BigCanvas() {
                   } catch(ex) { fail(ex); }
                   break;
                 case "REDO":
-                  success("-1");
-                  return;
-                /*function redoAction(actionId) {
-                  Actions.lock(actionId, function(actionDone) {
-                    //save unlock callback
-                    locks.unshift(actionDone);
-                    //read action
-                    Actions.get(actionId, function(err, action) {
-                      //handle error
-                      if(err) { fail(err); return; }
-                      try {
-                        if(!action.undone)
-                          throw new Error("Cannot redo action (userId: "+userId+"; actionId: "+actionId+").");
-                        //write action (undone=true)
-                        Actions.setUndone(actionId, false, function(err) {
+                  function redoAction(actionId) {
+                    Actions.lock(actionId, function(actionDone) {
+                      //save unlock callback
+                      locks.unshift(actionDone);
+                      //read action
+                      Actions.get(connection, actionId, function(err, nextAction) {
+                        if(err) { fail(err); return; }
+                        try {
+                          if(!nextAction.undone)
+                            throw new Error("Cannot redo action (userId: "+userId+"; actionId: "+actionId+").");
+
+                          //start transaction
+                          var transaction = connection.startTransaction();
+                          function rollback(err) {
+                            transaction.rollback();
+                            fail(err);
+                          }
+                          function commit() {
+                            transaction.commit(function(err, info) {
+                              if(err) {
+                                fail(err);
+                              } else {
+                                success(actionId);
+                                broadcastAction(actionId, action, userId, nextAction.region);
+                              }
+                            });
+                          }
+                          //TODO commit jobs
+                          Actions.setUndone(transaction, actionId, false, function(err) {
+                            if(err) { rollback(err); return; }
+                            Users.setLastActionId(transaction, userId, actionId, function(err) {
+                              if(err) { rollback(err); return; }
+                              Tiles.toggleAction(transaction, nextAction.region, actionId, true, function(err) {
+                                if(err) { rollback(err); return; }
+                                Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
+                                  if(err) { rollback(err); return; }
+                                  commit();
+                                });
+                              });
+                            });
+                          });
+                          transaction.execute();
+                        } catch(ex) { fail(ex); }
+                      });
+                    });
+                  }
+                  try {
+                    //get users last action
+                    var lastActionId = user.lastActionId;
+                    //if there is no last action, check first action (next candidate for redoing)
+                    if(lastActionId === "-1") {
+                      var firstActionId = user.firstActionId;
+                      if(firstActionId === "-1")
+                        throw new Error("No redoable action found (userId: "+userId+")!");
+                      redoAction(firstActionId);
+                    } else {
+                      //lock action
+                      Actions.lock(lastActionId, function(actionDone) {
+                        //save unlock callback
+                        locks.unshift(actionDone);
+                        //read action
+                        Actions.get(connection, lastActionId, function(err, lastAction) {
                           //handle error
                           if(err) { fail(err); return; }
-                          //write user
-                          Users.setLastActionId(userId, actionId, function(err) {
-                            //handle error
-                            if(err) { fail(err); return; }
-                            //commit jobs
-                            Jobs.commit(action.region, actionId, true, function(err) {
-                              //handle error
-                              if(err) { fail(err); return; }
-                              console.log("REDO was successfully performed (userId: "+userId+")");
-                              success("-1");
-                            });
-                          });
+                          try {
+                            var nextActionId = lastAction.nextActionId;
+                            if(nextActionId === "-1")
+                              throw new Error("No next action found (userId: "+userId+"; actionId: "+lastActionId+").");
+                            redoAction(nextActionId);
+                          } catch(ex) { fail(ex); }
                         });
-                      } catch(ex) { fail(ex); }
-                    });
-                  });
-                }
-                  //lock user
-                  Users.lock(userId, function(userDone) {
-                    //save unlock callback
-                    locks.unshift(userDone);
-                    //get user
-                    Users.get(userId, function(err, user) {
-                      //handle error
-                      if(err) { fail(err); return; }
-                      try {
-                        //get users last action
-                        var lastActionId = user.lastActionId || "-1";
-                        //if there is no last action, check first action (next candidate for redoing)
-                        if(lastActionId === "-1") {
-                          var firstActionId = user.firstActionId || "-1";
-                          if(firstActionId === "-1")
-                            throw new Error("No redoable action found (userId: "+userId+")!");
-                          redoAction(firstActionId);
-                        } else {
-                          //lock action
-                          Actions.lock(lastActionId, function(actionDone) {
-                            //save unlock callback
-                            locks.unshift(actionDone);
-                            //read action
-                            Actions.get(lastActionId, function(err, lastAction) {
-                              //handle error
-                              if(err) { fail(err); return; }
-                              try {
-                                var nextActionId = lastAction.nextActionId;
-                                if(nextActionId === "-1")
-                                  throw new Error("No next action found (userId: "+userId+"; actionId: "+lastActionId+").");
-                                redoAction(nextActionId);
-                              } catch(ex) { fail(ex); }
-                            });
-                          });
-                        }
-                      } catch(ex) { fail(ex); }
-                    });
-                  });
-                  break;*/
+                      });
+                    }
+                  } catch(ex) { fail(ex); }
+                  break;
               }
             });
           });
