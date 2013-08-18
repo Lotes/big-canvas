@@ -2,7 +2,7 @@ var BigInteger = require("big-integer");
 var Types = require("../Types");
 var Point = Types.Point;
 var TileLocation = Types.TileLocation;
-
+var _ = require("underscore");
 /**
  * A window is the spectator area of a user at the endless canvas.
  * @class Window
@@ -119,19 +119,35 @@ WindowTree.prototype.removeWindow = function(win, winId) {
 
 /**
  * Queries for all window ids at a given tile location.
- * @method getWindows
+ * @method getWindowsByLocation
  * @param {TileLocation} tileLocation
  * @returns {[Number, String]} returns all ids at the given location
  */
-WindowTree.prototype.getWindows = function(tileLocation) {
+WindowTree.prototype.getWindowsByLocation = function(tileLocation) {
   //returns all windowIds whose region intersects the given tile
-  var data = tileLocation.toData();
   var result = [];
-  if(data.column in this.tree
-    && data.row in this.tree[data.column]) {
-    for(var id in this.tree[data.column][data.row])
+  if(tileLocation.column in this.tree
+    && tileLocation.row in this.tree[tileLocation.column]) {
+    for(var id in this.tree[tileLocation.column][tileLocation.row])
       result.push(id);
   }
+  return result;
+};
+
+/**
+ * Queries for all window ids at a given tile location region.
+ * @method getWindowsByRegion
+ * @param {TileLocations} region
+ * @returns {[Number, String]} returns all ids at the given location
+ */
+WindowTree.prototype.getWindowsByRegion = function(region) {
+  //returns all windowIds whose region intersects the given region
+  var result = [],
+      self = this;
+  _.each(region, function(location) {
+    var ids = self.getWindowsByLocation(location);
+    result = _.union(result, ids);
+  });
   return result;
 };
 

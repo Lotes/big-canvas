@@ -49,6 +49,33 @@ function deleteRegionPaths(regionPaths) {
  */
 module.exports = {
   /**
+   * Commits the given region paths to the database
+   * @method commit
+   * @param client
+   * @param regionPaths
+   * @param actionId
+   * @param callback
+   */
+  commit: function(client, regionPaths, actionId, callback) {
+    var deltas = _.map(regionPaths, function(location, path) { return { location: location, path: path }; })
+    var index = 0;
+    function step() {
+      if(index >= deltas.length) {
+        callback();
+        return;
+      }
+      var delta = deltas[index];
+      index++;
+      client.query("INSERT INTO deltas (col, row, actionId, imagePath) VALUES (?, ?, ?, ?)",
+        [delta.location.column, delta.location.row, actionId, delta.path], function(err)
+        {
+          if(err) { callback(err); return; }
+          step();
+        });
+    }
+    step();
+  },
+  /**
    * @method deleteRegion
    * @param region
    */

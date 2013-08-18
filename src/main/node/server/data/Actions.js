@@ -14,11 +14,11 @@ module.exports = {
    * @param callback
    */
   newId: function(client, callback) {
-    Counters.lockUsersCounter(function(done) {
+    Counters.lockActionsCounter(function(done) {
       function success(value) { done(); callback(null, value); }
       function fail(err) { done(); callback(err); }
       Counters.newId(client, "actions", function(err, id) {
-        if(err) fail(err)
+        if(err) fail(err);
         else success(id);
       });
     });

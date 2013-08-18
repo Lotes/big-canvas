@@ -44,7 +44,8 @@ function BigCanvas(element) {
   var Types = generator.Types;
   var client = new generator.Interfaces.Main.Client({
     onAction: function(userId, actionId, action, region) {
-      console.log(userId);
+      console.log("user: "+userId+"; action: "+actionId);
+      //TODO
     },
     onWindowUpdated: function(updates) {
 
@@ -260,8 +261,8 @@ function BigCanvas(element) {
     }
     action.stroke = _.map(line, function(point) { return point.toData(); });
     client.sendAction(action, function(err, actionId) {
-      //console.log(err);
-      console.log("action acknowledged");
+      if(err) console.log(err.message);
+      else console.log("action acknowledged: "+actionId);
     });
   }
 
