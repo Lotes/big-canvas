@@ -69,9 +69,8 @@ scheme
   .addTable("tiles")
     .addColumn("col", ColumnType.STRING, false, true)
     .addColumn("row", ColumnType.STRING, false, true)
-    .addColumn("isValid", ColumnType.BOOLEAN)
-    .addColumn("actionBitString", ColumnType.TEXT)
-    .addColumn("lastRevision", ColumnType.INTEGER)
+    .addColumn("currentRevisionId", ColumnType.STRING, true)
+    .addColumn("nextRevisionId")
 ;
 
 scheme
@@ -86,8 +85,11 @@ scheme
   .addTable("versions")
     .addColumn("col", ColumnType.STRING, false, true)
     .addColumn("row", ColumnType.STRING, false, true)
-    .addColumn("revision", ColumnType.INTEGER, false, true)
-    .addColumn("actionBitString", ColumnType.TEXT)
+    .addColumn("revisionId", ColumnType.STRING, false, true)
+    .addColumn("parentRevisionId", ColumnType.STRING, true)
+    .addColumn("actionId")
+    .addColumn("imagePath", ColumnType.STRING, true)
+    .addColumn("canvasId", ColumnType.STRING, true)
 ;
 
 module.exports = scheme;

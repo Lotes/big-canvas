@@ -51,7 +51,7 @@ $(function() {
     activateButton($eraserButton);
   });
 
-  //configure options
+  //configure color picker
   var $colorPicker = $('#colorPicker');
   $colorPicker.palette({
     color: bigCanvas.getColor(),
@@ -67,7 +67,7 @@ $(function() {
   var router = new Router();
   function navigate(x, y, trigger) {
     router.navigate("#x="+x.toString()+"&y="+y.toString(), {trigger: trigger});
-  };
+  }
   router.on('route:moveTo', function (strX, strY) {
     var x, y;
     try {

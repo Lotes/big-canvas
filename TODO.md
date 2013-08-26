@@ -17,35 +17,6 @@
 * in gewissen Zeitabständen Versionen speichern
 * Canvases serverseitig cachen
 
-```
-enum UpdateType {
-  TILE_INIT,
-  TILE_PAINT
-}
-struct Update {
-  type: UpdateType match {
-    case TILE_INIT:
-	  location: TileLocation;
-	  empty: Boolean match {
-	    case true:
-		case false:
-			path: String;
-			actions: Actions;
-	  }
-    case TILE_PAINT:
-	  location: TileLocation;
-	  operationsLeft: Integer;
-  }
-}
-
-interface Main {
-  function setWindow(x,y,w,h): Updates;
-  event onUpdate(updates: Updates);
-  function getLastAction(): ActionDataOption;
-  function getNextAction(): ActionDataOption;
-}
-```
-
 ### Server
 * Delta/Version-Cache
 * Schema für Versionen
@@ -61,7 +32,7 @@ interface Main {
 * bei sendAction-Fehler, Canvas löschen
 * sonst auf onAction-Event warten
 * je Kachel Aktionsverlauf speichern
-  * falls Unterbrechung durch Bewegen oder skalieren, bei UNDO immer auf Server warten
+  * falls Unterbrechung durch Bewegen oder skalieren, dann bei UNDO immer auf Server warten
 * Busy-Animation (Pinsel beim Zeichnen)
 
 

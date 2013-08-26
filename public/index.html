@@ -2,6 +2,8 @@
 <head>
 	<title>big canvas</title>
     <script type="text/javascript" src="jquery-1.10.2.min.js"></script>
+    <link href="jquery-ui/css/ui-lightness/jquery-ui-1.10.3.custom.css" rel="stylesheet">
+    <script src="jquery-ui/js/jquery-ui-1.10.3.custom.js"></script>
     <script type="text/javascript" src="mousetrap.min.js"></script>
 	<script type="text/javascript" src="jquery-palette/parse-color.js"></script>
 	<script type="text/javascript" src="jquery-palette/jquery.palette.js"></script>
@@ -16,11 +18,13 @@
             overflow: hidden;
 		}
 		
-		#menu {
+		#tools {
 			background-color: black;
 			left: 0;
 			top: 0;
 			position: fixed;
+            color: white;
+            font-size: 12px;
 		}
 
 		.button {
@@ -54,7 +58,7 @@
 </head>
 <body>
 <div id="big-canvas">No canvas supported :-(.</div>
-<div id="menu">
+<div id="tools">
 	<img id="moveButton" class="button activated" src="images/move.png" title="Move"/>
 	<img id="brushButton" class="button" src="images/brush.png" title="Brush"/>
     <img id="eraserButton" class="button" src="images/eraser.png"  title="Eraser"/>
@@ -62,6 +66,7 @@
     <img id="redoButton" class="button" src="images/redo.png" title="Redo"/>
     <div class="separator"></div>
     <div id="colorPicker" class="button" style="background-color: red"></div>
+    <div id="opacityButton" class="button" style="background-color: red"></div>
 </div>
 </body>
 </html>

@@ -3,6 +3,47 @@ var Types = require("../Types");
 var Point = Types.Point;
 var TileLocation = Types.TileLocation;
 var _ = require("underscore");
+var Backbone = require("backbone");
+
+function isEmptyObject(obj) {
+  for(var prop in obj)
+    if(obj.hasOwnProperty(prop))
+      return false;
+  return true;
+}
+
+function RenderJobQueue() {
+  this.locations = {};
+}
+
+RenderJobQueue.prototype.exists = function(location) {
+  if(!(location.column in this.locations))
+    return false;
+  var rows = this.locations[location.column];
+  return (location.row in rows);
+};
+
+RenderJobQueue.prototype.add = function(location) {
+  if(this.exists(location))
+    return false;
+  if(!(location.column in this.locations))
+    this.locations[location.column] = {};
+  var rows = this.locations[location.column];
+  if(!(location.row in rows))
+    rows[location.row] = true;
+  return true;
+};
+
+RenderJobQueue.prototype.remove = function(location) {
+  if(!this.exists(location))
+    return;
+  var rows = this.locations[location.column];
+  delete rows[location.row];
+  if(isEmptyObject(rows))
+    delete this.locations[location.column];
+};
+
+
 /**
  * A window is the spectator area of a user at the endless canvas.
  * @class Window
@@ -61,13 +102,6 @@ WindowTree.prototype.set = function(tileLocation, id) {
   var idTree = rowTree[data.row];
   idTree[id] = true;
 };
-
-function isEmptyObject(obj) {
-  for(var prop in obj)
-    if(obj.hasOwnProperty(prop))
-      return false;
-  return true;
-}
 
 /**
  * Un-annotates this tree at the given location from the given id.
@@ -153,5 +187,6 @@ WindowTree.prototype.getWindowsByRegion = function(region) {
 
 Types.Window = Window;
 Types.WindowTree = WindowTree;
+Types.RenderJobQueue = RenderJobQueue;
 
 module.exports = Types;

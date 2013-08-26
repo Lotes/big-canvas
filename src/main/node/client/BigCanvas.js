@@ -47,8 +47,8 @@ function BigCanvas(element) {
       console.log("user: "+userId+"; action: "+actionId);
       //TODO
     },
-    onWindowUpdated: function(updates) {
-
+    onUpdate: function(updates) {
+      console.log(updates);
     }
   });
 
@@ -125,9 +125,11 @@ function BigCanvas(element) {
     rebuildTilesTable();
 
     //send window
-    client.setWindow(x.toString(), y.toString(), width, height, function(err) {
+    client.setWindow(x.toString(), y.toString(), width, height, function(err, updates) {
       if(err)
         alert("Error while sending new window: "+err.message);
+      else
+        console.log(updates);
     });
   }
   self.moveTo = function(ctr) {
@@ -239,7 +241,7 @@ function BigCanvas(element) {
   function endStroke(last) {
     //edit line
     if(line.length == 1)
-      line.push(last);
+      doStroke(line[0], last);
     //send line
     var action = null;
     switch(mode) {

@@ -10,6 +10,7 @@ var Point = Types.Point;
 var BoundingBox = Types.BoundingBox;
 var Window = Types.Window;
 var WindowTree = Types.WindowTree;
+var RenderJobQueue = Types.RenderJobQueue;
 
 var BigCanvasDefinitions = require("./BigCanvasDefinitions");
 var _ = require("underscore");
@@ -17,6 +18,7 @@ var _ = require("underscore");
 var Users = require("./data/Users");
 var Actions = require("./data/Actions");
 var Tiles = require("./data/Tiles");
+var Versions = require("./data/Versions");
 var Deltas = require("./data/Deltas");
 
 var socketIds = BigInteger(0);
@@ -36,9 +38,36 @@ function BigCanvas() {
   var self = this;
   var sockets = {};
   var windowTree = new WindowTree();
+  var jobs = new RenderJobQueue();
 
   function lockCanvas(callback) {
     lock("canvas", callback);
+  }
+
+  function jobStep(location) {
+    //open a database connection
+    /*var connection = new DatabaseConnection();
+    connection.connect(function(err) {
+      if(err) { connection.end(); return; }
+      //lock tile
+      Tiles.lock(location, function(done) {
+        function fail(ex) {
+          console.log(ex.message);
+          done();
+          connection.end();
+        }
+        function success() {
+          done();
+          connection.end();
+          jobStep(location);
+        }
+      });
+    }); */
+  }
+
+  function addRenderJob(location) {
+    if(jobs.add(location))
+      jobStep(location);
   }
 
   //setup server stub
@@ -65,20 +94,23 @@ function BigCanvas() {
         if(oldWindow != null)
           windowTree.removeWindow(oldWindow, socketId);
         windowTree.addWindow(newWindow, socketId);
-        callback();
+        callback(null, []);
       } catch(ex) {
         callback(ex);
       }
     },
     sendAction: function(socket, action, callback) {
       var server = this;
-      function broadcastAction(actionId, action, userId, region) {
+      function broadcastAndRender(actionId, action, userId, region) {
+        //broadcast
         var socketIds = windowTree.getWindowsByRegion(region);
         _.each(socketIds, function(socketId) {
           var socket = sockets[socketId];
           if(socket) //TODO dirty...
             server.onAction(socket, userId, actionId, action, region);
         });
+        //render
+        _.each(region, addRenderJob);
       }
 
       var connection = new DatabaseConnection();
@@ -154,11 +186,10 @@ function BigCanvas() {
                                 fail(err);
                               } else {
                                 success(rslt);
-                                broadcastAction(newActionId, action, userId, region);
+                                broadcastAndRender(newActionId, action, userId, region);
                               }
                             });
                           }
-                          //TODO commit jobs
                           Deltas.commit(transaction, regionPaths, newActionId, function(err) {
                             if(err) { rollback(err); return; }
                             Actions.create(transaction, newActionId, action, userId, previousActionId, region, function(err) {
@@ -167,19 +198,22 @@ function BigCanvas() {
                                 if(err) { rollback(err); return; }
                                 Tiles.appendAction(transaction, region, newActionId, function(err) {
                                   if(err) { rollback(err); return; }
-                                  Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
+                                  Versions.updateHistoryForRegion(transaction, region, newActionId, function(err) {
                                     if(err) { rollback(err); return; }
-                                    if(previousActionId !== "-1") {
-                                      Actions.setNextActionId(transaction, previousActionId, newActionId, function(err) {
-                                        if(err) { rollback(err); return; }
-                                        commit(newActionId);
-                                      });
-                                    } else {
-                                      Users.setFirstActionId(transaction, userId, newActionId, function(err) {
-                                        if(err) { rollback(err); return; }
-                                        commit(newActionId);
-                                      });
-                                    }
+                                    Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
+                                      if(err) { rollback(err); return; }
+                                      if(previousActionId !== "-1") {
+                                        Actions.setNextActionId(transaction, previousActionId, newActionId, function(err) {
+                                          if(err) { rollback(err); return; }
+                                          commit(newActionId);
+                                        });
+                                      } else {
+                                        Users.setFirstActionId(transaction, userId, newActionId, function(err) {
+                                          if(err) { rollback(err); return; }
+                                          commit(newActionId);
+                                        });
+                                      }
+                                    });
                                   });
                                 });
                               });
@@ -248,16 +282,15 @@ function BigCanvas() {
                                   fail(err);
                                 } else {
                                   success(rslt);
-                                  broadcastAction(lastActionId, action, userId, lastAction.region);
+                                  broadcastAndRender(lastActionId, action, userId, lastAction.region);
                                 }
                               });
                             }
-                            //TODO commit jobs
                             Actions.setUndone(transaction, lastActionId, true, function(err) {
                               if(err) { rollback(err); return; }
                               Users.setLastActionId(transaction, userId, lastAction.previousActionId, function(err) {
                                 if(err) { rollback(err); return; }
-                                Tiles.toggleAction(transaction, lastAction.region, lastActionId, false, function(err) {
+                                Versions.updateHistoryForRegion(transaction, lastAction.region, lastActionId, function(err) {
                                   if(err) { rollback(err); return; }
                                   Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
                                     if(err) { rollback(err); return; }
@@ -297,16 +330,15 @@ function BigCanvas() {
                                 fail(err);
                               } else {
                                 success(actionId);
-                                broadcastAction(actionId, action, userId, nextAction.region);
+                                broadcastAndRender(actionId, action, userId, nextAction.region);
                               }
                             });
                           }
-                          //TODO commit jobs
                           Actions.setUndone(transaction, actionId, false, function(err) {
                             if(err) { rollback(err); return; }
                             Users.setLastActionId(transaction, userId, actionId, function(err) {
                               if(err) { rollback(err); return; }
-                              Tiles.toggleAction(transaction, nextAction.region, actionId, true, function(err) {
+                              Versions.updateHistoryForRegion(transaction, nextAction.region, actionId, function(err) {
                                 if(err) { rollback(err); return; }
                                 Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
                                   if(err) { rollback(err); return; }
@@ -364,7 +396,6 @@ function BigCanvas() {
       callback();
     },
     defineImage: function(socket, x, y, width, height, callback) {
-      console.log("set name of user "+socket.getUserId()+" to '"+name+"'.");
       callback(null, "123");
     }
   });

@@ -45,9 +45,12 @@ module.exports = function(key, callback) {
   if(!mutexes[key])
     mutexes[key] = new Mutex();
   var mutex = mutexes[key];
+  //console.log("tried to acquire "+key);
   mutex.acquire(function() {
+    //console.log("acquired "+key);
     callback(function() {
       mutex.release();
+      //console.log("released "+key);
     });
   });
 };
