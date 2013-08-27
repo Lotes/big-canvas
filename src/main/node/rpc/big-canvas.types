@@ -94,27 +94,25 @@ struct ActionInfo { //used for tile updates
 }
 type ActionInfos = list of ActionInfo
 
+/* versions */
+type RevisionId = BigInteger
+
 /* updates */
 enum UpdateType {
-  TILE_INIT, //message on new window position
-  TILE_PAINT //message on changes in the window
+  TILE
   //TODO user join/leave/name changed/chat
 }
 
 struct Update {
   type: UpdateType match {
-    case TILE_INIT:
+    case TILE:
       location: TileLocation;
       empty: Boolean match {
         case true:
         case false:
-          imagePath: String;
-          actions: ActionInfos;
+          operationsLeft: Integer;
+          revisionId: RevisionId;
       };
-    case TILE_PAINT:
-      location: TileLocation;
-      operationsLeft: Integer;
-      previewImagePath: String;
   };
 }
 type Updates = list of Update

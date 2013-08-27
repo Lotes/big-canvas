@@ -189,6 +189,64 @@ function updateTileHistory(client, location, actionId, callback) {
   });
 }
 
+function getFirstUndrawnVersion(client, location, callback) {
+  getTile(client, location, function(err, tile) {
+    if(err) { callback(err); return; }
+    if(!tile || !tile.currentRevisionId) {
+      //empty tile
+      callback(null, {
+        operationsLeft: 0,
+        baseVersion: null,
+        newVersion: null
+      });
+    } else {
+      var baseVersion = null;
+      var newVersion = null;
+      var operationsLeft = 0;
+      function step(revisionId) {
+        if(revisionId == null) {
+          callback(null, {
+            operationsLeft: operationsLeft,
+            baseVersion: null,
+            newVersion: baseVersion
+          });
+        } else {
+          client.query("SELECT parentRevisionId, actionId, imagePath, canvasId FROM versions WHERE col=? AND row=? AND revisionId=?",
+            [location.column, location.row, revisionId], function(err, results)
+            {
+              if(err) { callback(err); return; }
+              if(results.length == 0) { callback(new Error("Version does not exist.")); return; }
+              newVersion = baseVersion;
+              baseVersion = {
+                revisionId: revisionId,
+                parentRevisionId: results[0].parentRevisionId,
+                actionId: results[0].actionId,
+                imagePath: results[0].imagePath,
+                canvasId: results[0].canvasId
+              };
+              if(baseVersion.imagePath == null && baseVersion.canvasId == null) {
+                //bad, walk to parent version
+                getParentVersion(client, location, revisionId, function(err, parentRevisionId) {
+                  if(err) { callback(err); return; }
+                  operationsLeft++;
+                  step(parentRevisionId);
+                });
+              } else {
+                //good, search is over
+                callback(null, {
+                  operationsLeft: operationsLeft,
+                  baseVersion: baseVersion,
+                  newVersion: newVersion
+                });
+              }
+            });
+        }
+      }
+      step(tile.currentRevisionId);
+    }
+  });
+}
+
 /**
  * Manages the "versions" table
  * @class Versions
@@ -203,6 +261,26 @@ module.exports = {
       updateTileHistory(client, location, actionId, function(err) {
         if(err) callback(err); else step();
       });
+    }
+    step();
+  },
+  getFirstUndrawnVersion: getFirstUndrawnVersion,
+  getStates: function(client, region, callback) {
+    var index = 0,
+        result = [];
+    function step() {
+      if(index >= region.length)
+        callback(null, result);
+      else {
+        var location = region[index];
+        index++;
+        getFirstUndrawnVersion(client, location, function(err, state) {
+          if(err) { callback(err); return; }
+          state.location = location;
+          result.push(state);
+          step();
+        });
+      }
     }
     step();
   }

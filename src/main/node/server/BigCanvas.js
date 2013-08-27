@@ -45,24 +45,35 @@ function BigCanvas() {
   }
 
   function jobStep(location) {
+    //TODO
     //open a database connection
     /*var connection = new DatabaseConnection();
     connection.connect(function(err) {
       if(err) { connection.end(); return; }
       //lock tile
+      var locks = [];
+      function unlock() {
+        connection.end();
+        _.each(locks, function(done) { done(); });
+        locks = [];
+      }
       Tiles.lock(location, function(done) {
+        locks.unshift(done);
         function fail(ex) {
-          console.log(ex.message);
-          done();
-          connection.end();
+          console.log(ex.message); //TODO find a better fail behaviour???
+          unlock();
         }
         function success() {
-          done();
-          connection.end();
+          unlock();
           jobStep(location);
         }
+        Versions.getFirstUndrawnVersion(connection, location, function(err, result) {
+          if(err) { fail(err); return; }
+          console.log(result);
+          success();
+        });
       });
-    }); */
+    });*/
   }
 
   function addRenderJob(location) {
@@ -89,12 +100,45 @@ function BigCanvas() {
       try {
         var oldWindow = socket.getWindow(),
           newWindow = new Window(x, y, width, height),
-          socketId = socket.getId();
-        //reset window
-        if(oldWindow != null)
-          windowTree.removeWindow(oldWindow, socketId);
-        windowTree.addWindow(newWindow, socketId);
-        callback(null, []);
+          socketId = socket.getId(),
+          connection = new DatabaseConnection(),
+          locks = [];
+        function unlock() {_.each(locks, function(done) { done(); }); connection.end(); }
+        function fail(ex) { callback(ex); unlock(); }
+        connection.connect(function(err) {
+          if(err) { fail(err); return; }
+          lockCanvas(function(canvasDone) {
+            locks.unshift(canvasDone);
+            try {
+              //reset window
+              if(oldWindow != null)
+                windowTree.removeWindow(oldWindow, socketId);
+              windowTree.addWindow(newWindow, socketId);
+              //collect region data
+              var region = newWindow.getRegion();
+              Tiles.lock(region, function(tilesDone) {
+                locks.unshift(tilesDone);
+                Versions.getStates(connection, region, function(err, states) {
+                  if(err) { fail(err); return; }
+                  var updates = _.map(states, function(state) {
+                    var update = {
+                      type: "TILE",
+                      location: state.location
+                    };
+                    update.empty = state.operationsLeft == 0 && state.baseVersion == null;
+                    if(!update.empty) {
+                      update.operationsLeft = state.operationsLeft;
+                      update.revisionId = state.baseVersion != null ? state.baseVersion.revisionId : "-1";
+                    }
+                    return update;
+                  });
+                  callback(null, updates);
+                  unlock();
+                });
+              });
+            } catch(ex) { fail(ex); }
+          });
+        });
       } catch(ex) {
         callback(ex);
       }

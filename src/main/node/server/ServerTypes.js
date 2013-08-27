@@ -78,6 +78,17 @@ Window.prototype.toData = function() {
 };
 
 /**
+ * Returns region data of the window.
+ * @method getRegion
+ * @returns the region as list of plain data objects
+ */
+Window.prototype.getRegion = function() {
+  return _.map(this.region, function(location) {
+    return location.toData();
+  });
+};
+
+/**
  * A window tree collects a set of all active windows plus their ids and returns all window ids for a given tile location.
  * @class WindowTree
  * @constructor
