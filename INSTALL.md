@@ -55,5 +55,6 @@ Config.DATABASE_NAME = "bigcanvas";
 ```
 Before you can use big-canvas initialize the database with `make init-database`.
 
-## Tests
-TODO
+## Run
+
+To start big-canvas just execute `make run` and visit `http://localhost:8080`.
