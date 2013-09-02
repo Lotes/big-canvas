@@ -1,9 +1,12 @@
 all:
-	build-definition build-parser build-client run
+	make build-definition
+	make build-parser
+	make build-client
+	make run
 
 dependencies:
-	apt-get install nodejs npm
-	npm install canvas ws cookie-signature ejs big-integer underscore backbone mysql mysql-queues expect.js
+	apt-get install nodejs npm mysql-server
+	npm install express canvas ws cookie-signature ejs big-integer underscore backbone mysql mysql-queues expect.js
 	npm install -g browserify pegjs mocha yuidocjs
 
 init-database:
