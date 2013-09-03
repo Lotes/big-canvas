@@ -6,7 +6,7 @@ all:
 
 dependencies:
 	apt-get install nodejs npm mysql-server
-	npm install express canvas ws cookie-signature ejs big-integer underscore backbone mysql mysql-queues expect.js
+	npm install express@3.3.4 canvas@1.0.4 ws@0.4.27 cookie-signature@1.0.1 ejs@0.8.4 big-integer@1.1.5 underscore@1.5.1 backbone@1.0.0 mysql@2.0.0-alpha8 mysql-queues@1.0.0 expect.js@0.2.0
 	npm install -g browserify pegjs mocha yuidocjs
 
 init-database:
