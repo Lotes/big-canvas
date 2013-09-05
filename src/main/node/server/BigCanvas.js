@@ -22,6 +22,14 @@ var Versions = require("./data/Versions");
 var Deltas = require("./data/Deltas");
 
 var socketIds = BigInteger(0);
+
+/**
+ *
+ *  @constructor BigCanvasSocket
+ *  @param {TODO what type is it?} wsSocket the socket to connect to
+ *  @param {String} userId the id of the user
+ *
+ * */
 function BigCanvasSocket(wsSocket, userId) {
   var id = socketIds.toString(),
       window = null;
@@ -34,6 +42,12 @@ function BigCanvasSocket(wsSocket, userId) {
   this.setWindow = function(win) { window = win; };
 }
 
+/**
+ *
+ * @constructor BigCanvas
+ * TODO what does it represent?
+ *
+ */
 function BigCanvas() {
   var self = this;
   var sockets = {};
@@ -143,6 +157,7 @@ function BigCanvas() {
         callback(ex);
       }
     },
+    // TODO WTF???
     sendAction: function(socket, action, callback) {
       var server = this;
       function broadcastAndRender(actionId, action, userId, region) {
