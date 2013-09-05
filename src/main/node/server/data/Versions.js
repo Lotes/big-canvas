@@ -1,5 +1,10 @@
 var _ = require("underscore");
 var BigInteger = require("big-integer");
+var Config = require("../Config");
+var Canvas = require("canvas");
+var Cache = require("../../Cache");
+var tilesCache = new Cache(1024); //TODO move cache size to config
+var fs = require("fs");
 
 function getActionOrderIndex(client, location, actionId, callback) {
   client.query("SELECT orderIndex FROM tileActions WHERE col=? AND row=? AND actionId=? LIMIT 1",
@@ -196,8 +201,8 @@ function getFirstUndrawnVersion(client, location, callback) {
       //empty tile
       callback(null, {
         operationsLeft: 0,
-        baseVersion: null,
-        newVersion: null
+        baseRevisionId: null,
+        newActionId: null
       });
     } else {
       var baseVersion = null;
@@ -207,11 +212,11 @@ function getFirstUndrawnVersion(client, location, callback) {
         if(revisionId == null) {
           callback(null, {
             operationsLeft: operationsLeft,
-            baseVersion: null,
-            newVersion: baseVersion
+            baseRevisionId: null,
+            newActionId: baseVersion != null ? baseVersion.actionId : null
           });
         } else {
-          client.query("SELECT parentRevisionId, actionId, imagePath, canvasId FROM versions WHERE col=? AND row=? AND revisionId=?",
+          client.query("SELECT actionId, imagePath FROM versions WHERE col=? AND row=? AND revisionId=?",
             [location.column, location.row, revisionId], function(err, results)
             {
               if(err) { callback(err); return; }
@@ -219,12 +224,10 @@ function getFirstUndrawnVersion(client, location, callback) {
               newVersion = baseVersion;
               baseVersion = {
                 revisionId: revisionId,
-                parentRevisionId: results[0].parentRevisionId,
                 actionId: results[0].actionId,
-                imagePath: results[0].imagePath,
-                canvasId: results[0].canvasId
+                imagePath: results[0].imagePath
               };
-              if(baseVersion.imagePath == null && baseVersion.canvasId == null) {
+              if(baseVersion.imagePath == null) {
                 //bad, walk to parent version
                 getParentVersion(client, location, revisionId, function(err, parentRevisionId) {
                   if(err) { callback(err); return; }
@@ -235,8 +238,8 @@ function getFirstUndrawnVersion(client, location, callback) {
                 //good, search is over
                 callback(null, {
                   operationsLeft: operationsLeft,
-                  baseVersion: baseVersion,
-                  newVersion: newVersion
+                  baseRevisionId: baseVersion.revisionId,
+                  newActionId: newVersion.actionId
                 });
               }
             });
@@ -247,11 +250,54 @@ function getFirstUndrawnVersion(client, location, callback) {
   });
 }
 
+function getRevisionKey(location, revisionId) {
+  return location.column+","+location.row + "@" + revisionId;
+}
+
 /**
  * Manages the "versions" table
  * @class Versions
  */
 module.exports = {
+  /**
+   * Returns a canvas of the given tile revision. If the revision id is null, an empty canvas is returned.
+   * If the revision has no path an error will be thrown!
+   * @method getRevision
+   * @param client
+   * @param location
+   * @param revisionId {RevisionId} can be null for empty tile
+   * @param callback
+   */
+  getRevision: function(client, location, revisionId, callback) {
+    if(revisionId == null) {
+      var size = Config.TILE_SIZE;
+      callback(null, new Canvas(size, size));
+    } else {
+      client.query("SELECT imagePath FROM versions WHERE col=? AND row=? AND revisionId=? LIMIT 1",
+        [location.column, location.row, revisionId], function(err, results)
+      {
+        if(err) { callback(err); return; }
+        if(results.length == 0) { callback(new Error("Cannot find revision (column: "+location.column+"; row: "+location.row+"; revision: "+revisionId+").")); return; }
+        var imagePath = results[0].imagePath;
+        var canvas = tilesCache.get(getRevisionKey(location, revisionId));
+        if(canvas != null) {
+          callback(null, canvas);
+        } else {
+          canvas = new Canvas(size, size);
+          fs.readFile(Config.SERVER_TILES_PATH + "/" + imagePath, function(err, buffer){
+            if (err) { callback(err); return; }
+            try {
+              var image = new Canvas.Image();
+              var g = canvas.getContext("2d");
+              image.src = buffer;
+              g.drawImage(image, 0, 0);
+              callback(null, canvas);
+            } catch(ex) { callback(ex); }
+          });
+        }
+      });
+    }
+  },
   updateHistoryForRegion: function(client, region, actionId, callback) {
     var index = 0;
     function step() {

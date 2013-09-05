@@ -1,8 +1,6 @@
 var BigCanvasTypes = require("../BigCanvasDefinitions").Types;
-var lock = require("../lock");
 var Utils = require("../ServerUtils");
 var Config = require("../Config");
-var fs = require("fs");
 var Types = require("../ServerTypes");
 var Point = Types.Point;
 var TileLocation = Types.TileLocation;
@@ -10,37 +8,44 @@ var BoundingBox = Types.BoundingBox;
 var _ = require("underscore");
 var Canvas = require("canvas");
 var Counters = require("./Counters");
+var Cache = require("../../Cache");
+var deltasCache = new Cache(1024); //TODO move cache size to config
 
-/**
- * @method saveImage
- * @param canvas
- * @param callback {Function(err, path)}
- */
-function saveImage(client, canvas, callback) {
-  Counters.lockDeltasCounter(function(done) {
-    Counters.newId(client, "deltas", function(err, id) {
-      done();
-      if(err) { callback(err); return; }
-      try {
-        var path = id+".png";
-        var fullName = Config.SERVER_DELTAS_PATH + "/" + path;
-        var out = fs.createWriteStream(fullName),
-            stream = canvas.pngStream();
-        stream.on("data", function(chunk){ out.write(chunk); });
-        stream.on("end", function() {
-          callback(null, path);
-        });
-      } catch(ex) { callback(ex); }
-    });
-  });
-}
+function Delta(boundingBox, canvas) {
+  var min = boundingBox.getMin(),
+      region = null;
+  this.getCanvas = function() { return canvas; };
+  this.getTile = function(location) {
 
-function deleteRegionPaths(regionPaths) {
-  _.each(regionPaths, function(location, path) {
-    fs.unlink(Config.SERVER_DELTAS_PATH+"/"+path, function(err) {
-      if(err) console.log(err.message);
-    });
-  });
+  };
+  this.getRegion = function() {
+    if(region != null)
+      return region;
+    region = [];
+    var locationMin = boundingBox.getMin(),
+        locationMax = boundingBox.getMax(),
+        leftTop = locationMin.toPoint(),
+        g = canvas.getContext("2d");
+    for(var col=locationMin.column; col.lesserOrEquals(locationMax.column); col=col.next()) {
+      for(var row=locationMin.row; row.lesserOrEquals(locationMax.row); row=row.next()) {
+        //analyze tile
+        var location = new TileLocation(col, row),
+          position = location.toPoint().minus(leftTop),
+          imageData = g.getImageData(position.x.toJSNumber(), position.y.toJSNumber(), tileSize, tileSize),
+          data = imageData.data,
+          found = false;
+        for(var i=0; i<data.length; i++)
+          if(data[i] != 0) {
+            found = true;
+            break;
+          }
+        if(!found)
+          continue;
+        region.push(location.toData());
+      }
+    }
+    return region;
+  };
 }
 
 /**
@@ -48,46 +53,20 @@ function deleteRegionPaths(regionPaths) {
  * @class Deltas
  */
 module.exports = {
-  /**
-   * Commits the given region paths to the database
-   * @method commit
-   * @param client
-   * @param regionPaths
-   * @param actionId
-   * @param callback
-   */
-  commit: function(client, regionPaths, actionId, callback) {
-    var deltas = _.map(regionPaths, function(location, path) { return { location: location, path: path }; })
-    var index = 0;
-    function step() {
-      if(index >= deltas.length) {
-        callback();
-        return;
-      }
-      var delta = deltas[index];
-      index++;
-      client.query("INSERT INTO deltas (col, row, actionId, imagePath) VALUES (?, ?, ?, ?)",
-        [delta.location.column, delta.location.row, actionId, delta.path], function(err)
-        {
-          if(err) { callback(err); return; }
-          step();
-        });
-    }
-    step();
-  },
-  /**
-   * @method deleteRegion
-   * @param region
-   */
-  deleteRegionPaths: deleteRegionPaths,
+  Delta: Delta,
   /**
    * @method draw
-   * @param client
+   * @param actionId
    * @param action
-   * @param callback
+   * @param callback {Function(error, Delta)}
    */
-  draw: function(client, action, callback) {
+  draw: function(actionId, action, callback) {
     try {
+      var delta = deltasCache.get(actionId);
+      if(delta != null) {
+        callback(null, delta);
+        return;
+      }
       //estimate region
       var stroke = _.map(action.stroke, function(pt) { return new Point(pt.x, pt.y); });
       var bb = new BoundingBox();
@@ -123,54 +102,9 @@ module.exports = {
       });
       g.stroke();
 
-      //determine affected region
-      var regionPaths = {},
-        finished = false,
-        tilesCount = 0,
-        error = null;
-
-      function rollback() {
-        if(tilesCount == 0 && finished && error) {
-          deleteRegionPaths(regionPaths);
-          callback(error);
-        }
-      }
-
-      for(var col=locationMin.column; col.lesserOrEquals(locationMax.column); col=col.next()) {
-        for(var row=locationMin.row; row.lesserOrEquals(locationMax.row); row=row.next()) {
-          //analyze tile
-          var location = new TileLocation(col, row),
-            position = location.toPoint().minus(leftTop),
-            imageData = g.getImageData(position.x.toJSNumber(), position.y.toJSNumber(), tileSize, tileSize),
-            data = imageData.data,
-            found = false;
-          for(var i=0; i<data.length; i++)
-            if(data[i] != 0) {
-              found = true;
-              break;
-            }
-          if(!found)
-            continue;
-          //tile is affected, save it
-          tilesCount++;
-          var tileCanvas = new Canvas(tileSize, tileSize);
-          tileCanvas.getContext("2d").putImageData(imageData, 0, 0);
-          saveImage(client, tileCanvas, (function(location) {
-            return function(err, path) {
-              tilesCount--;
-              if(err) {
-                error = err;
-                rollback();
-                return;
-              }
-              regionPaths[path] = location.toData();
-              if(tilesCount == 0 && finished && !error)
-                callback(null, regionPaths);
-            };
-          })(location));
-        }
-      }
-      finished = true;
+      var delta = new Delta(bb, canvas);
+      deltasCache.set(actionId, delta);
+      callback(null, delta);
     } catch(ex) {
       callback(ex);
     }

@@ -48,14 +48,6 @@ scheme
 ;
 
 scheme
-  .addTable("deltas")
-    .addColumn("col", ColumnType.STRING, false, true)
-    .addColumn("row", ColumnType.STRING, false, true)
-    .addColumn("actionId", ColumnType.STRING, false, true)
-    .addColumn("imagePath")
-;
-
-scheme
   .addTable("images")
     .addColumn("id", ColumnType.STRING, false, true)
     .addColumn("x")
@@ -89,7 +81,6 @@ scheme
     .addColumn("parentRevisionId", ColumnType.STRING, true)
     .addColumn("actionId")
     .addColumn("imagePath", ColumnType.STRING, true)
-    .addColumn("canvasId", ColumnType.STRING, true)
 ;
 
 module.exports = scheme;
