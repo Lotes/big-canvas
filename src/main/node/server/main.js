@@ -70,6 +70,7 @@ var socketServer = new WebSocketServer({
   port: config.SERVER_SOCKET_PORT,
   path: "/"+config.SERVER_SOCKET_PATH
 });
+
 socketServer.on('connection', function(socket) {
   parseCookie(socket.upgradeReq, null, function(err) {
     if(err)

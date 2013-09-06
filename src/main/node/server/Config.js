@@ -1,4 +1,5 @@
 /**
+ * Global configuration
  * @class Config
  */
 var Config = require("../Config");
