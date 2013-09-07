@@ -5,6 +5,7 @@ var Canvas = require("canvas");
 var Cache = require("../../Cache");
 var tilesCache = new Cache(1024); //TODO move cache size to config
 var fs = require("fs");
+var Counters = require("./Counters");
 
 function getActionOrderIndex(client, location, actionId, callback) {
   client.query("SELECT orderIndex FROM tileActions WHERE col=? AND row=? AND actionId=? LIMIT 1",
@@ -129,8 +130,8 @@ function addVersion(client, location, nextRevisionIdGenerator, parentRevisionId,
     else {
       //no, generate a new version and return the new revision id
       var revisionId = nextRevisionIdGenerator();
-      client.query("INSERT INTO versions (col, row, revisionId, parentRevisionId, actionId, imagePath, canvasId)"+
-        "VALUES (?,?,?,?,?,?,?)", [location.column, location.row, revisionId, parentRevisionId, actionId, null, null],
+      client.query("INSERT INTO versions (col, row, revisionId, parentRevisionId, actionId, imagePath)"+
+        "VALUES (?,?,?,?,?,?)", [location.column, location.row, revisionId, parentRevisionId, actionId, null, null],
       function(err) {
         if(err) callback(err);
         else callback(null, revisionId);
@@ -202,45 +203,66 @@ function getFirstUndrawnVersion(client, location, callback) {
       callback(null, {
         operationsLeft: 0,
         baseRevisionId: null,
+        newRevisionId: null,
         newActionId: null
       });
     } else {
-      var baseVersion = null;
-      var newVersion = null;
-      var operationsLeft = 0;
+      var versions = [];
       function step(revisionId) {
         if(revisionId == null) {
-          callback(null, {
-            operationsLeft: operationsLeft,
-            baseRevisionId: null,
-            newActionId: baseVersion != null ? baseVersion.actionId : null
-          });
+          if(versions.length > 0) {
+            var last = versions[versions.length-1];
+            callback(null, {
+              operationsLeft: versions.length,
+              baseRevisionId: null,
+              newRevisionId: last.revisionId,
+              newActionId: last.actionId
+            });
+          } else {
+            //empty tile
+            callback(null, {
+              operationsLeft: versions.length,
+              baseRevisionId: null,
+              newRevisionId: null,
+              newActionId: null
+            });
+          }
         } else {
           client.query("SELECT actionId, imagePath FROM versions WHERE col=? AND row=? AND revisionId=?",
             [location.column, location.row, revisionId], function(err, results)
             {
               if(err) { callback(err); return; }
               if(results.length == 0) { callback(new Error("Version does not exist.")); return; }
-              newVersion = baseVersion;
-              baseVersion = {
+              var version = {
                 revisionId: revisionId,
                 actionId: results[0].actionId,
                 imagePath: results[0].imagePath
               };
-              if(baseVersion.imagePath == null) {
+              if(version.imagePath == null) {
                 //bad, walk to parent version
+                versions.push(version);
                 getParentVersion(client, location, revisionId, function(err, parentRevisionId) {
                   if(err) { callback(err); return; }
-                  operationsLeft++;
                   step(parentRevisionId);
                 });
               } else {
                 //good, search is over
-                callback(null, {
-                  operationsLeft: operationsLeft,
-                  baseRevisionId: baseVersion.revisionId,
-                  newActionId: newVersion.actionId
-                });
+                if(versions.length > 0) {
+                  var last = versions[versions.length-1];
+                  callback(null, {
+                    operationsLeft: versions.length,
+                    baseRevisionId: version.revisionId,
+                    newRevisionId: last.revisionId,
+                    newActionId: last.actionId
+                  });
+                } else {
+                  callback(null, {
+                    operationsLeft: 0,
+                    baseRevisionId: version.revisionId,
+                    newRevisionId: null,
+                    newActionId: null
+                  });
+                }
               }
             });
         }
@@ -297,6 +319,42 @@ module.exports = {
         }
       });
     }
+  },
+  /**
+   * Saves the given canvas into a PNG image file and updates the version entry.
+   * @method setRevision
+   * @param client {MySQLClient}
+   * @param location {TileLocation}
+   * @param revisionId {RevisionId}
+   * @param canvas {Canvas}
+   * @param callback {Function(Error)}
+   */
+  setRevision: function(client, location, revisionId, canvas, callback) {
+    //get new id
+    Counters.lockVersionsCounter(function(done) {
+      Counters.newId(client, "versions", function(err, id) {
+        done();
+        if(err) { callback(err); return; }
+        //save image
+        var fileName = id + ".png",
+            out = fs.createWriteStream(Config.SERVER_TILES_PATH + "/" + fileName),
+            stream = canvas.pngStream();
+        stream.on("data", function(chunk){ out.write(chunk); });
+        stream.on("error", function(err){
+          console.log("ERROR WHILE IMAGE WRITING ", err);
+          //TODO callback(err)?
+        });
+        stream.on("end", function(){
+          client.query("UPDATE versions SET imagePath=? WHERE col=? AND row=? AND revisionId=?",
+            [fileName, location.column, location.row, revisionId], function(err, result)
+          {
+            if(err) { callback(err); return; }
+            if(result.affectedRows == 0) { callback(new Error("Could not update versions image path (c: "+location.column+"; r: "+location.row+"; v: "+revisionId+")!")); return; }
+            callback();
+          });
+        });
+      });
+    });
   },
   updateHistoryForRegion: function(client, region, actionId, callback) {
     var index = 0;

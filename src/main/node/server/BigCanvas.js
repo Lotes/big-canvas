@@ -83,9 +83,11 @@ function BigCanvas() {
       Tiles.lock(location, function(done) {
         locks.unshift(done);
         function fail(ex) {
-          console.log(ex.message); //TODO find a better fail behaviour???
+          console.log(ex); //TODO find a better fail behaviour???
           unlock();
-          jobStep(location);
+          setTimeout(function() {
+            jobStep(location);
+          }, 1000); //for debug purpose
         }
         function success() {
           unlock();
@@ -95,8 +97,9 @@ function BigCanvas() {
           if(err) { fail(err); return; }
           try {
             if(result.operationsLeft == 0) {
-              unlock(); //exit eventually
-              return;
+              jobs.remove(location);
+              unlock();
+              return; //exit eventually
             }
             Versions.getRevision(connection, location, result.baseRevisionId, function(err, baseCanvas) {
               if(err) { fail(err); return; }
@@ -104,15 +107,19 @@ function BigCanvas() {
               Actions.get(connection, actionId, function(err, actionData) {
                 if(err) { fail(err); return; }
                 var action = actionData["actionObject"];
-                Deltas.draw(actionId, action, function(err, deltaCanvas) {
+                Deltas.draw(actionId, action, function(err, delta) {
                   if(err) { fail(err); return; }
-                  /*Deltas.apply(baseCanvas, deltaCanvas.getTile(location), action, function(err, resultCanvas) {
-                    if(err) { fail(err); return; }
-                    Versions.setRevision(connection, location, revisionId, resultCanvas, function(err) {
+                  try {
+                    var deltaCanvas = delta.getTile(location);
+                    Deltas.applyDelta(baseCanvas, deltaCanvas, action, function(err, resultCanvas) {
                       if(err) { fail(err); return; }
-                      success();
+                      Versions.setRevision(connection, location, result.newRevisionId, resultCanvas, function(err) {
+                        if(err) { fail(err); return; }
+                        //TODO broadcast
+                        success();
+                      });
                     });
-                  });*/
+                  } catch(ex) { fail(ex); }
                 });
               });
             });
@@ -123,8 +130,11 @@ function BigCanvas() {
   }
 
   function addRenderJob(location) {
-    if(jobs.add(location))
-      jobStep(location);
+    Tiles.lock(location, function(done) {
+      if(jobs.add(location))
+        jobStep(location);
+      done();
+    });
   }
 
   //setup server stub

@@ -11,23 +11,37 @@ var Counters = require("./Counters");
 var Cache = require("../../Cache");
 var deltasCache = new Cache(1024); //TODO move cache size to config
 
-function Delta(boundingBox, canvas) {
-  var min = boundingBox.getMin(),
-      region = null;
+function Delta(min, max, canvas) {
+  var region = null;
   this.getCanvas = function() { return canvas; };
   this.getTile = function(location) {
-
+    location = new TileLocation(location.column, location.row);
+    if(location.column.greaterOrEquals(min.column) && location.column.lesserOrEquals(max.column)
+      && location.row.greaterOrEquals(min.row) && location.row.lesserOrEquals(max.row))
+    {
+      var size = Config.TILE_SIZE,
+          result = new Canvas(size, size),
+          g = canvas.getContext("2d"),
+          rg = result.getContext("2d"),
+          relativeColumn = location.column.minus(min.column).toJSNumber(),
+          relativeRow = location.row.minus(min.row).toJSNumber(),
+          left = relativeColumn * size,
+          top = relativeRow * size,
+          data = g.getImageData(left, top, size, size);
+      rg.putImageData(data, 0, 0);
+      return result;
+    } else
+      throw new Error("Location is not inside the delta!");
   };
   this.getRegion = function() {
     if(region != null)
       return region;
     region = [];
-    var locationMin = boundingBox.getMin(),
-        locationMax = boundingBox.getMax(),
-        leftTop = locationMin.toPoint(),
+    var tileSize = Config.TILE_SIZE,
+        leftTop = min.toPoint(),
         g = canvas.getContext("2d");
-    for(var col=locationMin.column; col.lesserOrEquals(locationMax.column); col=col.next()) {
-      for(var row=locationMin.row; row.lesserOrEquals(locationMax.row); row=row.next()) {
+    for(var col=min.column; col.lesserOrEquals(max.column); col=col.next()) {
+      for(var row=min.row; row.lesserOrEquals(max.row); row=row.next()) {
         //analyze tile
         var location = new TileLocation(col, row),
           position = location.toPoint().minus(leftTop),
@@ -53,7 +67,39 @@ function Delta(boundingBox, canvas) {
  * @class Deltas
  */
 module.exports = {
-  Delta: Delta,
+  /**
+   * @method applyDelta
+   * @param baseCanvas {Canvas}
+   * @param deltaCanvas {Canvas}
+   * @param action {Action}
+   * @param callback {Function(Error, Canvas)} returns the resulting canvas
+   */
+  applyDelta: function(baseCanvas, deltaCanvas, action, callback) {
+    try {
+      callback(new Error("Deltas.applyDelta: Not implemented yet."));
+      /*var size = Config.TILE_SIZE,
+        resultCanvas = new Canvas(size, size),
+        g = resultCanvas.getContext("2d");
+      //draw base revision
+      g.globalCompositeOperation = "none";
+      var baseImage = new Canvas.Image();
+      baseImage.src = baseCanvas.toBuffer();
+      g.drawImage(baseImage, 0, 0, size, size);
+
+      //draw delta
+      switch(action.type) {
+        case "BRUSH":  g.globalCompositeOperation = "none"; break;
+        case "ERASER": g.globalCompositeOperation = "destination-out"; break;
+      }
+      var deltaImage = new Canvas.Image();
+      deltaImage.src = deltaCanvas.toBuffer();
+      g.drawImage(deltaImage, 0, 0, size, size);
+
+      //return result
+      callback(null, resultCanvas); */
+    } catch(ex) { callback(ex); }
+  },
+
   /**
    * @method draw
    * @param actionId
@@ -102,9 +148,9 @@ module.exports = {
       });
       g.stroke();
 
-      var delta = new Delta(bb, canvas);
-      deltasCache.set(actionId, delta);
-      callback(null, delta);
+      var result = new Delta(locationMin, locationMax, canvas);
+      deltasCache.set(actionId, result);
+      callback(null, result);
     } catch(ex) {
       callback(ex);
     }
