@@ -4,6 +4,6 @@
   "version": "0.2",
   "url": "http://openstoryboards.org:8080/",
   "options": {
-    "outdir": "doc"
+    "outdir": "yuidoc"
   }
 }
