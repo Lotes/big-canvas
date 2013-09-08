@@ -4,5 +4,6 @@ node_modules
 src/main/node/rpc/json-rpc-parser.js
 /.idea
 /public/bigcanvas.js
-/doc
+/yuidoc
 src/main/node/rpc/big-canvas.js
+/doc/dataModel.zargo~
