@@ -51,6 +51,11 @@ A client (and the associated user) can move on the canvas. The server needs the 
 The following diagram shows which data is held by big-canvas and how the data entites are connected to each other. Basicly we have tiles, versions, actions and users:
 ![Class diagram](entities.png)
 Each tile is defined by its tile location (column and row) and points to the last valid version. A version belongs always to a tile (same tile location). Versions are defined by their revision id and an action id and they point to a parent revision. A version is the result of applying this action to the parent version. The next new revision id is held in the tile object with the same location. Every version has a path to its image. If the path is null, the version has to be drawn by a so called "render job".
+
 An action is a command executed by a user applied to the canvas. Its type determines whether it is a brush or eraser command. The "actionObject" holds the original sent action string. The region tells us which tile locations are affected. And last but not least there are pointers to the previous and the next action (of the executing user!). They are used to realize the undo/redo functionality.
 
 ##Example
+Imagine Alice is doing a brush action from tile (4;10), over (5;10) to (5;11). Afterwars Bob is also performing a brush action from tile (4;11) to (5;11).
+![Example 1](tileExample1.png)
+The following image shows which values the objects have and how they are connected. There are four tile objects, each with at least one version.
+![Example 1](tileExample2.png)
