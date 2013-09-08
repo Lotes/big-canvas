@@ -288,11 +288,11 @@ module.exports = {
    * @param client
    * @param location
    * @param revisionId {RevisionId} can be null for empty tile
-   * @param callback
+   * @param callback {Function(Error,Canvas)}
    */
   getRevision: function(client, location, revisionId, callback) {
+    var size = Config.TILE_SIZE;
     if(revisionId == null) {
-      var size = Config.TILE_SIZE;
       callback(null, new Canvas(size, size));
     } else {
       client.query("SELECT imagePath FROM versions WHERE col=? AND row=? AND revisionId=? LIMIT 1",
@@ -312,7 +312,7 @@ module.exports = {
               var image = new Canvas.Image();
               var g = canvas.getContext("2d");
               image.src = buffer;
-              g.drawImage(image, 0, 0);
+              g.drawImage(image, 0, 0, size, size);
               callback(null, canvas);
             } catch(ex) { callback(ex); }
           });

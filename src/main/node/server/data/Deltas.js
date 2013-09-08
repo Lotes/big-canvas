@@ -76,15 +76,13 @@ module.exports = {
    */
   applyDelta: function(baseCanvas, deltaCanvas, action, callback) {
     try {
-      callback(new Error("Deltas.applyDelta: Not implemented yet."));
-      /*var size = Config.TILE_SIZE,
+      //callback(new Error("Deltas.applyDelta: Not implemented yet."));
+      var size = Config.TILE_SIZE,
         resultCanvas = new Canvas(size, size),
-        g = resultCanvas.getContext("2d");
+        g = resultCanvas.getContext("2d"),
+        bg = baseCanvas.getContext("2d");
       //draw base revision
-      g.globalCompositeOperation = "none";
-      var baseImage = new Canvas.Image();
-      baseImage.src = baseCanvas.toBuffer();
-      g.drawImage(baseImage, 0, 0, size, size);
+      g.putImageData(bg.getImageData(0, 0, size, size), 0, 0);
 
       //draw delta
       switch(action.type) {
@@ -96,7 +94,7 @@ module.exports = {
       g.drawImage(deltaImage, 0, 0, size, size);
 
       //return result
-      callback(null, resultCanvas); */
+      callback(null, resultCanvas);
     } catch(ex) { callback(ex); }
   },
 
