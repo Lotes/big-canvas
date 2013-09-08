@@ -55,7 +55,10 @@ Each tile is defined by its tile location (column and row) and points to the las
 An action is a command executed by a user applied to the canvas. Its type determines whether it is a brush or eraser command. The "actionObject" holds the original sent action string. The region tells us which tile locations are affected. And last but not least there are pointers to the previous and the next action (of the executing user!). They are used to realize the undo/redo functionality.
 
 ##Example
-Imagine Alice is doing a brush action from tile (4;10), over (5;10) to (5;11). Afterwars Bob is also performing a brush action from tile (4;11) to (5;11).
+Imagine Alice is doing a brush action from tile (4;10), over (5;10) to (5;11). Afterwards Bob is also performing a brush action from tile (4;11) to (5;11).
+
 ![Example 1](tileExample1.png)
+
 The following image shows which values the objects have and how they are connected. There are four tile objects, each with at least one version.
+
 ![Example 1](tileExample2.png)
