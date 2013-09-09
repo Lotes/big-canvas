@@ -63,10 +63,40 @@ function BigCanvas() {
   var sockets = {};
   var windowTree = new WindowTree();
   var jobs = new RenderJobQueue();
+  var updateQueue = {};
 
   function lockCanvas(callback) {
     lock("canvas", callback);
   }
+
+  function enqueueTileUpdate(tileUpdate) {
+    var location = tileUpdate.location;
+    var socketIds = windowTree.getWindowsByLocation(location);
+    _.each(socketIds, function(socketId) {
+      if(!(socketId in updateQueue))
+        updateQueue[socketId] = {
+          createdOn: new Date().getTime(),
+          updates: [tileUpdate]
+        };
+      else
+        updateQueue[socketId].updates.push(tileUpdate);
+    });
+  }
+
+  //send update events
+  setInterval(function() {
+    var newUpdateQueue = {};
+    var now = new Date().getTime();
+    _.each(updateQueue, function(entry, socketId) {
+      if(now - entry.createdOn > 500) { //TODO write update interval to config
+        var socket = sockets[socketId];
+        if(socket) //TODO dirty solution, should be never null or undefined
+          self.Server.onUpdate(socket, entry.updates);
+      } else
+        newUpdateQueue[socketId] = entry;
+    });
+    updateQueue = newUpdateQueue;
+  }, 200);
 
   function jobStep(location) {
     //open a database connection
@@ -85,9 +115,7 @@ function BigCanvas() {
         function fail(ex) {
           console.log(ex); //TODO find a better fail behaviour???
           unlock();
-          setTimeout(function() {
-            jobStep(location);
-          }, 1000); //for debug purpose
+          jobStep(location);
         }
         function success() {
           unlock();
@@ -115,8 +143,20 @@ function BigCanvas() {
                       if(err) { fail(err); return; }
                       Versions.setRevision(connection, location, result.newRevisionId, resultCanvas, function(err) {
                         if(err) { fail(err); return; }
-                        //TODO broadcast
-                        success();
+                        //broadcast
+                        try {
+                          enqueueTileUpdate({
+                            type: "TILE",
+                            location: location,
+                            empty: false,
+                            operationsLeft: result.operationsLeft - 1, //TODO -1 ok?
+                            parentRevisionId: result.baseRevisionId!=null ? result.baseRevisionId : "-1",
+                            revisionId: result.newRevisionId,
+                            actionId: result.newActionId
+                          });
+                          //finally close the step
+                          success();
+                        } catch(ex) { fail(ex); }
                       });
                     });
                   } catch(ex) { fail(ex); }
@@ -185,7 +225,8 @@ function BigCanvas() {
                     update.empty = state.operationsLeft == 0 && state.baseRevisionId == null;
                     if(!update.empty) {
                       update.operationsLeft = state.operationsLeft;
-                      update.revisionId = state.baseRevisionId != null ? state.baseRevisionId : "-1";
+                      update.parentRevisionId = state.baseRevisionId != null ? state.baseRevisionId : "-1";
+                      update.revisionId = state.newRevisionId != null ? state.newRevisionId : "-1";
                       update.actionId = state.newActionId != null ? state.newActionId : "-1";
                     }
                     return update;
@@ -201,7 +242,6 @@ function BigCanvas() {
         callback(ex);
       }
     },
-    // TODO WTF???
     sendAction: function(socket, action, callback) {
       var server = this;
       function broadcastAndRender(actionId, action, userId, region) {

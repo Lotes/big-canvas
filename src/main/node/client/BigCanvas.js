@@ -315,6 +315,7 @@ function BigCanvas(element) {
     },
     onUpdate: function(updates) {
       console.log(updates);
+      //TODO
     }
   });
 

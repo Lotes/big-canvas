@@ -112,6 +112,7 @@ struct Update {
         case false:
           operationsLeft: Integer;
           revisionId: RevisionId;
+          parentRevisionId: RevisionId;
           actionId: ActionId;
       };
   };
