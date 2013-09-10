@@ -62,3 +62,8 @@ Imagine Alice is doing a brush action from tile (4;10), over (5;10) to (5;11). A
 The following image shows which values the objects have and how they are connected. There are four tile objects, each with at least one version.
 
 ![Example 1](tileExample2.png)
+
+##TODO
+show undo example
+
+![update tile history](updateTileHistory.png)
