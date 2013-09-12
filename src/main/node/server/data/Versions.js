@@ -313,6 +313,7 @@ module.exports = {
               var g = canvas.getContext("2d");
               image.src = buffer;
               g.drawImage(image, 0, 0, size, size);
+              tilesCache.set(getRevisionKey(location, revisionId), canvas);
               callback(null, canvas);
             } catch(ex) { callback(ex); }
           });
@@ -350,6 +351,7 @@ module.exports = {
           {
             if(err) { callback(err); return; }
             if(result.affectedRows == 0) { callback(new Error("Could not update versions image path (c: "+location.column+"; r: "+location.row+"; v: "+revisionId+")!")); return; }
+            tilesCache.set(getRevisionKey(location, revisionId), canvas);
             callback();
           });
         });

@@ -12,6 +12,10 @@ dependencies:
 init-database:
 	./src/main/node/tools/initdb
 
+init-filesystem:
+	rm -rf private/tiles
+	mkdir private/tiles
+
 build-doc:
 	yuidoc src/main/node/
 

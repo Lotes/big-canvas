@@ -125,6 +125,22 @@ function BigCanvas() {
           if(err) { fail(err); return; }
           try {
             if(result.operationsLeft == 0) {
+              /*if(result.newRevisionId)
+                enqueueTileUpdate({
+                  type: "TILE",
+                  location: location,
+                  empty: false,
+                  operationsLeft: 0,
+                  parentRevisionId: result.baseRevisionId!=null ? result.baseRevisionId : "-1",
+                  revisionId: result.newRevisionId,
+                  actionId: result.newActionId
+                });
+              else
+                enqueueTileUpdate({
+                  type: "TILE",
+                  location: location,
+                  empty: true
+                }); */
               jobs.remove(location);
               unlock();
               return; //exit eventually
@@ -149,7 +165,7 @@ function BigCanvas() {
                             type: "TILE",
                             location: location,
                             empty: false,
-                            operationsLeft: result.operationsLeft - 1, //TODO -1 ok?
+                            operationsLeft: result.operationsLeft - 1,
                             parentRevisionId: result.baseRevisionId!=null ? result.baseRevisionId : "-1",
                             revisionId: result.newRevisionId,
                             actionId: result.newActionId
@@ -536,7 +552,7 @@ function BigCanvas() {
       callback(null, "123");
     }
   });
-};
+}
 
 module.exports = {
   BigCanvasSocket: BigCanvasSocket,
