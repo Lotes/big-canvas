@@ -260,13 +260,13 @@ function BigCanvas() {
     },
     sendAction: function(socket, action, callback) {
       var server = this;
-      function broadcastAndRender(actionId, action, userId, region) {
+      function broadcastAndRender(actionId, action, userId, region, updates) {
         //broadcast
         var socketIds = windowTree.getWindowsByRegion(region);
         _.each(socketIds, function(socketId) {
           var socket = sockets[socketId];
           if(socket) //TODO dirty...
-            server.onAction(socket, userId, actionId, action, region);
+            server.onAction(socket, userId, actionId, action, updates);
         });
         //render
         _.each(region, addRenderJob);
@@ -336,13 +336,13 @@ function BigCanvas() {
                             transaction.rollback();
                             fail(err);
                           }
-                          function commit(rslt) {
+                          function commit(rslt, updates) {
                             transaction.commit(function(err, info) {
                               if(err) {
                                 fail(err);
                               } else {
                                 success(rslt);
-                                broadcastAndRender(newActionId, action, userId, region);
+                                broadcastAndRender(newActionId, action, userId, region, updates);
                               }
                             });
                           }
@@ -352,19 +352,19 @@ function BigCanvas() {
                               if(err) { rollback(err); return; }
                               Tiles.appendAction(transaction, region, newActionId, function(err) {
                                 if(err) { rollback(err); return; }
-                                Versions.updateHistoryForRegion(transaction, region, newActionId, function(err) {
+                                Versions.updateHistoryForRegion(transaction, region, newActionId, function(err, updates) {
                                   if(err) { rollback(err); return; }
                                   Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
                                     if(err) { rollback(err); return; }
                                     if(previousActionId !== "-1") {
                                       Actions.setNextActionId(transaction, previousActionId, newActionId, function(err) {
                                         if(err) { rollback(err); return; }
-                                        commit(newActionId);
+                                        commit(newActionId, updates);
                                       });
                                     } else {
                                       Users.setFirstActionId(transaction, userId, newActionId, function(err) {
                                         if(err) { rollback(err); return; }
-                                        commit(newActionId);
+                                        commit(newActionId, updates);
                                       });
                                     }
                                   });
@@ -429,13 +429,13 @@ function BigCanvas() {
                               transaction.rollback();
                               fail(err);
                             }
-                            function commit(rslt) {
+                            function commit(rslt, updates) {
                               transaction.commit(function(err, info) {
                                 if(err) {
                                   fail(err);
                                 } else {
                                   success(rslt);
-                                  broadcastAndRender(lastActionId, action, userId, lastAction.region);
+                                  broadcastAndRender(lastActionId, action, userId, lastAction.region, updates);
                                 }
                               });
                             }
@@ -443,11 +443,11 @@ function BigCanvas() {
                               if(err) { rollback(err); return; }
                               Users.setLastActionId(transaction, userId, lastAction.previousActionId, function(err) {
                                 if(err) { rollback(err); return; }
-                                Versions.updateHistoryForRegion(transaction, lastAction.region, lastActionId, function(err) {
+                                Versions.updateHistoryForRegion(transaction, lastAction.region, lastActionId, function(err, updates) {
                                   if(err) { rollback(err); return; }
                                   Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
                                     if(err) { rollback(err); return; }
-                                    commit(lastActionId);
+                                    commit(lastActionId, updates);
                                   });
                                 });
                               });
@@ -477,13 +477,13 @@ function BigCanvas() {
                             transaction.rollback();
                             fail(err);
                           }
-                          function commit() {
+                          function commit(updates) {
                             transaction.commit(function(err, info) {
                               if(err) {
                                 fail(err);
                               } else {
                                 success(actionId);
-                                broadcastAndRender(actionId, action, userId, nextAction.region);
+                                broadcastAndRender(actionId, action, userId, nextAction.region, updates);
                               }
                             });
                           }
@@ -491,11 +491,11 @@ function BigCanvas() {
                             if(err) { rollback(err); return; }
                             Users.setLastActionId(transaction, userId, actionId, function(err) {
                               if(err) { rollback(err); return; }
-                              Versions.updateHistoryForRegion(transaction, nextAction.region, actionId, function(err) {
+                              Versions.updateHistoryForRegion(transaction, nextAction.region, actionId, function(err, updates) {
                                 if(err) { rollback(err); return; }
                                 Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
                                   if(err) { rollback(err); return; }
-                                  commit();
+                                  commit(updates);
                                 });
                               });
                             });

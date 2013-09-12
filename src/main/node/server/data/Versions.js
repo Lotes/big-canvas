@@ -166,23 +166,25 @@ function updateTileHistory(client, location, actionId, callback) {
           }
           getBaseRevision(client, location, tile.currentRevisionId, baseActionId, function(err, baseRevisionId) {
             if(err) { callback(err); return; }
-            //console.log("base revision is "+baseRevisionId);
             var parentRevisionId = baseRevisionId;
             var tailIndex = 0;
+            var tail = [];
             function step() {
               if(tailIndex >= tailActionIds.length) {
                 setTile(client, location, parentRevisionId, nextRevisionId.toString(), function(err) {
                   if(err) callback(err);
-                  else callback();
-                  //console.log("updated tile");
+                  else callback(null, baseRevisionId, tail);
                 });
               } else {
                 var actionId = tailActionIds[tailIndex];
                 tailIndex++;
                 addVersion(client, location, generateNextRevisionId, parentRevisionId, actionId, function(err, revisionId) {
                   if(err) { callback(err); return; }
-                  //console.log("added version (revId: "+revisionId+", actionId: "+actionId+")");
                   parentRevisionId = revisionId;
+                  tail.push({
+                    revisionId: revisionId,
+                    actionId: actionId
+                  });
                   step();
                 });
               }
@@ -360,12 +362,25 @@ module.exports = {
   },
   updateHistoryForRegion: function(client, region, actionId, callback) {
     var index = 0;
+    var result = [];
     function step() {
-      if(index >= region.length) { callback(); return; }
+      if(index >= region.length) {
+        callback(null, result);
+        return;
+      }
       var location = region[index];
       index++;
-      updateTileHistory(client, location, actionId, function(err) {
-        if(err) callback(err); else step();
+      updateTileHistory(client, location, actionId, function(err, baseRevisionId, tail) {
+        if(err) callback(err);
+        else {
+          result.push({
+            type: "HISTORY",
+            location: location,
+            baseRevisionId: baseRevisionId!=null ? baseRevisionId : "-1",
+            tailRevisions: tail
+          });
+          step();
+        }
       });
     }
     step();

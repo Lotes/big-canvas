@@ -97,10 +97,16 @@ type ActionInfos = list of ActionInfo
 /* versions */
 type RevisionId = BigInteger
 
+struct Revision {
+  revisionId: RevisionId;
+  actionId: ActionId;
+}
+type Revisions = list of Revision
+
 /* updates */
 enum UpdateType {
-  TILE
-  //TODO user join/leave/name changed/chat
+  TILE,
+  HISTORY
 }
 
 struct Update {
@@ -115,6 +121,10 @@ struct Update {
           parentRevisionId: RevisionId;
           actionId: ActionId;
       };
+    case HISTORY:
+      location: TileLocation;
+      baseRevisionId: RevisionId;
+      tailRevisions: Revisions;
   };
 }
 type Updates = list of Update
@@ -127,7 +137,7 @@ interface Main {
 
   //sending and receiving actions
   function sendAction(action: Action): ActionId;
-  event onAction(userId: UserId, actionId: ActionId, action: Action, region: TileLocations);
+  event onAction(userId: UserId, actionId: ActionId, action: Action, updates: Updates);
 
   //user
   function getName(userId: UserId): String;

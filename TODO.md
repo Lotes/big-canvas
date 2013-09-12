@@ -15,7 +15,8 @@
 * multiple layers (max. 5)
 
 ## v0.4
-* add comments
+* read-only mode
+* comments
 
 ## v0.5
 * live and static images
@@ -30,4 +31,4 @@
 * upload images
 
 ## v0.x
-* Undo/Redo für beliebigen Benutzer
+* any-undo

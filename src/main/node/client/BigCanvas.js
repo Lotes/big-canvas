@@ -309,8 +309,9 @@ function BigCanvas(element) {
   }
 
   var client = new generator.Interfaces.Main.Client({
-    onAction: function(userId, actionId, action, region) {
+    onAction: function(userId, actionId, action, updates) {
       console.log("user: "+userId+"; action: "+actionId);
+      console.log(updates);
       //TODO
     },
     onUpdate: function(updates) {
