@@ -17,13 +17,13 @@ struct Update {
     case ACTION:
 	  actionId: ActionId;
 	  action: Action;
-	  userId: UserId;
+	  userId: UserId; //executor
     case RENDERED:
-      location: TileLocation;
+      location: TileLocation; //which revisions are avaiblable now?
       revisionId: RevisionId;
 	case HISTORY:
 	  location: TileLocation;
-	  baseRevisionId: RevisionId; //empty or available
+	  baseRevisionId: RevisionId; //-1 or available
 	  tailRevisions: Revisions;
   };
 }
@@ -36,3 +36,14 @@ interface Main {
 	  width: WindowWidth; height: WindowHeight);
 	event onUpdate(updates: Updates);
 }
+
+/*
+Ablauf:
+-login
+-sendWindow(x,y,w,h)
+-onUpdate(us) --> history for each tile
+-requestActions(as)
+-onUpdate(us) --> actions
+-draw
+-ready!
+*/
