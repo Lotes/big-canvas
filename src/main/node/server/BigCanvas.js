@@ -20,34 +20,87 @@ var Actions = require("./data/Actions");
 var Tiles = require("./data/Tiles");
 var Versions = require("./data/Versions");
 var Deltas = require("./data/Deltas");
+var Cache = require("../Cache");
+
+var Canvas = require("canvas");
+var fs = require("fs");
 
 var socketIds = BigInteger(0);
+
+/**
+ *
+ *  @constructor BigCanvasSocket
+ *  @param {TODO what type is it?} wsSocket the socket to connect to
+ *  @param {String} userId the id of the user
+ *
+ * */
 function BigCanvasSocket(wsSocket, userId) {
   var id = socketIds.toString(),
       window = null;
   socketIds = socketIds.next();
   this.getId = function() { return id; };
-  this.send = function(obj) { wsSocket.send(JSON.stringify(obj)); };
+  this.send = function(obj) {
+    try {
+      wsSocket.send(JSON.stringify(obj));
+    } catch(ex) {
+      console.log("Error while sending message ("+ex.message+").");
+    }
+  };
   this.getUserId = function() { return userId; };
   this.close = function(obj) { wsSocket.close(); };
   this.getWindow = function() { return window; };
   this.setWindow = function(win) { window = win; };
 }
 
+/**
+ *
+ * @constructor BigCanvas
+ * TODO what does it represent?
+ *
+ */
 function BigCanvas() {
   var self = this;
   var sockets = {};
   var windowTree = new WindowTree();
   var jobs = new RenderJobQueue();
+  var updateQueue = {};
 
   function lockCanvas(callback) {
     lock("canvas", callback);
   }
 
+  function enqueueTileUpdate(tileUpdate) {
+    var location = tileUpdate.location;
+    var socketIds = windowTree.getWindowsByLocation(location);
+    _.each(socketIds, function(socketId) {
+      if(!(socketId in updateQueue))
+        updateQueue[socketId] = {
+          createdOn: new Date().getTime(),
+          updates: [tileUpdate]
+        };
+      else
+        updateQueue[socketId].updates.push(tileUpdate);
+    });
+  }
+
+  //send update events
+  setInterval(function() {
+    var newUpdateQueue = {};
+    var now = new Date().getTime();
+    _.each(updateQueue, function(entry, socketId) {
+      if(now - entry.createdOn > 500) { //TODO write update interval to config
+        var socket = sockets[socketId];
+        if(socket) //TODO dirty solution, should be never null or undefined
+          self.Server.onUpdate(socket, entry.updates);
+      } else
+        newUpdateQueue[socketId] = entry;
+    });
+    updateQueue = newUpdateQueue;
+  }, 200);
+
   function jobStep(location) {
-    //TODO
     //open a database connection
-    /*var connection = new DatabaseConnection();
+    var connection = new DatabaseConnection();
     connection.connect(function(err) {
       if(err) { connection.end(); return; }
       //lock tile
@@ -60,8 +113,9 @@ function BigCanvas() {
       Tiles.lock(location, function(done) {
         locks.unshift(done);
         function fail(ex) {
-          console.log(ex.message); //TODO find a better fail behaviour???
+          console.log(ex); //TODO find a better fail behaviour???
           unlock();
+          jobStep(location);
         }
         function success() {
           unlock();
@@ -69,16 +123,74 @@ function BigCanvas() {
         }
         Versions.getFirstUndrawnVersion(connection, location, function(err, result) {
           if(err) { fail(err); return; }
-          console.log(result);
-          success();
+          try {
+            if(result.operationsLeft == 0) {
+              /*if(result.newRevisionId)
+                enqueueTileUpdate({
+                  type: "TILE",
+                  location: location,
+                  empty: false,
+                  operationsLeft: 0,
+                  parentRevisionId: result.baseRevisionId!=null ? result.baseRevisionId : "-1",
+                  revisionId: result.newRevisionId,
+                  actionId: result.newActionId
+                });
+              else
+                enqueueTileUpdate({
+                  type: "TILE",
+                  location: location,
+                  empty: true
+                }); */
+              jobs.remove(location);
+              unlock();
+              return; //exit eventually
+            }
+            Versions.getRevision(connection, location, result.baseRevisionId, function(err, baseCanvas) {
+              if(err) { fail(err); return; }
+              var actionId = result.newActionId;
+              Actions.get(connection, actionId, function(err, actionData) {
+                if(err) { fail(err); return; }
+                var action = actionData["actionObject"];
+                Deltas.draw(actionId, action, function(err, delta) {
+                  if(err) { fail(err); return; }
+                  try {
+                    var deltaCanvas = delta.getTile(location);
+                    Deltas.applyDelta(baseCanvas, deltaCanvas, action, function(err, resultCanvas) {
+                      if(err) { fail(err); return; }
+                      Versions.setRevision(connection, location, result.newRevisionId, resultCanvas, function(err) {
+                        if(err) { fail(err); return; }
+                        //broadcast
+                        try {
+                          enqueueTileUpdate({
+                            type: "TILE",
+                            location: location,
+                            empty: false,
+                            operationsLeft: result.operationsLeft - 1,
+                            parentRevisionId: result.baseRevisionId!=null ? result.baseRevisionId : "-1",
+                            revisionId: result.newRevisionId,
+                            actionId: result.newActionId
+                          });
+                          //finally close the step
+                          success();
+                        } catch(ex) { fail(ex); }
+                      });
+                    });
+                  } catch(ex) { fail(ex); }
+                });
+              });
+            });
+          } catch(ex) { fail(ex); }
         });
       });
-    });*/
+    });
   }
 
   function addRenderJob(location) {
-    if(jobs.add(location))
-      jobStep(location);
+    Tiles.lock(location, function(done) {
+      if(jobs.add(location))
+        jobStep(location);
+      done();
+    });
   }
 
   //setup server stub
@@ -116,6 +228,7 @@ function BigCanvas() {
               windowTree.addWindow(newWindow, socketId);
               //collect region data
               var region = newWindow.getRegion();
+              _.each(region, addRenderJob);
               Tiles.lock(region, function(tilesDone) {
                 locks.unshift(tilesDone);
                 Versions.getStates(connection, region, function(err, states) {
@@ -125,10 +238,12 @@ function BigCanvas() {
                       type: "TILE",
                       location: state.location
                     };
-                    update.empty = state.operationsLeft == 0 && state.baseVersion == null;
+                    update.empty = state.operationsLeft == 0 && state.baseRevisionId == null;
                     if(!update.empty) {
                       update.operationsLeft = state.operationsLeft;
-                      update.revisionId = state.baseVersion != null ? state.baseVersion.revisionId : "-1";
+                      update.parentRevisionId = state.baseRevisionId != null ? state.baseRevisionId : "-1";
+                      update.revisionId = state.newRevisionId != null ? state.newRevisionId : "-1";
+                      update.actionId = state.newActionId != null ? state.newActionId : "-1";
                     }
                     return update;
                   });
@@ -207,11 +322,10 @@ function BigCanvas() {
                   }
 
                   function performAction(newActionId, previousActionId) {
-                    Deltas.draw(connection, action, function(err, regionPaths) {
+                    Deltas.draw(newActionId, action, function(err, delta) {
                       if(err) { fail(err); return; }
                       try {
-                        //get region
-                        var region = _.map(regionPaths, function(location, path) { return location; });
+                        var region = delta.getRegion();
                         //lock region
                         Tiles.lock(region, function(tilesDone) {
                           //save unlock callback
@@ -220,13 +334,11 @@ function BigCanvas() {
                           var transaction = connection.startTransaction();
                           function rollback(err) {
                             transaction.rollback();
-                            Deltas.deleteRegionPaths(regionPaths);
                             fail(err);
                           }
                           function commit(rslt) {
                             transaction.commit(function(err, info) {
                               if(err) {
-                                Deltas.deleteRegionPaths(regionPaths);
                                 fail(err);
                               } else {
                                 success(rslt);
@@ -234,30 +346,27 @@ function BigCanvas() {
                               }
                             });
                           }
-                          Deltas.commit(transaction, regionPaths, newActionId, function(err) {
+                          Actions.create(transaction, newActionId, action, userId, previousActionId, region, function(err) {
                             if(err) { rollback(err); return; }
-                            Actions.create(transaction, newActionId, action, userId, previousActionId, region, function(err) {
+                            Users.setLastActionId(transaction, userId, newActionId, function(err) {
                               if(err) { rollback(err); return; }
-                              Users.setLastActionId(transaction, userId, newActionId, function(err) {
+                              Tiles.appendAction(transaction, region, newActionId, function(err) {
                                 if(err) { rollback(err); return; }
-                                Tiles.appendAction(transaction, region, newActionId, function(err) {
+                                Versions.updateHistoryForRegion(transaction, region, newActionId, function(err) {
                                   if(err) { rollback(err); return; }
-                                  Versions.updateHistoryForRegion(transaction, region, newActionId, function(err) {
+                                  Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
                                     if(err) { rollback(err); return; }
-                                    Users.incrementUsageStatistics(transaction, userId, action.type, function(err) {
-                                      if(err) { rollback(err); return; }
-                                      if(previousActionId !== "-1") {
-                                        Actions.setNextActionId(transaction, previousActionId, newActionId, function(err) {
-                                          if(err) { rollback(err); return; }
-                                          commit(newActionId);
-                                        });
-                                      } else {
-                                        Users.setFirstActionId(transaction, userId, newActionId, function(err) {
-                                          if(err) { rollback(err); return; }
-                                          commit(newActionId);
-                                        });
-                                      }
-                                    });
+                                    if(previousActionId !== "-1") {
+                                      Actions.setNextActionId(transaction, previousActionId, newActionId, function(err) {
+                                        if(err) { rollback(err); return; }
+                                        commit(newActionId);
+                                      });
+                                    } else {
+                                      Users.setFirstActionId(transaction, userId, newActionId, function(err) {
+                                        if(err) { rollback(err); return; }
+                                        commit(newActionId);
+                                      });
+                                    }
                                   });
                                 });
                               });
@@ -443,7 +552,7 @@ function BigCanvas() {
       callback(null, "123");
     }
   });
-};
+}
 
 module.exports = {
   BigCanvasSocket: BigCanvasSocket,

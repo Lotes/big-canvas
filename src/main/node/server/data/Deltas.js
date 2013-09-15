@@ -1,8 +1,6 @@
 var BigCanvasTypes = require("../BigCanvasDefinitions").Types;
-var lock = require("../lock");
 var Utils = require("../ServerUtils");
 var Config = require("../Config");
-var fs = require("fs");
 var Types = require("../ServerTypes");
 var Point = Types.Point;
 var TileLocation = Types.TileLocation;
@@ -10,37 +8,58 @@ var BoundingBox = Types.BoundingBox;
 var _ = require("underscore");
 var Canvas = require("canvas");
 var Counters = require("./Counters");
+var Cache = require("../../Cache");
+var deltasCache = new Cache(1024); //TODO move cache size to config
 
-/**
- * @method saveImage
- * @param canvas
- * @param callback {Function(err, path)}
- */
-function saveImage(client, canvas, callback) {
-  Counters.lockDeltasCounter(function(done) {
-    Counters.newId(client, "deltas", function(err, id) {
-      done();
-      if(err) { callback(err); return; }
-      try {
-        var path = id+".png";
-        var fullName = Config.SERVER_DELTAS_PATH + "/" + path;
-        var out = fs.createWriteStream(fullName),
-            stream = canvas.pngStream();
-        stream.on("data", function(chunk){ out.write(chunk); });
-        stream.on("end", function() {
-          callback(null, path);
-        });
-      } catch(ex) { callback(ex); }
-    });
-  });
-}
-
-function deleteRegionPaths(regionPaths) {
-  _.each(regionPaths, function(location, path) {
-    fs.unlink(Config.SERVER_DELTAS_PATH+"/"+path, function(err) {
-      if(err) console.log(err.message);
-    });
-  });
+function Delta(min, max, canvas) {
+  var region = null;
+  this.getCanvas = function() { return canvas; };
+  this.getTile = function(location) {
+    location = new TileLocation(location.column, location.row);
+    if(location.column.greaterOrEquals(min.column) && location.column.lesserOrEquals(max.column)
+      && location.row.greaterOrEquals(min.row) && location.row.lesserOrEquals(max.row))
+    {
+      var size = Config.TILE_SIZE,
+          result = new Canvas(size, size),
+          g = canvas.getContext("2d"),
+          rg = result.getContext("2d"),
+          relativeColumn = location.column.minus(min.column).toJSNumber(),
+          relativeRow = location.row.minus(min.row).toJSNumber(),
+          left = relativeColumn * size,
+          top = relativeRow * size,
+          data = g.getImageData(left, top, size, size);
+      rg.putImageData(data, 0, 0);
+      return result;
+    } else
+      throw new Error("Location is not inside the delta!");
+  };
+  this.getRegion = function() {
+    if(region != null)
+      return region;
+    region = [];
+    var tileSize = Config.TILE_SIZE,
+        leftTop = min.toPoint(),
+        g = canvas.getContext("2d");
+    for(var col=min.column; col.lesserOrEquals(max.column); col=col.next()) {
+      for(var row=min.row; row.lesserOrEquals(max.row); row=row.next()) {
+        //analyze tile
+        var location = new TileLocation(col, row),
+          position = location.toPoint().minus(leftTop),
+          imageData = g.getImageData(position.x.toJSNumber(), position.y.toJSNumber(), tileSize, tileSize),
+          data = imageData.data,
+          found = false;
+        for(var i=0; i<data.length; i++)
+          if(data[i] != 0) {
+            found = true;
+            break;
+          }
+        if(!found)
+          continue;
+        region.push(location.toData());
+      }
+    }
+    return region;
+  };
 }
 
 /**
@@ -49,45 +68,49 @@ function deleteRegionPaths(regionPaths) {
  */
 module.exports = {
   /**
-   * Commits the given region paths to the database
-   * @method commit
-   * @param client
-   * @param regionPaths
-   * @param actionId
-   * @param callback
+   * @method applyDelta
+   * @param baseCanvas {Canvas}
+   * @param deltaCanvas {Canvas}
+   * @param action {Action}
+   * @param callback {Function(Error, Canvas)} returns the resulting canvas
    */
-  commit: function(client, regionPaths, actionId, callback) {
-    var deltas = _.map(regionPaths, function(location, path) { return { location: location, path: path }; })
-    var index = 0;
-    function step() {
-      if(index >= deltas.length) {
-        callback();
-        return;
+  applyDelta: function(baseCanvas, deltaCanvas, action, callback) {
+    try {
+      //callback(new Error("Deltas.applyDelta: Not implemented yet."));
+      var size = Config.TILE_SIZE,
+        resultCanvas = new Canvas(size, size),
+        g = resultCanvas.getContext("2d"),
+        bg = baseCanvas.getContext("2d");
+      //draw base revision
+      g.putImageData(bg.getImageData(0, 0, size, size), 0, 0);
+
+      //draw delta
+      switch(action.type) {
+        case "BRUSH":  g.globalCompositeOperation = "none"; break;
+        case "ERASER": g.globalCompositeOperation = "destination-out"; break;
       }
-      var delta = deltas[index];
-      index++;
-      client.query("INSERT INTO deltas (col, row, actionId, imagePath) VALUES (?, ?, ?, ?)",
-        [delta.location.column, delta.location.row, actionId, delta.path], function(err)
-        {
-          if(err) { callback(err); return; }
-          step();
-        });
-    }
-    step();
+      var deltaImage = new Canvas.Image();
+      deltaImage.src = deltaCanvas.toBuffer();
+      g.drawImage(deltaImage, 0, 0, size, size);
+
+      //return result
+      callback(null, resultCanvas);
+    } catch(ex) { callback(ex); }
   },
-  /**
-   * @method deleteRegion
-   * @param region
-   */
-  deleteRegionPaths: deleteRegionPaths,
+
   /**
    * @method draw
-   * @param client
+   * @param actionId
    * @param action
-   * @param callback
+   * @param callback {Function(error, Delta)}
    */
-  draw: function(client, action, callback) {
+  draw: function(actionId, action, callback) {
     try {
+      var delta = deltasCache.get(actionId);
+      if(delta != null) {
+        callback(null, delta);
+        return;
+      }
       //estimate region
       var stroke = _.map(action.stroke, function(pt) { return new Point(pt.x, pt.y); });
       var bb = new BoundingBox();
@@ -123,54 +146,9 @@ module.exports = {
       });
       g.stroke();
 
-      //determine affected region
-      var regionPaths = {},
-        finished = false,
-        tilesCount = 0,
-        error = null;
-
-      function rollback() {
-        if(tilesCount == 0 && finished && error) {
-          deleteRegionPaths(regionPaths);
-          callback(error);
-        }
-      }
-
-      for(var col=locationMin.column; col.lesserOrEquals(locationMax.column); col=col.next()) {
-        for(var row=locationMin.row; row.lesserOrEquals(locationMax.row); row=row.next()) {
-          //analyze tile
-          var location = new TileLocation(col, row),
-            position = location.toPoint().minus(leftTop),
-            imageData = g.getImageData(position.x.toJSNumber(), position.y.toJSNumber(), tileSize, tileSize),
-            data = imageData.data,
-            found = false;
-          for(var i=0; i<data.length; i++)
-            if(data[i] != 0) {
-              found = true;
-              break;
-            }
-          if(!found)
-            continue;
-          //tile is affected, save it
-          tilesCount++;
-          var tileCanvas = new Canvas(tileSize, tileSize);
-          tileCanvas.getContext("2d").putImageData(imageData, 0, 0);
-          saveImage(client, tileCanvas, (function(location) {
-            return function(err, path) {
-              tilesCount--;
-              if(err) {
-                error = err;
-                rollback();
-                return;
-              }
-              regionPaths[path] = location.toData();
-              if(tilesCount == 0 && finished && !error)
-                callback(null, regionPaths);
-            };
-          })(location));
-        }
-      }
-      finished = true;
+      var result = new Delta(locationMin, locationMax, canvas);
+      deltasCache.set(actionId, result);
+      callback(null, result);
     } catch(ex) {
       callback(ex);
     }

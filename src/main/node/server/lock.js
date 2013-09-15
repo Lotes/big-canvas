@@ -7,9 +7,8 @@ var EventEmitter = require('events').EventEmitter;
  */
 function Mutex() {
   var self = this;
-  var queue = new EventEmitter();
+  var queue = [];
   var locked = false;
-  queue.setMaxListeners(0);
 
   /**
    * @method acquire
@@ -17,7 +16,7 @@ function Mutex() {
    */
   self.acquire = function(fn) {
     if (locked) {
-      queue.once('ready', function() { self.acquire(fn); });
+      queue.push(fn);
     } else {
       locked = true;
       fn();
@@ -29,7 +28,10 @@ function Mutex() {
    */
   self.release = function() {
     locked = false;
-    queue.emit('ready');
+    if(queue.length > 0) {
+      var fn = queue.shift();
+      self.acquire(fn);
+    }
   };
 };
 
@@ -49,8 +51,8 @@ module.exports = function(key, callback) {
   mutex.acquire(function() {
     //console.log("acquired "+key);
     callback(function() {
-      mutex.release();
       //console.log("released "+key);
+      mutex.release();
     });
   });
 };

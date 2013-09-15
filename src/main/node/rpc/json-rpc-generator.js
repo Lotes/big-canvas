@@ -424,7 +424,7 @@ var Generator = function(schemeText) {
                         if(fn.returns.validate(result))
                           callback(null, result);
                         else
-                          callback(new Error("Invalid result."));
+                          callback(new Error("Invalid result ("+JSON.stringify(result)+")."));
                     });
                     //add socket
                     paramsList.unshift(socket);
@@ -489,7 +489,7 @@ var Generator = function(schemeText) {
                 var formalParam = fn.parameters[i];
                 var actualParam = arguments[i+1];
                 if(!formalParam.type.validate(actualParam))
-                  throw new Error("Invalid argument ("+(i+1)+")!");
+                  throw new Error("Invalid argument ("+(i+1)+". argument: "+JSON.stringify(actualParam)+")!");
                 paramsList.push(actualParam);
               }
               //send the event

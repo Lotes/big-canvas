@@ -112,6 +112,15 @@ TileLocation.prototype.toPoint = function() {
 };
 
 /**
+ * Compares this tile location with another for equality.
+ * @param other {TileLocation}
+ * @returns {Boolean} true, iff column and row are equal
+ */
+TileLocation.prototype.equals = function(other) {
+  return this.column.equals(other.column) && this.row.equals(other.row);
+};
+
+/**
  * A bounding box in 2D. This implementation uses big integers for the limits.
  * @class BoundingBox
  * @constructor

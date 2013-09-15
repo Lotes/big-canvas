@@ -1,3 +1,5 @@
+/* */
+
 var DatabaseConnection = require("./DatabaseConnection");
 var Sessions = require("./data/Sessions");
 

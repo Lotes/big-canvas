@@ -5,6 +5,8 @@ var TileLocation = Types.TileLocation;
 var _ = require("underscore");
 var Backbone = require("backbone");
 
+
+// why is this here?
 function isEmptyObject(obj) {
   for(var prop in obj)
     if(obj.hasOwnProperty(prop))
@@ -12,10 +14,18 @@ function isEmptyObject(obj) {
   return true;
 }
 
+/**
+ * TODO is it really a queue or a table?
+ * @constructor
+ */
 function RenderJobQueue() {
   this.locations = {};
 }
 
+/**
+ * @param location describing the job
+ * @returns {boolean} whether it exists
+ */
 RenderJobQueue.prototype.exists = function(location) {
   if(!(location.column in this.locations))
     return false;
@@ -23,17 +33,29 @@ RenderJobQueue.prototype.exists = function(location) {
   return (location.row in rows);
 };
 
+/**
+ * Registers the location of the job within the queue
+ *
+ * @param location describing the job
+ * @returns {boolean} has this job been added by this operation
+ */
 RenderJobQueue.prototype.add = function(location) {
   if(this.exists(location))
     return false;
   if(!(location.column in this.locations))
     this.locations[location.column] = {};
-  var rows = this.locations[location.column];
+    // TODO is indentation here correct?
+    var rows = this.locations[location.column];
   if(!(location.row in rows))
     rows[location.row] = true;
   return true;
 };
 
+/**
+ * Removes the job from the queue
+ *
+ * @param location describing the job
+ */
 RenderJobQueue.prototype.remove = function(location) {
   if(!this.exists(location))
     return;

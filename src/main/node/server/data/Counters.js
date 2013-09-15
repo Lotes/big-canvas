@@ -36,7 +36,7 @@ module.exports = {
   lockActionsCounter: function(callback) {
     lock("counters/actions", callback);
   },
-  lockDeltasCounter: function(callback) {
-    lock("counters/deltas", callback);
+  lockVersionsCounter: function(callback) {
+    lock("counters/versions", callback);
   }
 };
