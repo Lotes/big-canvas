@@ -1,3 +1,4 @@
+```
 type RevisionId = BigInteger
 struct Revision {
 	revisionId: RevisionId;
@@ -38,7 +39,6 @@ interface Main {
 }
 
 /*
-Ablauf:
 -login
 -sendWindow(x,y,w,h)
 -onUpdate(us) --> history for each tile
@@ -47,3 +47,4 @@ Ablauf:
 -draw
 -ready!
 */
+```
