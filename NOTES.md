@@ -22,10 +22,11 @@ struct Update {
     case RENDERED:
       location: TileLocation; //which revisions are avaiblable now?
       revisionId: RevisionId;
-	case HISTORY:
-	  location: TileLocation;
-	  baseRevisionId: RevisionId; //-1 or available
-	  tailRevisions: Revisions;
+    case HISTORY:
+      location: TileLocation;
+      baseRevisionId: RevisionId;
+      available: Boolean;
+      tailRevisions: Revisions;
   };
 }
 type Updates = list of Update
