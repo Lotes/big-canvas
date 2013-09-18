@@ -30,7 +30,6 @@ struct Update {
     case HISTORY:
       location: TileLocation;
       baseRevisionId: RevisionId;
-      available: Boolean;
       tailRevisions: Revisions;
   };
 }

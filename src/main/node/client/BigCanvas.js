@@ -309,11 +309,6 @@ function BigCanvas(element) {
   }
 
   var client = new generator.Interfaces.Main.Client({
-    onAction: function(userId, actionId, action, updates) {
-      console.log("user: "+userId+"; action: "+actionId);
-      console.log(updates);
-      //TODO
-    },
     onUpdate: function(updates) {
       console.log(updates);
       //TODO
@@ -325,12 +320,9 @@ function BigCanvas(element) {
         y = center.y.minus(Math.floor(height/2));
     refresh();
     //send window
-    client.setWindow(x.toString(), y.toString(), width, height, function(err, updates) {
+    client.setWindow(x.toString(), y.toString(), width, height, function(err) {
       if(err)
         alert("Error while sending new window: "+err.message);
-      else
-        ; //console.log(updates);
-      //TODO...
     });
   }
   self.moveTo = function(ctr) {

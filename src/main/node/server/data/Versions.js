@@ -7,6 +7,14 @@ var tilesCache = new Cache(1024); //TODO move cache size to config
 var fs = require("fs");
 var Counters = require("./Counters");
 
+/**
+ * returns the number (index) of the given action on the given tile
+ * @method getActionOrderIndex
+ * @param client {MySQLClient}
+ * @param location {TileLocation}
+ * @param actionId {ActionId}
+ * @param callback {Function(err,Integer)}
+ */
 function getActionOrderIndex(client, location, actionId, callback) {
   client.query("SELECT orderIndex FROM tileActions WHERE col=? AND row=? AND actionId=? LIMIT 1",
     [location.column, location.row, actionId], function(err, results)
@@ -17,6 +25,14 @@ function getActionOrderIndex(client, location, actionId, callback) {
   });
 }
 
+/**
+ * returns the action id before the given action index on the given tile. If there is no predecessor, nothing will be returned
+ * @method getPreviousActionByOrderIndex
+ * @param client
+ * @param location
+ * @param orderIndex
+ * @param callback
+ */
 function getPreviousActionByOrderIndex(client, location, orderIndex, callback) {
   client.query("SELECT a.id AS id FROM tileActions ta INNER JOIN actions a ON ta.actionId=a.id "+
     "WHERE ta.col=? AND ta.row=? AND ta.orderIndex<? AND a.undone=0 ORDER BY ta.orderIndex DESC LIMIT 1",
@@ -197,38 +213,23 @@ function updateTileHistory(client, location, actionId, callback) {
   });
 }
 
-function getFirstUndrawnVersion(client, location, callback) {
+function getTileHistoryByLocation(client, location, callback) {
   getTile(client, location, function(err, tile) {
     if(err) { callback(err); return; }
     if(!tile || !tile.currentRevisionId) {
       //empty tile
       callback(null, {
-        operationsLeft: 0,
         baseRevisionId: null,
-        newRevisionId: null,
-        newActionId: null
+        tailRevisions: []
       });
     } else {
       var versions = [];
       function step(revisionId) {
         if(revisionId == null) {
-          if(versions.length > 0) {
-            var last = versions[versions.length-1];
-            callback(null, {
-              operationsLeft: versions.length,
-              baseRevisionId: null,
-              newRevisionId: last.revisionId,
-              newActionId: last.actionId
-            });
-          } else {
-            //empty tile
-            callback(null, {
-              operationsLeft: versions.length,
-              baseRevisionId: null,
-              newRevisionId: null,
-              newActionId: null
-            });
-          }
+          callback(null, {
+            baseRevisionId: null,
+            tailRevisions: versions
+          });
         } else {
           client.query("SELECT actionId, imagePath FROM versions WHERE col=? AND row=? AND revisionId=?",
             [location.column, location.row, revisionId], function(err, results)
@@ -238,9 +239,9 @@ function getFirstUndrawnVersion(client, location, callback) {
               var version = {
                 revisionId: revisionId,
                 actionId: results[0].actionId,
-                imagePath: results[0].imagePath
+                available: results[0].imagePath != null
               };
-              if(version.imagePath == null) {
+              if(!version.available) {
                 //bad, walk to parent version
                 versions.push(version);
                 getParentVersion(client, location, revisionId, function(err, parentRevisionId) {
@@ -249,22 +250,10 @@ function getFirstUndrawnVersion(client, location, callback) {
                 });
               } else {
                 //good, search is over
-                if(versions.length > 0) {
-                  var last = versions[versions.length-1];
-                  callback(null, {
-                    operationsLeft: versions.length,
-                    baseRevisionId: version.revisionId,
-                    newRevisionId: last.revisionId,
-                    newActionId: last.actionId
-                  });
-                } else {
-                  callback(null, {
-                    operationsLeft: 0,
-                    baseRevisionId: version.revisionId,
-                    newRevisionId: null,
-                    newActionId: null
-                  });
-                }
+                callback(null, {
+                  baseRevisionId: revisionId,
+                  tailRevisions: versions
+                });
               }
             });
         }
@@ -385,8 +374,8 @@ module.exports = {
     }
     step();
   },
-  getFirstUndrawnVersion: getFirstUndrawnVersion,
-  getStates: function(client, region, callback) {
+  getTileHistoryByLocation: getTileHistoryByLocation,
+  getTileHistoryByRegion: function(client, region, callback) {
     var index = 0,
         result = [];
     function step() {
@@ -395,10 +384,12 @@ module.exports = {
       else {
         var location = region[index];
         index++;
-        getFirstUndrawnVersion(client, location, function(err, state) {
+        getTileHistoryByLocation(client, location, function(err, update) {
           if(err) { callback(err); return; }
-          state.location = location;
-          result.push(state);
+          update.location = location;
+          update.type = "HISTORY";
+          update.baseRevisionId = update.baseRevisionId != null ? update.baseRevisionId : "-1";
+          result.push(update);
           step();
         });
       }

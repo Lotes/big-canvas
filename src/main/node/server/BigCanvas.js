@@ -69,17 +69,34 @@ function BigCanvas() {
     lock("canvas", callback);
   }
 
+  function enqueueUpdate(socketId, update) {
+    if(!(socketId in updateQueue))
+      updateQueue[socketId] = {
+        createdOn: new Date().getTime(),
+        updates: [update]
+      };
+    else
+      updateQueue[socketId].updates.push(update);
+  }
+
   function enqueueTileUpdate(tileUpdate) {
     var location = tileUpdate.location;
     var socketIds = windowTree.getWindowsByLocation(location);
     _.each(socketIds, function(socketId) {
-      if(!(socketId in updateQueue))
-        updateQueue[socketId] = {
-          createdOn: new Date().getTime(),
-          updates: [tileUpdate]
-        };
-      else
-        updateQueue[socketId].updates.push(tileUpdate);
+      enqueueUpdate(socketId, tileUpdate);
+    });
+  }
+
+  function enqueueActionUpdate(actionId, action, userId, region) {
+    var actionUpdate = {
+      type: "ACTION",
+      actionId: actionId,
+      action: action,
+      userId: userId
+    };
+    var socketIds = windowTree.getWindowsByRegion(region);
+    _.each(socketIds, function(socketId) {
+      enqueueUpdate(socketId, actionUpdate);
     });
   }
 
@@ -121,33 +138,19 @@ function BigCanvas() {
           unlock();
           jobStep(location);
         }
-        Versions.getFirstUndrawnVersion(connection, location, function(err, result) {
+        Versions.getTileHistoryByLocation(connection, location, function(err, result) {
           if(err) { fail(err); return; }
           try {
-            if(result.operationsLeft == 0) {
-              /*if(result.newRevisionId)
-                enqueueTileUpdate({
-                  type: "TILE",
-                  location: location,
-                  empty: false,
-                  operationsLeft: 0,
-                  parentRevisionId: result.baseRevisionId!=null ? result.baseRevisionId : "-1",
-                  revisionId: result.newRevisionId,
-                  actionId: result.newActionId
-                });
-              else
-                enqueueTileUpdate({
-                  type: "TILE",
-                  location: location,
-                  empty: true
-                }); */
+            if(result.tailRevisions.length == 0) {
               jobs.remove(location);
               unlock();
               return; //exit eventually
             }
             Versions.getRevision(connection, location, result.baseRevisionId, function(err, baseCanvas) {
               if(err) { fail(err); return; }
-              var actionId = result.newActionId;
+              var revision = result.tailRevisions[0];
+              var revisionId = revision.revisionId;
+              var actionId = revision.actionId;
               Actions.get(connection, actionId, function(err, actionData) {
                 if(err) { fail(err); return; }
                 var action = actionData["actionObject"];
@@ -157,18 +160,14 @@ function BigCanvas() {
                     var deltaCanvas = delta.getTile(location);
                     Deltas.applyDelta(baseCanvas, deltaCanvas, action, function(err, resultCanvas) {
                       if(err) { fail(err); return; }
-                      Versions.setRevision(connection, location, result.newRevisionId, resultCanvas, function(err) {
+                      Versions.setRevision(connection, location, revisionId, resultCanvas, function(err) {
                         if(err) { fail(err); return; }
                         //broadcast
                         try {
                           enqueueTileUpdate({
-                            type: "TILE",
+                            type: "RENDERED",
                             location: location,
-                            empty: false,
-                            operationsLeft: result.operationsLeft - 1,
-                            parentRevisionId: result.baseRevisionId!=null ? result.baseRevisionId : "-1",
-                            revisionId: result.newRevisionId,
-                            actionId: result.newActionId
+                            revisionId: revisionId
                           });
                           //finally close the step
                           success();
@@ -208,6 +207,10 @@ function BigCanvas() {
       delete sockets[socketId];
     },
     //remote procedure call implementations
+    requestActions: function(socket, actionIds, callback) {
+      //TODO
+      callback();
+    },
     setWindow: function(socket, x, y, width, height, callback) {
       try {
         var oldWindow = socket.getWindow(),
@@ -231,23 +234,12 @@ function BigCanvas() {
               _.each(region, addRenderJob);
               Tiles.lock(region, function(tilesDone) {
                 locks.unshift(tilesDone);
-                Versions.getStates(connection, region, function(err, states) {
+                Versions.getTileHistoryByRegion(connection, region, function(err, updates) {
                   if(err) { fail(err); return; }
-                  var updates = _.map(states, function(state) {
-                    var update = {
-                      type: "TILE",
-                      location: state.location
-                    };
-                    update.empty = state.operationsLeft == 0 && state.baseRevisionId == null;
-                    if(!update.empty) {
-                      update.operationsLeft = state.operationsLeft;
-                      update.parentRevisionId = state.baseRevisionId != null ? state.baseRevisionId : "-1";
-                      update.revisionId = state.newRevisionId != null ? state.newRevisionId : "-1";
-                      update.actionId = state.newActionId != null ? state.newActionId : "-1";
-                    }
-                    return update;
+                  _.each(updates, function(update) {
+                    enqueueTileUpdate(update);
                   });
-                  callback(null, updates);
+                  callback();
                   unlock();
                 });
               });
@@ -262,12 +254,7 @@ function BigCanvas() {
       var server = this;
       function broadcastAndRender(actionId, action, userId, region, updates) {
         //broadcast
-        var socketIds = windowTree.getWindowsByRegion(region);
-        _.each(socketIds, function(socketId) {
-          var socket = sockets[socketId];
-          if(socket) //TODO dirty...
-            server.onAction(socket, userId, actionId, action, updates);
-        });
+        enqueueActionUpdate(actionId, action, userId, region);
         //render
         _.each(region, addRenderJob);
       }

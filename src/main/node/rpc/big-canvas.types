@@ -100,28 +100,27 @@ type RevisionId = BigInteger
 struct Revision {
   revisionId: RevisionId;
   actionId: ActionId;
+  available: Boolean;
 }
 type Revisions = list of Revision
 
 /* updates */
 enum UpdateType {
-  TILE,
-  HISTORY
+  RENDERED,
+  HISTORY,
+  ACTION
 }
 
 struct Update {
   type: UpdateType match {
-    case TILE:
+    case ACTION: //executed actions
+      actionId: ActionId;
+      action: Action;
+      userId: UserId;
+    case RENDERED: //available revisions
       location: TileLocation;
-      empty: Boolean match {
-        case true:
-        case false:
-          operationsLeft: Integer;
-          revisionId: RevisionId;
-          parentRevisionId: RevisionId;
-          actionId: ActionId;
-      };
-    case HISTORY:
+      revisionId: RevisionId;
+    case HISTORY: //current version branch
       location: TileLocation;
       baseRevisionId: RevisionId;
       tailRevisions: Revisions;
@@ -131,13 +130,10 @@ type Updates = list of Update
 
 /* interface */
 interface Main {
-  //window update
-  function setWindow(x: BigInteger, y: BigInteger, width: WindowWidth, height: WindowHeight): Updates;
-  event onUpdate(updates: Updates);
-
-  //sending and receiving actions
+  function requestActions(actionIds: ActionIds);
   function sendAction(action: Action): ActionId;
-  event onAction(userId: UserId, actionId: ActionId, action: Action, updates: Updates);
+  function setWindow(x: BigInteger, y: BigInteger, width: WindowWidth, height: WindowHeight);
+  event onUpdate(updates: Updates);
 
   //user
   function getName(userId: UserId): String;
@@ -147,5 +143,5 @@ interface Main {
   //function getNextAction(): ActionDataOption;
 
   //images
-  function defineImage(x: BigInteger, y: BigInteger, width: ImageWidth, height: ImageHeight): ImageId;
+  //function defineImage(x: BigInteger, y: BigInteger, width: ImageWidth, height: ImageHeight): ImageId;
 }
