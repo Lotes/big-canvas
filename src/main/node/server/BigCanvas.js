@@ -208,8 +208,41 @@ function BigCanvas() {
     },
     //remote procedure call implementations
     requestActions: function(socket, actionIds, callback) {
-      //TODO
-      callback();
+      var connection = new DatabaseConnection();
+      connection.connect(function(err) {
+        if(err) { connection.end(); callback(err); return; }
+        var index = 0;
+        function step() {
+          if(index >= actionIds.length) {
+            connection.end();
+            callback();
+          } else {
+            var actionId = actionIds[index];
+            index++;
+            Actions.get(connection, actionId, function(err, action) {
+              if(err) {
+                connection.end();
+                callback(err);
+                return;
+              }
+              try {
+                //TODO check if user window intersects the region of the action
+                enqueueUpdate(socket.getId(), {
+                  type: "ACTION",
+                  actionId: actionId,
+                  action: action.actionObject,
+                  userId: action.userId
+                });
+                step();
+              } catch(ex) {
+                connection.end();
+                callback(ex);
+              }
+            });
+          }
+        }
+        step();
+      });
     },
     setWindow: function(socket, x, y, width, height, callback) {
       try {
@@ -529,17 +562,6 @@ function BigCanvas() {
           });
         });
       });
-    },
-    getName: function(socket, userId, callback) {
-      console.log("get name...");
-      callback(null, "username");
-    },
-    setName: function(socket, name, callback) {
-      console.log("set name of user "+socket.getUserId()+" to '"+name+"'.");
-      callback();
-    },
-    defineImage: function(socket, x, y, width, height, callback) {
-      callback(null, "123");
     }
   });
 }

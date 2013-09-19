@@ -136,8 +136,8 @@ interface Main {
   event onUpdate(updates: Updates);
 
   //user
-  function getName(userId: UserId): String;
-  function setName(name: String);
+  //function getName(userId: UserId): String;
+  //function setName(name: String);
   //function getUserInfo(): UserData;
   //function getLastAction(): ActionDataOption;
   //function getNextAction(): ActionDataOption;
