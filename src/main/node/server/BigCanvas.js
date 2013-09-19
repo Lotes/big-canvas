@@ -255,6 +255,9 @@ function BigCanvas() {
       function broadcastAndRender(actionId, action, userId, region, updates) {
         //broadcast
         enqueueActionUpdate(actionId, action, userId, region);
+        _.each(updates, function(update) {
+           enqueueTileUpdate(update);
+        });
         //render
         _.each(region, addRenderJob);
       }

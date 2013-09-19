@@ -103,17 +103,17 @@ function getParentVersion(client, location, revisionId, callback) {
 
 function getBaseRevision(client, location, revisionId, baseActionId, callback) {
   if(baseActionId == null || revisionId == null) {
-    callback(null, null);
+    callback(null, null, false);
     return;
   }
   function step(revisionId) {
-    client.query("SELECT actionId FROM versions WHERE col=? AND row=? AND revisionId=? LIMIT 1",
+    client.query("SELECT actionId, imagePath FROM versions WHERE col=? AND row=? AND revisionId=? LIMIT 1",
       [location.column, location.row, revisionId], function(err, results)
     {
       if(err) { callback(err); return; }
       if(results.length == 0) { callback(new Error("Revision does not exist.")); return; }
       if(results[0].actionId == baseActionId) {
-        callback(null, revisionId);
+        callback(null, revisionId, results[0].imagePath != null);
         return;
       }
       getParentVersion(client, location, revisionId, function(err, parentRevisionId) {
@@ -132,25 +132,25 @@ function getBaseRevision(client, location, revisionId, baseActionId, callback) {
  * @param nextRevisionIdGenerator
  * @param parentRevisionId
  * @param actionId
- * @param callback {Function(err, revisionId)}
+ * @param callback {Function(err, revisionId, available)}
  */
 function addVersion(client, location, nextRevisionIdGenerator, parentRevisionId, actionId, callback) {
   //does a version with that parent and that action already exist?
-  client.query("SELECT revisionId FROM versions WHERE col=? AND row=? AND parentRevisionId=? AND actionId=? LIMIT 1",
+  client.query("SELECT revisionId, imagePath FROM versions WHERE col=? AND row=? AND parentRevisionId=? AND actionId=? LIMIT 1",
     [location.column, location.row, parentRevisionId, actionId], function(err, results)
   {
     if(err) { callback(err); return; }
     if(results.length == 1)
       //yes, return revision id
-      callback(null, results[0].revisionId);
+      callback(null, results[0].revisionId, results[0].imagePath != null);
     else {
       //no, generate a new version and return the new revision id
       var revisionId = nextRevisionIdGenerator();
       client.query("INSERT INTO versions (col, row, revisionId, parentRevisionId, actionId, imagePath)"+
-        "VALUES (?,?,?,?,?,?)", [location.column, location.row, revisionId, parentRevisionId, actionId, null, null],
+        "VALUES (?,?,?,?,?,?)", [location.column, location.row, revisionId, parentRevisionId, actionId, null],
       function(err) {
         if(err) callback(err);
-        else callback(null, revisionId);
+        else callback(null, revisionId, false);
       });
     }
   });
@@ -159,13 +159,10 @@ function addVersion(client, location, nextRevisionIdGenerator, parentRevisionId,
 function updateTileHistory(client, location, actionId, callback) {
   getActionOrderIndex(client, location, actionId, function(err, actionIndex) {
     if(err) { callback(err); return; }
-    //console.log("order index of action "+actionId+" is "+actionIndex);
     getPreviousActionByOrderIndex(client, location, actionIndex, function(err, baseActionId) {
       if(err) { callback(err); return; }
-      //console.log("previous action is "+baseActionId);
       getTailActionIds(client, location, actionIndex, function(err, tailActionIds) {
         if(err) { callback(err); return; }
-        //console.log("tail actions are ", tailActionIds);
         getTile(client, location, function(err, tile) {
           if(err) { callback(err); return; }
           if(tile == null)
@@ -180,7 +177,7 @@ function updateTileHistory(client, location, actionId, callback) {
             nextRevisionId = nextRevisionId.next();
             return result;
           }
-          getBaseRevision(client, location, tile.currentRevisionId, baseActionId, function(err, baseRevisionId) {
+          getBaseRevision(client, location, tile.currentRevisionId, baseActionId, function(err, baseRevisionId, baseAvailable) {
             if(err) { callback(err); return; }
             var parentRevisionId = baseRevisionId;
             var tailIndex = 0;
@@ -189,17 +186,54 @@ function updateTileHistory(client, location, actionId, callback) {
               if(tailIndex >= tailActionIds.length) {
                 setTile(client, location, parentRevisionId, nextRevisionId.toString(), function(err) {
                   if(err) callback(err);
-                  else callback(null, baseRevisionId, tail);
+                  else {
+                    if(baseRevisionId==null || baseAvailable)
+                      callback(null, baseRevisionId!=null ? baseRevisionId : "-1", tail);
+                    else {
+                      tail.unshift({
+                        revisionId: baseRevisionId,
+                        actionId: baseActionId,
+                        available: false
+                      });
+                      function predStep(revisionId) {
+                        getParentVersion(client, location, revisionId, function(err, parentRevisionId) {
+                          if(err) { callback(err); return; }
+                          if(parentRevisionId == null) {
+                            callback(null, "-1", tail);
+                          } else {
+                            client.query("SELECT actionId, imagePath FROM versions WHERE col=? AND row=? AND revisionId=? LIMIT 1",
+                              [location.column, location.row, parentRevisionId], function(err, results)
+                              {
+                                if(err) { callback(err); return; }
+                                if(results.length == 0) { callback(new Error("Unexpected: Revision parent does not exist!")); return; }
+                                if(results[0].imagePath != null) {
+                                  callback(null, parentRevisionId, tail);
+                                } else {
+                                  tail.unshift({
+                                    revisionId: parentRevisionId,
+                                    actionId: results[0].actionId,
+                                    available: false
+                                  });
+                                  predStep(parentRevisionId);
+                                }
+                              });
+                          }
+                        });
+                      }
+                      predStep(baseRevisionId);
+                    }
+                  }
                 });
               } else {
                 var actionId = tailActionIds[tailIndex];
                 tailIndex++;
-                addVersion(client, location, generateNextRevisionId, parentRevisionId, actionId, function(err, revisionId) {
+                addVersion(client, location, generateNextRevisionId, parentRevisionId, actionId, function(err, revisionId, available) {
                   if(err) { callback(err); return; }
                   parentRevisionId = revisionId;
                   tail.push({
                     revisionId: revisionId,
-                    actionId: actionId
+                    actionId: actionId,
+                    available: available
                   });
                   step();
                 });
