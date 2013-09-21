@@ -2,9 +2,11 @@
 
 ## Read-only mode
 * [Muro](http://muro.deviantart.com/)
+
 ### User
   * name (get/set)
   * email?
+
 ### Comments
   * for each layer or global?
   * comments have a layer attribute, which can be null for global comments
@@ -12,9 +14,6 @@
   * like functionality
   * markers like in google maps
   * comments in a collapsable sidebar
-  * WYSIWYG-Editor
-    * bold, italic, underlined?
-    * font-size and color
   * answer functionality
 ![Comments](comments.png)
 
@@ -24,11 +23,14 @@
  * visible
  * opacity
  * fixed id color?
+![Layers](layers.png)
+
 ### Main menu?
  * file
  * edit
  * contact
  * help
+
 ### Library?
  * uploaded images
  * live images
