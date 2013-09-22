@@ -15,6 +15,7 @@
   * markers like in google maps
   * comments in a collapsable sidebar
   * answer functionality
+  
 ![Comments](comments.png)
 
 ### Layers
@@ -23,6 +24,7 @@
  * visible
  * opacity
  * fixed id color?
+
 ![Layers](layers.png)
 
 ### Main menu?
