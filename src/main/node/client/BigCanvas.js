@@ -534,10 +534,10 @@ function BigCanvas(element) {
       type: "UNDO"
     };
     client.sendAction(action, function(err, actionId) {
-      if(err)
+      if(err) //TODO
         console.log(err);
       else
-        console.log(actionId);
+        console.log("undo action "+actionId);
     });
   };
   self.redo = function() {
@@ -545,10 +545,10 @@ function BigCanvas(element) {
       type: "REDO"
     };
     client.sendAction(action, function(err, actionId) {
-      if(err)
+      if(err) //TODO
         console.log(err);
       else
-        console.log(actionId);
+        console.log("redo action "+actionId);
     });
   };
 
