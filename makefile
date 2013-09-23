@@ -2,6 +2,7 @@ all:
 	make build-definition
 	make build-parser
 	make build-client
+	make build-style
 	make run
 
 dependencies:
@@ -28,6 +29,9 @@ build-parser:
 build-client:
 	browserify src/main/node/client/main.js -o public/bigcanvas.js
 
+build-style:
+	lessc public/bigcanvas.less public/bigcanvas.css
+	
 run:
 	node src/main/node/server/main.js
 

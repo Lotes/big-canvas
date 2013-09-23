@@ -1,0 +1,46 @@
+<html>
+<head>
+	<title>big-canvas - gui prototype</title>
+    <script type="text/javascript" src="jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="mousetrap.min.js"></script>
+	<link type="text/css" rel="stylesheet" href="bigcanvas.css"/>
+</head>
+<body>
+	<div id="header" region="north">
+		big-canvas
+	</div>
+	<div id="canvas" region="center">
+		the canvas :)
+	</div>
+	<div id="comments" region="east">
+		bla bla bla
+	</div>
+	<div id="toolsbar" region="south">
+		tools
+	</div>
+	<script>
+		$(function() {
+			var $header = $("#header"),
+				$comments = $("#comments"),
+				$canvas = $("#canvas"),
+				$toolsbar = $("#toolsbar");
+			function layout() {
+				var headerHeight = $header.height(),
+				    toolsbarHeight = $toolsbar.height(),
+					width = $header.width(),
+					height = $(document.body).height() - headerHeight - toolsbarHeight;
+				$header.css("left", "0px");
+				$header.css("top", "0px");
+				$toolsbar.css("left", "0px");
+				$toolsbar.css("bottom", "0px");
+				$canvas.css("left", "0px");
+				$canvas.css("top", headerHeight+"px");
+				$canvas.css("width", width+"px");
+				$canvas.css("height", height+"px");<
+			}
+			$(window).resize(layout);
+			layout();
+		});
+	</script>
+</body>
+</html>
