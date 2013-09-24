@@ -1,46 +1,55 @@
 <html>
 <head>
 	<title>big-canvas - gui prototype</title>
-    <script type="text/javascript" src="jquery-1.10.2.min.js"></script>
+	<!-- jquery -->
+    <script type="text/javascript" src="jquery.min.js"></script>
+	<!-- jquery layout -->
+	<script type="text/javascript" src="jquery.layout.min.js"></script>
+	<link type="text/css" rel="stylesheet" href="layout-default.css"/>
+	<!-- jquery ui -->
+	<script type="text/javascript" src="jquery-ui/js/jquery-ui-1.10.3.custom.min.js"></script>
+	<link type="text/css" rel="stylesheet" href="jquery-ui/css/custom-theme/jquery-ui-1.10.3.custom.min.css"/>
+	<!-- mouse trap -->
     <script type="text/javascript" src="mousetrap.min.js"></script>
+	<!-- big-canvas -->
 	<link type="text/css" rel="stylesheet" href="bigcanvas.css"/>
+	<script type="text/javascript">
+	$(document).ready(function () {
+		var layout = $('body').layout({
+			 pane__spacing: 0,
+			 north__resizable: false,
+			 north__closable: false,
+			 south__resizable: false,
+			 south__closable: false,
+			 north__spacing_open: 0,
+			 south__spacing_open: 0,
+			 east__resizable: false,
+			 east__closable: true,
+			 east__spacing_open: 0,
+			 east__spacing_closed: 0,
+			 
+			 paneClass: "region",
+			 north__paneSelector: "#header-region",
+			 east__paneSelector: "#comments-region",
+			 center__paneSelector: "#canvas-region",			 
+			 south__paneSelector: "#tools-region",
+			 
+			 north__size: 50,
+			 south__size: 50,
+			 east__size: 511
+		});
+		//layout.close("east");
+	});
+	</script>
 </head>
 <body>
-	<div id="header" region="north">
+	<div id="canvas-region" class="ui-layout-center">Canvas</div>
+	<div id="header-region" class="ui-layout-north">
 		big-canvas
 	</div>
-	<div id="canvas" region="center">
-		the canvas :)
+	<div id="tools-region" class="ui-layout-south">Tools</div>
+	<div id="comments-region" class="ui-layout-east">
+		Comments
 	</div>
-	<div id="comments" region="east">
-		bla bla bla
-	</div>
-	<div id="toolsbar" region="south">
-		tools
-	</div>
-	<script>
-		$(function() {
-			var $header = $("#header"),
-				$comments = $("#comments"),
-				$canvas = $("#canvas"),
-				$toolsbar = $("#toolsbar");
-			function layout() {
-				var headerHeight = $header.height(),
-				    toolsbarHeight = $toolsbar.height(),
-					width = $header.width(),
-					height = $(document.body).height() - headerHeight - toolsbarHeight;
-				$header.css("left", "0px");
-				$header.css("top", "0px");
-				$toolsbar.css("left", "0px");
-				$toolsbar.css("bottom", "0px");
-				$canvas.css("left", "0px");
-				$canvas.css("top", headerHeight+"px");
-				$canvas.css("width", width+"px");
-				$canvas.css("height", height+"px");<
-			}
-			$(window).resize(layout);
-			layout();
-		});
-	</script>
 </body>
 </html>
