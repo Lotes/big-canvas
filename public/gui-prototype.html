@@ -36,9 +36,12 @@
 			 
 			 north__size: 50,
 			 south__size: 50,
-			 east__size: 511
+			 east__size: 381 //like in google maps :D
 		});
 		//layout.close("east");
+		/*$(".button").button({
+			checked: true
+		});*/
 	});
 	</script>
 </head>
@@ -47,7 +50,25 @@
 	<div id="header-region" class="ui-layout-north">
 		big-canvas
 	</div>
-	<div id="tools-region" class="ui-layout-south">Tools</div>
+	<div id="tools-region" class="ui-layout-south">
+		<button class="toolsbutton">
+			Test
+		</button>
+		<button class="toolsbutton">
+			<span class="button-content">
+				<img src="images/layers.png"/>
+				<span class="text">Layer 1</span>
+			</span>
+		</button>
+		<button class="toolsbutton">
+			<img src="images/layers.png"/>
+			<span class="text">Brush</span>
+		</button>
+		<button class="toolsbutton">
+			<img src="images/layers.png"/>
+			<span class="text">Eraser</span>
+		</button>
+	</div>
 	<div id="comments-region" class="ui-layout-east">
 		Comments
 	</div>
