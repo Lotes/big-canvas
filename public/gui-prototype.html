@@ -39,35 +39,69 @@
 			 east__size: 381 //like in google maps :D
 		});
 		//layout.close("east");
-		/*$(".button").button({
-			checked: true
-		});*/
+		
+		var $layersButton = $("#layers-button");
+		var $layersDialog = $("#layers-dialog");
+		var $layersList = $("#layers-list");
+		var layersDialogVisible = false;
+		$layersButton.click(function() {
+			if(layersDialogVisible) {
+				$layersDialog.hide();
+				$layersButton.removeClass("button-activated");
+			} else {
+				var point = $(this).offset();
+				var height = $layersDialog.height();
+				var top = point.top - height - 1;
+				console.log(top);
+				$layersDialog.css("left", "0px");
+				$layersDialog.css("top", top+"px");
+				$layersDialog.show();
+				$layersButton.addClass("button-activated");
+			}
+			layersDialogVisible = !layersDialogVisible;
+		});
+		$layersDialog.hide();
+		$layersDialog.show();
+		
+		//$(".toolsbutton").button();
 	});
 	</script>
 </head>
 <body>
+	<div id="layers-dialog">
+		<div class="header">layers</div>
+		<div class="body">
+			<ul id="layers-list">
+				<li>
+					<div class="checkbox"></div>
+					<div class="checkbox"></div>
+					Layer 0 (100%)
+				</li>
+				<li>
+					<div class="checkbox"></div>
+					<div class="checkbox"></div>
+					Layer 1 (50%)
+				</li>
+			</ul>
+		</div>
+	</div>
 	<div id="canvas-region" class="ui-layout-center">Canvas</div>
 	<div id="header-region" class="ui-layout-north">
 		big-canvas
 	</div>
-	<div id="tools-region" class="ui-layout-south">
-		<button class="toolsbutton">
-			Test
-		</button>
-		<button class="toolsbutton">
+	<div id="tools-region" class="ui-layout-south">		
+		<div id="layers-button" class="toolsbutton">
 			<span class="button-content">
 				<img src="images/layers.png"/>
 				<span class="text">Layer 1</span>
 			</span>
-		</button>
-		<button class="toolsbutton">
+		</div>
+		<div class="toolsbutton">
 			<img src="images/layers.png"/>
-			<span class="text">Brush</span>
-		</button>
-		<button class="toolsbutton">
+		</div>
+		<div class="toolsbutton">
 			<img src="images/layers.png"/>
-			<span class="text">Eraser</span>
-		</button>
+		</div>
 	</div>
 	<div id="comments-region" class="ui-layout-east">
 		Comments

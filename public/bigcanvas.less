@@ -1,3 +1,10 @@
+@heading-color: #666666;
+@options-background-color: #DDDDDD;
+@options-border-color: #AAAAAA;
+@button-color: #DDDDDD;
+@button-hover-color: #EEEEEE;
+@button-activated-color: #CCCCCC;
+
 html, body {
 	width: 100%;
 	height: 100%;
@@ -7,13 +14,12 @@ html, body {
 }
 
 /* REGIONS */
-
 .region {
 
 }
 
 #header-region {
-	background-color: #666666;
+	background-color: @heading-color;
 	color: white;
 	font-size: 20px;
 	padding: 10px;
@@ -24,26 +30,93 @@ html, body {
 }
 
 #tools-region {
-	background-color: #DDDDDD;
+	background-color: @options-background-color;
+	border-top: 1px solid @options-border-color;
 }
 
 #comments-region {
-	background-color: #DDDDDD;
+	background-color: @options-background-color;
+	border-left: 1px solid @options-border-color;
 }
 
 /* TOOLS */
 .toolsbutton {
-	padding: 0px;
-	margin: 0px;
+	padding: 0.5em;
+	margin: 0;
 	height: 50px;
+	display: block;
+	float: left;
+	outline: 1px solid #AAAAAA;
+	cursor: pointer;
+	background-color: @button-color;
 	
 	img {
+		position: relative;
+		bottom: -2px;
 	}
 	
 	.text {
 		font-size: 20px;
-		height: 100%;
 		margin-left: 0.5em;
+		position: relative;
+		bottom: 8px;
 	}	
 }
 
+.toolsbutton:hover {
+	background-color: @button-hover-color;
+}
+
+.button-activated {
+	background-color: @button-activated-color;
+}
+
+/* LAYERS */
+#layers-dialog {
+	background-color: @button-activated-color;
+	border-top: 1px solid @options-border-color;
+	border-left: 1px solid @options-border-color;
+	border-right: 1px solid @options-border-color;
+	position: relative;
+	z-index: 10000;
+	width: 300px;
+	display: block;
+	
+	ul {
+		padding: 0;
+		margin: 0;
+		list-style-type: none;
+	}
+	
+	li {
+		padding: 0.5em;
+		background-color: @options-background-color;
+		cursor: pointer;
+		margin-bottom: 0.5em;
+		font-size: 20px;
+	}
+	li:hover {
+		background-color: #EEEEEE;
+	}
+	.checkbox {
+		border: 1px solid #AAAAAA;
+		background-color: #EEEEEE;
+		width: 32px;
+		height: 32px;
+		display: block;
+		float: left;
+		margin-right: 0.5em;
+	} 
+}
+
+.header {
+	font-size: 16px;
+	background-color: @heading-color;
+	color: white;
+	font-weight: bold;
+	padding: 0.1em 0.5em;
+}
+
+.body {
+	padding: 0.5em;
+}
