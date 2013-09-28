@@ -4,6 +4,8 @@
 @button-color: #DDDDDD;
 @button-hover-color: #EEEEEE;
 @button-activated-color: #CCCCCC;
+@button-padding: 0.5em;
+@tools-region-height: 50px;
 
 html, body {
 	width: 100%;
@@ -13,6 +15,13 @@ html, body {
 	overflow: hidden;
 }
 
+.unselectable {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+ 
 /* REGIONS */
 .region {
 
@@ -41,23 +50,26 @@ html, body {
 
 /* TOOLS */
 .toolsbutton {
-	padding: 0.5em;
+  .unselectable;
+	padding: @button-padding;
 	margin: 0;
-	height: 50px;
-	display: block;
-	float: left;
+	height: @tools-region-height;
 	outline: 1px solid #AAAAAA;
 	cursor: pointer;
 	background-color: @button-color;
+
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
 	
 	img {
 		position: relative;
 		bottom: -2px;
+    margin-right: @button-padding;
 	}
 	
 	.text {
 		font-size: 20px;
-		margin-left: 0.5em;
 		position: relative;
 		bottom: 8px;
 	}	
@@ -65,6 +77,10 @@ html, body {
 
 .toolsbutton:hover {
 	background-color: @button-hover-color;
+}
+
+.toolsbutton:active {
+	background-color: @button-activated-color;
 }
 
 .button-activated {
