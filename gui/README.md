@@ -67,3 +67,4 @@
 * [CMYK](http://colorizer.org/)
 * [Conversion formulas](http://www.easyrgb.com/index.php?X=MATH)
 * [Hexagon palette](http://www.w3schools.com/tags/ref_colormixer.asp)
+* comparsion with last color
