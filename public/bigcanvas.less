@@ -105,11 +105,27 @@ html, body {
 	}
 	
 	li {
-		padding: 0.5em;
 		background-color: @options-background-color;
 		cursor: pointer;
-		margin-bottom: 0.5em;
 		font-size: 20px;
+    
+    border-bottom: 1px solid #D8D8D8;
+    
+    height: 32px;
+    line-height: 32px;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
+    text-align: left;
+    width: 100%;
+    
+    .name {
+      color: #202020;
+      display: block;
+      margin-left: 5px;
+      overflow: hidden;
+      width: 215px;
+    }
 	}
 	li:hover {
 		background-color: #EEEEEE;
