@@ -1,0 +1,112 @@
+<html>
+<head>
+	<title>big-canvas - gui prototype</title>
+	<!-- jquery -->
+    <script type="text/javascript" src="jquery.min.js"></script>
+	<!-- jquery layout -->
+	<script type="text/javascript" src="jquery.layout.min.js"></script>
+	<link type="text/css" rel="stylesheet" href="layout-default.css"/>
+	<!-- jquery ui -->
+	<script type="text/javascript" src="jquery-ui/js/jquery-ui-1.10.3.custom.min.js"></script>
+	<link type="text/css" rel="stylesheet" href="jquery-ui/css/custom-theme/jquery-ui-1.10.3.custom.min.css"/>
+	<!-- mouse trap -->
+    <script type="text/javascript" src="mousetrap.min.js"></script>
+	<!-- big-canvas -->
+	<link type="text/css" rel="stylesheet" href="bigcanvas.css"/>
+	<script type="text/javascript">
+	$(document).ready(function () {
+		var layout = $('body').layout({
+			 pane__spacing: 0,
+			 north__resizable: false,
+			 north__closable: false,
+			 south__resizable: false,
+			 south__closable: false,
+			 north__spacing_open: 0,
+			 south__spacing_open: 0,
+			 east__resizable: false,
+			 east__closable: true,
+			 east__spacing_open: 0,
+			 east__spacing_closed: 0,
+			 
+			 paneClass: "region",
+			 north__paneSelector: "#header-region",
+			 east__paneSelector: "#comments-region",
+			 center__paneSelector: "#canvas-region",			 
+			 south__paneSelector: "#tools-region",
+			 
+			 north__size: 50,
+			 south__size: 50,
+			 east__size: 381 //like in google maps :D
+		});
+		//layout.close("east");
+		
+		var $layersButton = $("#layers-button");
+		var $layersDialog = $("#layers-dialog");
+		var $layersList = $("#layers-list");
+		var layersDialogVisible = false;
+		$layersButton.click(function() {
+			if(layersDialogVisible) {
+				$layersDialog.hide();
+				$layersButton.removeClass("button-activated");
+			} else {
+				var point = $(this).offset();
+				var height = $layersDialog.height();
+				var top = point.top - height - 1;
+				console.log(top);
+				$layersDialog.css("left", "0px");
+				$layersDialog.css("top", top+"px");
+				$layersDialog.show();
+				$layersButton.addClass("button-activated");
+			}
+			layersDialogVisible = !layersDialogVisible;
+		});
+		$layersDialog.hide();
+		//$layersDialog.show();
+		
+		//$(".toolsbutton").button();
+	});
+	</script>
+</head>
+<body>
+	<div id="layers-dialog">
+		<div class="header">layers</div>
+		<div class="body">
+			<ul id="layers-list">
+				<li>
+          <span class="name">Layer 1</span>
+          <div class="visibleButton"></div>
+					<div class="lockButton"></div>
+          <div class="opacityDisplay">100</div>
+				</li>
+        <li>
+          <span class="name">Layer 2</span>
+          <div class="visibleButton"></div>
+					<div class="lockButton"></div>
+          <div class="opacityDisplay">100</div>
+				</li>
+			</ul>
+		</div>
+	</div>
+	<div id="canvas-region" class="ui-layout-center">Canvas</div>
+	<div id="header-region" class="ui-layout-north">
+		big-canvas
+	</div>
+	<div id="tools-region" class="ui-layout-south">		
+		<div id="layers-button" class="toolsbutton">
+			<span class="button-content">
+				<img src="images/layers.png"/>
+				<span class="text">Layer 1</span>
+			</span>
+		</div>
+		<div class="toolsbutton">
+			<img src="images/layers.png"/>
+		</div>
+		<div class="toolsbutton">
+			<img src="images/layers.png"/>
+		</div>
+	</div>
+	<div id="comments-region" class="ui-layout-east">
+		Comments
+	</div>
+</body>
+</html>

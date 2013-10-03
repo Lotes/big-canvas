@@ -7,3 +7,5 @@ src/main/node/rpc/json-rpc-parser.js
 /yuidoc
 src/main/node/rpc/big-canvas.js
 /doc/dataModel.zargo~
+
+/public/bigcanvas.css

@@ -1,0 +1,154 @@
+@heading-color: #666666;
+@options-background-color: #DDDDDD;
+@options-border-color: #AAAAAA;
+@button-color: #DDDDDD;
+@button-hover-color: #EEEEEE;
+@button-activated-color: #CCCCCC;
+@button-padding: 0.5em;
+@tools-region-height: 50px;
+
+html, body {
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	margin: 0;
+	overflow: hidden;
+}
+
+.unselectable {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+ 
+/* REGIONS */
+.region {
+
+}
+
+#header-region {
+	background-color: @heading-color;
+	color: white;
+	font-size: 20px;
+	padding: 10px;
+}
+
+#canvas-region {
+	background-color: white;
+}
+
+#tools-region {
+	background-color: @options-background-color;
+	border-top: 1px solid @options-border-color;
+}
+
+#comments-region {
+	background-color: @options-background-color;
+	border-left: 1px solid @options-border-color;
+}
+
+/* TOOLS */
+.toolsbutton {
+  .unselectable;
+	padding: @button-padding;
+	margin: 0;
+	height: @tools-region-height;
+	outline: 1px solid #AAAAAA;
+	cursor: pointer;
+	background-color: @button-color;
+
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
+	
+	img {
+		position: relative;
+		bottom: -2px;
+    margin-right: @button-padding;
+	}
+	
+	.text {
+		font-size: 20px;
+		position: relative;
+		bottom: 8px;
+	}	
+}
+
+.toolsbutton:hover {
+	background-color: @button-hover-color;
+}
+
+.toolsbutton:active {
+	background-color: @button-activated-color;
+}
+
+.button-activated {
+	background-color: @button-activated-color;
+}
+
+/* LAYERS */
+#layers-dialog {
+	background-color: @button-activated-color;
+	border-top: 1px solid @options-border-color;
+	border-left: 1px solid @options-border-color;
+	border-right: 1px solid @options-border-color;
+	position: relative;
+	z-index: 10000;
+	width: 300px;
+	display: block;
+	
+	ul {
+		padding: 0;
+		margin: 0;
+		list-style-type: none;
+	}
+	
+	li {
+		background-color: @options-background-color;
+		cursor: pointer;
+		font-size: 20px;
+    
+    border-bottom: 1px solid #D8D8D8;
+    
+    height: 32px;
+    line-height: 32px;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
+    text-align: left;
+    width: 100%;
+    
+    .name {
+      color: #202020;
+      display: block;
+      margin-left: 5px;
+      overflow: hidden;
+      width: 215px;
+    }
+	}
+	li:hover {
+		background-color: #EEEEEE;
+	}
+	.checkbox {
+		border: 1px solid #AAAAAA;
+		background-color: #EEEEEE;
+		width: 32px;
+		height: 32px;
+		display: block;
+		float: left;
+		margin-right: 0.5em;
+	} 
+}
+
+.header {
+	font-size: 16px;
+	background-color: @heading-color;
+	color: white;
+	font-weight: bold;
+	padding: 0.1em 0.5em;
+}
+
+.body {
+	padding: 0.5em;
+}

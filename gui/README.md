@@ -15,6 +15,7 @@
   * markers like in google maps
   * comments in a collapsable sidebar
   * answer functionality
+  
 ![Comments](comments.png)
 
 ### Layers
@@ -23,6 +24,7 @@
  * visible
  * opacity
  * fixed id color?
+
 ![Layers](layers.png)
 
 ### Main menu?
@@ -65,3 +67,4 @@
 * [CMYK](http://colorizer.org/)
 * [Conversion formulas](http://www.easyrgb.com/index.php?X=MATH)
 * [Hexagon palette](http://www.w3schools.com/tags/ref_colormixer.asp)
+* comparsion with last color
