@@ -294,8 +294,9 @@ function BigCanvas(element) {
                 drawNext(newCanvas, next);
               };
               baseImage.onerror = function() {
+                //TODO
                 console.log("Could not load revision image for (col: "+location.column+"; row: "+location.row+"; rev: "+base.getId()+")");
-                self.render(); //TODO is this a good idea? :-/
+                //self.render(); //TODO is this a good idea? :-/
               };
               baseImage.src = "tiles/col"+location.column+"/row"+location.row+"/rev"+base.getId();
             }
@@ -427,7 +428,6 @@ function BigCanvas(element) {
         switch(update.type) {
           case "ACTION":
             actions.add(update);
-            //TODO wake up waiting cells
             break;
           case "HISTORY":
             cell = grid.getCell(update.location);

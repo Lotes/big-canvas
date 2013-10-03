@@ -4,6 +4,69 @@ var BigInteger = require("big-integer");
 var Counters = require("./Counters");
 
 /**
+ * @method getActionById
+ * @param client {MySQLClient}
+ * @param actionId {ActionId}
+ * @param callback {Function(Error, ActionData)}
+ */
+function getActionById(client, actionId, callback) {
+  try {
+    if(!BigCanvasTypes.ActionId.validate(actionId))
+      throw new Error("Invalid action id: "+actionId+"!");
+    client.query(
+      "SELECT type, actionObject, userId, undone, region, timestamp, previousActionId, nextActionId "+
+        "FROM actions WHERE id=? LIMIT 1", [actionId], function(err, results)
+      {
+        if(err)
+          callback(err);
+        else {
+          try{
+            if(results.length == 0)
+              throw new Error("No action with id="+actionId+" found!");
+            var action = results[0];
+            action.id = actionId;
+            action.actionObject = JSON.parse(action.actionObject);
+            action.region = JSON.parse(action.region);
+            action.undone = action.undone != 0;
+            if(!BigCanvasTypes.ActionData.validate(action))
+              throw new Error("Invalid action data (actionId: "+actionId+").");
+            callback(null, action);
+          } catch(ex) {
+            callback(ex);
+          }
+        }
+      });
+  } catch(ex) {
+    callback(ex);
+  }
+}
+
+/**
+ * @method getActionsByIds
+ * @param client {MySQLClient}
+ * @param actionIds {ActionIds} a list of requested action ids
+ * @param callback {Function(Error, ActionDataList)}
+ */
+function getActionsByIds(client, actionIds, callback) {
+  var index = 0,
+    actions = [];
+  function step() {
+    if(index >= actionIds.length) {
+      callback(null, actions);
+    } else {
+      var actionId = actionIds[index];
+      index++;
+      getActionById(client, actionId, function(err, action) {
+        if(err) { callback(err); return; }
+        actions.push(action);
+        step();
+      });
+    }
+  }
+  step();
+}
+
+/**
  * Manages the "actions" table.
  * @class Actions
  */
@@ -31,42 +94,8 @@ module.exports = {
   lock: function(actionId, callback) {
     lock("actions/"+actionId, callback);
   },
-  /**
-   * @method get
-   * @param client
-   * @param actionId
-   * @param callback
-   */
-  get: function(client, actionId, callback) {
-    try {
-      if(!BigCanvasTypes.ActionId.validate(actionId))
-        throw new Error("Invalid action id: "+actionId+"!");
-      client.query(
-        "SELECT type, actionObject, userId, undone, region, timestamp, previousActionId, nextActionId "+
-        "FROM actions WHERE id=? LIMIT 1", [actionId], function(err, results)
-      {
-        if(err)
-          callback(err);
-        else {
-          try{
-            if(results.length == 0)
-              throw new Error("No action with id="+actionId+" found!");
-            var action = results[0];
-            action.actionObject = JSON.parse(action.actionObject);
-            action.region = JSON.parse(action.region);
-            action.undone = action.undone != 0;
-            if(!BigCanvasTypes.ActionData.validate(action))
-              throw new Error("Invalid action data (actionId: "+actionId+").");
-            callback(null, action);
-          } catch(ex) {
-            callback(ex);
-          }
-        }
-      });
-    } catch(ex) {
-      callback(ex);
-    }
-  },
+  get: getActionById,
+  getByIds: getActionsByIds,
   /**
    * adds a new action
    * @method create

@@ -6,6 +6,7 @@ var Cache = require("../../Cache");
 var tilesCache = new Cache(1024); //TODO move cache size to config
 var fs = require("fs");
 var Counters = require("./Counters");
+var Actions = require("./Actions");
 
 /**
  * returns the number (index) of the given action on the given tile
@@ -362,7 +363,7 @@ module.exports = {
    * @param location {TileLocation}
    * @param revisionId {RevisionId}
    * @param canvas {Canvas}
-   * @param callback {Function(Error)}
+   * @param callback {Function(Error), Updates}
    */
   setRevision: function(client, location, revisionId, canvas, callback) {
     //get new id
@@ -394,26 +395,42 @@ module.exports = {
   },
   updateHistoryForRegion: function(client, region, actionId, callback) {
     var index = 0;
-    var result = [];
+    var histories = [];
+    var actionIds = [];
     function step() {
       if(index >= region.length) {
-        callback(null, result);
-        return;
-      }
-      var location = region[index];
-      index++;
-      updateTileHistory(client, location, actionId, function(err, baseRevisionId, tail) {
-        if(err) callback(err);
-        else {
-          result.push({
-            type: "HISTORY",
-            location: location,
-            baseRevisionId: baseRevisionId!=null ? baseRevisionId : "-1",
-            tailRevisions: tail
+        Actions.getByIds(client, actionIds, function(err, actions) {
+          if(err) { callback(err); return; }
+          var actionUpdates = _.map(actions, function(action) {
+            return {
+              type: "ACTION",
+              actionId: action.id,
+              action: action.actionObject,
+              userId: action.userId,
+              region: action.region
+            };
           });
-          step();
-        }
-      });
+          callback(null, actionUpdates.concat(histories));
+        });
+      } else {
+        var location = region[index];
+        index++;
+        updateTileHistory(client, location, actionId, function(err, baseRevisionId, tail) {
+          if(err) callback(err);
+          else {
+            histories.push({
+              type: "HISTORY",
+              location: location,
+              baseRevisionId: baseRevisionId!=null ? baseRevisionId : "-1",
+              tailRevisions: tail
+            });
+            _.each(tail, function(revision) {
+              actionIds = _.union(actionIds, [revision.actionId]);
+            });
+            step();
+          }
+        });
+      }
     }
     step();
   },

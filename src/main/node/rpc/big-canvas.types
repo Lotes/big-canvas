@@ -130,7 +130,6 @@ type Updates = list of Update
 
 /* interface */
 interface Main {
-  function requestActions(actionIds: ActionIds);
   function sendAction(action: Action): ActionId;
   function setWindow(x: BigInteger, y: BigInteger, width: WindowWidth, height: WindowHeight);
   event onUpdate(updates: Updates);

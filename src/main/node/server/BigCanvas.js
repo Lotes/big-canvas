@@ -88,6 +88,7 @@ function BigCanvas() {
   }
 
   function enqueueActionUpdate(actionId, action, userId, region) {
+    //TODO implement filter: kick out all actions that are known by the client
     var actionUpdate = {
       type: "ACTION",
       actionId: actionId,
@@ -207,43 +208,6 @@ function BigCanvas() {
       delete sockets[socketId];
     },
     //remote procedure call implementations
-    requestActions: function(socket, actionIds, callback) {
-      var connection = new DatabaseConnection();
-      connection.connect(function(err) {
-        if(err) { connection.end(); callback(err); return; }
-        var index = 0;
-        function step() {
-          if(index >= actionIds.length) {
-            connection.end();
-            callback();
-          } else {
-            var actionId = actionIds[index];
-            index++;
-            Actions.get(connection, actionId, function(err, action) {
-              if(err) {
-                connection.end();
-                callback(err);
-                return;
-              }
-              try {
-                //TODO IMPORTANT: check if user window intersects the region of the action
-                enqueueUpdate(socket.getId(), {
-                  type: "ACTION",
-                  actionId: actionId,
-                  action: action.actionObject,
-                  userId: action.userId
-                });
-                step();
-              } catch(ex) {
-                connection.end();
-                callback(ex);
-              }
-            });
-          }
-        }
-        step();
-      });
-    },
     setWindow: function(socket, x, y, width, height, callback) {
       try {
         var oldWindow = socket.getWindow(),
@@ -289,7 +253,10 @@ function BigCanvas() {
         //broadcast
         enqueueActionUpdate(actionId, action, userId, region);
         _.each(updates, function(update) {
-           enqueueTileUpdate(update);
+          if(update.type == "ACTION")
+            enqueueActionUpdate(update.actionId, update.action, update.userId, update.region);
+          else
+            enqueueTileUpdate(update);
         });
         //render
         _.each(region, addRenderJob);
