@@ -4,6 +4,7 @@ function Revision(id) {
   var parent = null,
       available = false,
       actionId = null;
+  this.getId = function() { return id; };
   this.isEmpty = function() { return id == "-1"; };
   this.getActionId = function() { return actionId; };
   this.setActionId = function(value) { actionId = value; };
@@ -18,7 +19,7 @@ function TileHistory() {
       revisions = {},
       head = null;
 
-  this.getHeadRevision = function() { return head; };
+  this.getHead = function() { return head; };
 
   this.addRevision = function(id, actionId) {
     if(!(id in revisions))

@@ -12,6 +12,7 @@ var bigCanvas = new BigCanvas();
 var DatabaseConnection = require("./DatabaseConnection");
 
 var Users = require("./data/Users");
+var Versions = require("./data/Versions");
 
 var webServer = express();
 var sessionStore = new SessionStore({
@@ -59,10 +60,35 @@ webServer.configure('production', function(){
   webServer.use(express.errorHandler());
 });
 
-/*webServer.get('/tiles/:x_:y.png', function(req, res){
-  //TODO
-  res.end("nothing");
-});*/
+webServer.get('/tiles/col:col/row:row/rev:rev', function(req, res){
+  var connection = new DatabaseConnection();
+  connection.connect(function(err) {
+    if(err) {
+      connection.end();
+      res.send(err.message, 500);
+      return;
+    }
+    var location = {
+          column: req.params.col,
+          row: req.params.row
+        },
+        revisionId = req.params.rev;
+    Versions.getImagePath(connection, location, revisionId, function(err, imagePath) {
+      connection.end();
+      if(err) {
+        res.send(err.message, 500);
+        return;
+      }
+      if(!imagePath) {
+        res.send("Not available!", 404);
+        return;
+      }
+      //TODO set content type?
+      var fileName = config.SERVER_TILES_PATH+"/"+imagePath;
+      res.sendfile(fileName, { root: "/" });
+    });
+  });
+});
 
 webServer.listen(config.SERVER_WEB_PORT);
 

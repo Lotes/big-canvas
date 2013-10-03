@@ -306,6 +306,15 @@ function getRevisionKey(location, revisionId) {
  * @class Versions
  */
 module.exports = {
+  getImagePath: function(client, location, revisionId, callback) { //TODO reuse in getRevision()
+    client.query("SELECT imagePath FROM versions WHERE col=? AND row=? AND revisionId=? LIMIT 1",
+      [location.column, location.row, revisionId], function(err, results)
+    {
+      if(err) { callback(err); return; }
+      if(results.length == 0) { callback(); return; }
+      callback(null, results[0].imagePath);
+    });
+  },
   /**
    * Returns a canvas of the given tile revision. If the revision id is null, an empty canvas is returned.
    * If the revision has no path an error will be thrown!

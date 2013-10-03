@@ -10,6 +10,9 @@ var _ = require("underscore");
 var Backbone = require("backbone");
 var generator = new Generator(rpcDefinition);
 var BigCanvasTypes = generator.Types;
+var ActionTable = require("./ActionTable");
+var TileHistory = require("./TileHistory");
+var Cache = require("../Cache");
 
 function setUnselectable($element) {
   $element.css("-moz-user-select", "none");
@@ -23,6 +26,8 @@ function setUnselectable($element) {
 
 function BigCanvas(element) {
   var self = this,
+    actions = new ActionTable(),
+    deltaCache = new Cache(1024), //TODO move cache size to config
     $element = $(element),
     center = new Point(0, 0),
     width = $element.width(),
@@ -45,6 +50,28 @@ function BigCanvas(element) {
 
   self.getColor = function() { return strokeColor; };
   self.setColor = function(color) { strokeColor = color; };
+
+  function getAction(actionId, callback) {
+
+  }
+
+  function getDelta(actionId, callback) {
+    //query the cache for the delta
+    var cached = deltaCache.get(actionId);
+    if(cached != null) {
+      callback(null, cached);
+      return;
+    }
+    //query the action
+    getAction(actionId, function(err, action) {
+      if(err) {
+        callback(err);
+        return;
+      }
+      //draw the action
+      //TODO
+    });
+  }
 
   function TileWindow() {
     var left = center.x.minus(Math.floor(width/2)),
@@ -141,13 +168,18 @@ function BigCanvas(element) {
     }
 
     function Entry(location, $cell) {
-      var statusText = null,
+      var
+        self = this,
+        statusText = null,
         statusCanvas = document.createElement("canvas"),
         busyImage = new Image(),
         $busyImage = $(busyImage),
         $statusCanvas = $(statusCanvas),
         canvas = null,
-        size = Config.TILE_SIZE;
+        size = Config.TILE_SIZE,
+        history = new TileHistory(),
+        timeout = null,
+        canvasCache = new Cache(20);
       busyImage.src = "images/loading.gif";
       statusCanvas.width = size;
       statusCanvas.height = size;
@@ -176,20 +208,111 @@ function BigCanvas(element) {
           $cell.append(statusCanvas);
         }
       }
-      this.setStatus = function(status) {
-        statusText = status;
-        renderStatus();
-        refresh();
-      };
-      this.setCanvas = function(c) {
+      function setCanvas(c) {
         canvas = c;
         var $canvas = $(canvas);
         $canvas.css("position", "absolute");
         $canvas.css("left", "0px");
         $canvas.css("top", "0px");
-        refresh();
+      }
+      function setStatus(status) {
+        statusText = status;
+        renderStatus();
+      }
+      function renderLoop() {
+        timeout = null;
+        var revision = history.getHead();
+        if(revision.isEmpty()) {
+          canvas = null;
+          statusText = null;
+          refresh();
+        } else {
+          //get last cached canvas in tile history or the first one without action id (because this one is definitely available)
+          var base = revision,
+              next = null,
+              operationsLeft = 0,
+              cachedCanvas = null;
+          while(
+            (cachedCanvas = canvasCache.get(base.getId())) == null
+            && base.getParent() != null
+            && base.getActionId() != null
+          ) {
+            next = base;
+            base = base.getParent();
+            operationsLeft++;
+          }
+
+          function drawNext(baseCanvas, nextRevision) {
+            //show old status
+            setStatus(operationsLeft > 0 ? operationsLeft : null);
+            refresh();
+            if(nextRevision != null)
+            {
+              //initialize new canvas
+              var newCanvas = document.createElement("canvas"),
+                g = newCanvas.getContext("2d");
+              newCanvas.width = size;
+              newCanvas.height = size;
+              g.clearRect(0, 0, size, size);
+              g.drawImage(baseCanvas, 0, 0);
+
+              getDelta(nextRevision.getActionId(), function(err, delta) {
+                if(err) { console.log(err); return; } //TODO find better exception handling
+
+                //TODO
+
+                //show new status
+                operationsLeft--;
+                setStatus(operationsLeft > 0 ? operationsLeft : null);
+                refresh();
+                //trigger next render step
+                if(operationsLeft > 0)
+                  self.render();
+              });
+            }
+          }
+
+          //check if canvas was cached
+          if(cachedCanvas == null) {
+            var newCanvas = document.createElement("canvas"),
+                g = newCanvas.getContext("2d");
+            newCanvas.width = size;
+            newCanvas.height = size;
+            g.clearRect(0, 0, size, size);
+            if(base.isEmpty()) {
+              canvasCache.set(base.getId(), newCanvas);
+              setCanvas(newCanvas);
+              refresh();
+              drawNext(newCanvas, next);
+            } else {
+              var baseImage = new Image();
+              baseImage.onload = function() {
+                canvasCache.set(base.getId(), newCanvas);
+                g.drawImage(baseImage, 0, 0);
+                setCanvas(newCanvas);
+                refresh();
+                drawNext(newCanvas, next);
+              };
+              baseImage.onerror = function() {
+                console.log("Could not load revision image for (col: "+location.column+"; row: "+location.row+"; rev: "+base.getId()+")");
+                self.render(); //TODO is this a good idea? :-/
+              };
+              baseImage.src = "tiles/col"+location.column+"/row"+location.row+"/rev"+base.getId();
+            }
+          } else {
+            setCanvas(cachedCanvas);
+            drawNext(cachedCanvas, next);
+          }
+        }
+      }
+      this.getHistory = function() {
+        return history;
       };
-      this.setCell = function($c) {
+      this.render = function() {
+        if(timeout == null)
+          timeout = setTimeout(renderLoop, 0);
+      };
+      this.setElement = function($c) {
         $cell = $c;
         refresh();
       };
@@ -243,7 +366,7 @@ function BigCanvas(element) {
           //update entries
           var entry = getEntry(location);
           if(entry != null) {
-            entry.setCell($div);
+            entry.setElement($div);
             addEntry(newEntries, location, entry);
           } else
             addEntry(newEntries, location, new Entry(location, $div));
@@ -259,16 +382,10 @@ function BigCanvas(element) {
       entries = newEntries;
     }
 
-    this.setTileStatus = function(location, status) {
-      var entry = getEntry(location);
-      if(entry != null)
-        entry.setStatus(status);
+    this.getCell = function(location) {
+      return getEntry(location);
     };
-    this.setTileCanvas = function(location, canvas) {
-      var entry = getEntry(location);
-      if(entry != null)
-        entry.setCanvas(canvas);
-    };
+
     this.refresh = function() {
       var newWindow = new TileWindow();
       if(window == null || !window.equals(newWindow)) {
@@ -298,11 +415,6 @@ function BigCanvas(element) {
   var background = new BackgroundLayer(),
       grid = new GridLayer();
 
-  grid.setTileStatus({
-    column: "0",
-    row: "0"
-  }, "center");
-
   function refresh() {
     background.refresh();
     grid.refresh();
@@ -310,8 +422,30 @@ function BigCanvas(element) {
 
   var client = new generator.Interfaces.Main.Client({
     onUpdate: function(updates) {
-      console.log(updates);
-      //TODO
+      _.each(updates, function(update) {
+        var cell;
+        switch(update.type) {
+          case "ACTION":
+            actions.add(update);
+            //TODO wake up waiting cells
+            break;
+          case "HISTORY":
+            cell = grid.getCell(update.location);
+            if(cell != null) {
+              cell.getHistory().addNewBranch(update);
+              cell.render();
+            }
+            break;
+          case "RENDERED":
+            cell = grid.getCell(update.location);
+            if(cell != null) {
+              var history = cell.getHistory();
+              var revision = history.addRevision(update.revisionId);
+              revision.setAvailable(true);
+            }
+            break;
+        }
+      });
     }
   });
 

@@ -226,7 +226,7 @@ function BigCanvas() {
                 return;
               }
               try {
-                //TODO check if user window intersects the region of the action
+                //TODO IMPORTANT: check if user window intersects the region of the action
                 enqueueUpdate(socket.getId(), {
                   type: "ACTION",
                   actionId: actionId,
