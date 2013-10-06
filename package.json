@@ -1,0 +1,44 @@
+{
+  "name": "big-canvas",
+  "version": "0.1.2",
+  "description": "big-canvas is a collaborative drawing tool for the browser.",
+  "keywords": [
+    "canvas",
+    "collaborative",
+    "html5",
+    "graphical",
+    "editor",
+    "drawing",
+    "tool"
+  ],
+  "private": true,
+  "main": "src/node/server/main.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "dependencies": {
+    "backbone": "~1.0.0",
+    "big-integer": "~1.1.5",
+    "canvas": "~1.0.4",
+    "cookie-signature": "~1.0.1",
+    "express": "~3.3.4",
+    "mysql": "~2.0.0-alpha8",
+    "mysql-queues": "~1.0.0",
+    "ejs": "~0.8.4",
+    "underscore": "~1.5.1",
+    "ws": "~0.4.27",
+    "expect.js": "~0.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lotes/big-canvas.git"
+  },
+  "author": "Markus Rudolph <markhoernchen@gmx.de>",
+  "bugs": {
+    "url": "https://github.com/Lotes/big-canvas/issues"
+  }
+}
