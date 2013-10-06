@@ -8,11 +8,11 @@
 @tools-region-height: 50px;
 
 html, body {
-	width: 100%;
-	height: 100%;
-	padding: 0;
-	margin: 0;
-	overflow: hidden;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
 }
 
 .unselectable {
@@ -28,86 +28,91 @@ html, body {
 }
 
 #header-region {
-	background-color: @heading-color;
-	color: white;
-	font-size: 20px;
-	padding: 10px;
+  background-color: @heading-color;
+  color: white;
+  font-size: 20px;
+  padding: 10px;
 }
 
 #canvas-region {
-	background-color: white;
+  background-color: white;
 }
 
 #tools-region {
-	background-color: @options-background-color;
-	border-top: 1px solid @options-border-color;
+  background-color: @options-background-color;
+  border-top: 1px solid @options-border-color;
+  text-align: center;
 }
 
 #comments-region {
-	background-color: @options-background-color;
-	border-left: 1px solid @options-border-color;
+  background-color: @options-background-color;
+  border-left: 1px solid @options-border-color;
 }
 
 /* TOOLS */
 .toolsbutton {
   .unselectable;
-	padding: @button-padding;
-	margin: 0;
-	height: @tools-region-height;
-	outline: 1px solid #AAAAAA;
-	cursor: pointer;
-	background-color: @button-color;
+  padding: @button-padding;
+  margin: 0;
+  height: @tools-region-height;
+  outline: 1px solid #AAAAAA;
+  cursor: pointer;
+  background-color: @button-color;
 
   display: table-cell;
   vertical-align: middle;
   text-align: center;
-	
-	img {
-		position: relative;
-		bottom: -2px;
-    margin-right: @button-padding;
-	}
-	
-	.text {
-		font-size: 20px;
-		position: relative;
-		bottom: 8px;
-	}	
+  
+  img {
+    position: relative;
+    bottom: -2px;
+  }
+  
+  .text {
+    font-size: 20px;
+    position: relative;
+    bottom: 8px;
+    margin-left: @button-padding;
+  }
 }
 
 .toolsbutton:hover {
-	background-color: @button-hover-color;
+  background-color: @button-hover-color;
 }
 
 .toolsbutton:active {
-	background-color: @button-activated-color;
+  background-color: @button-activated-color;
 }
 
-.button-activated {
-	background-color: @button-activated-color;
+.toolsbutton-activated {
+  background-color: @button-activated-color;
+}
+
+.toolsbutton-group {
+  display: table;
 }
 
 /* LAYERS */
-#layers-dialog {
-	background-color: @button-activated-color;
-	border-top: 1px solid @options-border-color;
-	border-left: 1px solid @options-border-color;
-	border-right: 1px solid @options-border-color;
-	position: relative;
-	z-index: 10000;
-	width: 300px;
-	display: block;
-	
-	ul {
-		padding: 0;
-		margin: 0;
-		list-style-type: none;
-	}
-	
-	li {
-		background-color: @options-background-color;
-		cursor: pointer;
-		font-size: 20px;
+/*#layers-dialog {
+  background-color: @button-activated-color;
+  border-top: 1px solid @options-border-color;
+  border-left: 1px solid @options-border-color;
+  border-right: 1px solid @options-border-color;
+  position: relative;
+  z-index: 10000;
+  width: 300px;
+  display: block;
+  
+  ul {
+    padding: 0;
+    margin: 0;
+    list-style-type: none;
+  }
+  
+  li {
+    background-color: @options-background-color;
+    cursor: pointer;
+    font-size: 20px;
     
     border-bottom: 1px solid #D8D8D8;
     
@@ -126,29 +131,29 @@ html, body {
       overflow: hidden;
       width: 215px;
     }
-	}
-	li:hover {
-		background-color: #EEEEEE;
-	}
-	.checkbox {
-		border: 1px solid #AAAAAA;
-		background-color: #EEEEEE;
-		width: 32px;
-		height: 32px;
-		display: block;
-		float: left;
-		margin-right: 0.5em;
-	} 
+  }
+  li:hover {
+    background-color: #EEEEEE;
+  }
+  .checkbox {
+    border: 1px solid #AAAAAA;
+    background-color: #EEEEEE;
+    width: 32px;
+    height: 32px;
+    display: block;
+    float: left;
+    margin-right: 0.5em;
+  } 
 }
 
 .header {
-	font-size: 16px;
-	background-color: @heading-color;
-	color: white;
-	font-weight: bold;
-	padding: 0.1em 0.5em;
+  font-size: 16px;
+  background-color: @heading-color;
+  color: white;
+  font-weight: bold;
+  padding: 0.1em 0.5em;
 }
 
 .body {
-	padding: 0.5em;
-}
+  padding: 0.5em;
+}*/
