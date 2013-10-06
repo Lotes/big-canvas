@@ -12,15 +12,18 @@ var Window = Types.Window;
 var WindowTree = Types.WindowTree;
 var RenderJobQueue = Types.RenderJobQueue;
 
-var BigCanvasDefinitions = require("./BigCanvasDefinitions");
+var BigCanvasDefinitions = require("./../rpc/BigCanvasDefinitions");
 var _ = require("underscore");
 
 var Users = require("./data/Users");
 var Actions = require("./data/Actions");
 var Tiles = require("./data/Tiles");
 var Versions = require("./data/Versions");
-var Deltas = require("./data/Deltas");
 var Cache = require("../Cache");
+
+var ServerStrategies = require("./ServerStrategies");
+var strategies = new ServerStrategies();
+var Deltas = require("./../Deltas");
 
 var Canvas = require("canvas");
 var fs = require("fs");
@@ -64,6 +67,7 @@ function BigCanvas() {
   var windowTree = new WindowTree();
   var jobs = new RenderJobQueue();
   var updateQueue = {};
+  var deltas = new Deltas(strategies);
 
   function lockCanvas(callback) {
     lock("canvas", callback);
@@ -155,11 +159,11 @@ function BigCanvas() {
               Actions.get(connection, actionId, function(err, actionData) {
                 if(err) { fail(err); return; }
                 var action = actionData["actionObject"];
-                Deltas.draw(actionId, action, function(err, delta) {
+                deltas.get(actionId, action, function(err, delta) {
                   if(err) { fail(err); return; }
                   try {
                     var deltaCanvas = delta.getTile(location);
-                    Deltas.applyDelta(baseCanvas, deltaCanvas, action, function(err, resultCanvas) {
+                    deltas.apply(baseCanvas, deltaCanvas, action, function(err, resultCanvas) {
                       if(err) { fail(err); return; }
                       Versions.setRevision(connection, location, revisionId, resultCanvas, function(err) {
                         if(err) { fail(err); return; }
@@ -251,7 +255,7 @@ function BigCanvas() {
       var server = this;
       function broadcastAndRender(actionId, action, userId, region, updates) {
         //broadcast
-        enqueueActionUpdate(actionId, action, userId, region);
+        //enqueueActionUpdate(actionId, action, userId, region); //TODO check if really needed
         _.each(updates, function(update) {
           if(update.type == "ACTION")
             enqueueActionUpdate(update.actionId, update.action, update.userId, update.region);
@@ -312,7 +316,7 @@ function BigCanvas() {
                   }
 
                   function performAction(newActionId, previousActionId) {
-                    Deltas.draw(newActionId, action, function(err, delta) {
+                    deltas.get(newActionId, action, function(err, delta) {
                       if(err) { fail(err); return; }
                       try {
                         var region = delta.getRegion();

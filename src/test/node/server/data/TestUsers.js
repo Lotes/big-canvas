@@ -1,6 +1,6 @@
 var Config = require("./../../../../main/node/Config");
 var Users = require("./../../../../main/node/server/data/Users");
-var BigCanvasTypes = require("./../../../../main/node/server/BigCanvasDefinitions").Types;
+var BigCanvasTypes = require("./../../../../main/node/rpc/BigCanvasDefinitions").Types;
 var expect = require("expect.js");
 var DatabaseConnection = require("./../../../../main/node/server/DatabaseConnection");
 

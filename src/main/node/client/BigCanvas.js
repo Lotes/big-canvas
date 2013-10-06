@@ -3,16 +3,18 @@ var Point = Types.Point;
 var TileLocation = Types.TileLocation;
 var BoundingBox = Types.BoundingBox;
 var Config = require("./Config");
-var Generator = require("./../rpc/json-rpc-generator");
-var rpcDefinition = require("./../rpc/big-canvas");
 var BigInteger = require("big-integer");
 var _ = require("underscore");
 var Backbone = require("backbone");
-var generator = new Generator(rpcDefinition);
+var generator = require("../rpc/BigCanvasDefinitions");
 var BigCanvasTypes = generator.Types;
 var ActionTable = require("./ActionTable");
 var TileHistory = require("./TileHistory");
 var Cache = require("../Cache");
+
+var ClientStrategies = require("./ClientStrategies");
+var strategies = new ClientStrategies();
+var Deltas = require("../Deltas");
 
 function setUnselectable($element) {
   $element.css("-moz-user-select", "none");
@@ -27,7 +29,8 @@ function setUnselectable($element) {
 function BigCanvas(element) {
   var self = this,
     actions = new ActionTable(),
-    deltaCache = new Cache(1024), //TODO move cache size to config
+    pendingActionLayers = {},
+    deltas = new Deltas(strategies),
     $element = $(element),
     center = new Point(0, 0),
     width = $element.width(),
@@ -50,28 +53,6 @@ function BigCanvas(element) {
 
   self.getColor = function() { return strokeColor; };
   self.setColor = function(color) { strokeColor = color; };
-
-  function getAction(actionId, callback) {
-
-  }
-
-  function getDelta(actionId, callback) {
-    //query the cache for the delta
-    var cached = deltaCache.get(actionId);
-    if(cached != null) {
-      callback(null, cached);
-      return;
-    }
-    //query the action
-    getAction(actionId, function(err, action) {
-      if(err) {
-        callback(err);
-        return;
-      }
-      //draw the action
-      //TODO
-    });
-  }
 
   function TileWindow() {
     var left = center.x.minus(Math.floor(width/2)),
@@ -256,18 +237,28 @@ function BigCanvas(element) {
               g.clearRect(0, 0, size, size);
               g.drawImage(baseCanvas, 0, 0);
 
-              getDelta(nextRevision.getActionId(), function(err, delta) {
+              //get action
+              var actionId = nextRevision.getActionId();
+              var action = actions.get(actionId).getAction();
+
+              //get delta
+              deltas.get(actionId, action, function(err, delta) {
                 if(err) { console.log(err); return; } //TODO find better exception handling
-
-                //TODO
-
-                //show new status
-                operationsLeft--;
-                setStatus(operationsLeft > 0 ? operationsLeft : null);
-                refresh();
-                //trigger next render step
-                if(operationsLeft > 0)
-                  self.render();
+                //apply delta
+                var deltaTileCanvas = delta.getTile(location);
+                deltas.apply(newCanvas, deltaTileCanvas, action, function(err, resultCanvas) {
+                  if(err) { console.log(err); return; } //TODO find better exception handling
+                  //update cell canvas
+                  canvasCache.set(nextRevision.getId(), resultCanvas);
+                  setCanvas(resultCanvas);
+                  //show new status
+                  operationsLeft--;
+                  setStatus(operationsLeft > 0 ? operationsLeft : null);
+                  refresh();
+                  //trigger next render step
+                  if(operationsLeft > 0)
+                    self.render();
+                });
               });
             }
           }
@@ -428,6 +419,11 @@ function BigCanvas(element) {
         switch(update.type) {
           case "ACTION":
             actions.add(update);
+            var actionId = update.actionId;
+            if(actionId in pendingActionLayers) {
+              pendingActionLayers[actionId].remove();
+              delete pendingActionLayers[actionId];
+            }
             break;
           case "HISTORY":
             cell = grid.getCell(update.location);
@@ -584,9 +580,16 @@ function BigCanvas(element) {
           break;
       }
       action.stroke = _.map(line, function(point) { return point.toData(); });
+      var tempLayer = currentTempLayer;
       client.sendAction(action, function(err, actionId) {
-        if(err) console.log(err.message);
-        else console.log("action acknowledged: "+actionId);
+        if(err) {
+          console.log(err.message);
+          tempLayer.remove();
+        }
+        else {
+          console.log("action acknowledged: "+actionId);
+          pendingActionLayers[actionId] = tempLayer;
+        }
       });
     }
 

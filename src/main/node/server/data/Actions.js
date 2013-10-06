@@ -1,5 +1,5 @@
 var lock = require("../lock");
-var BigCanvasTypes = require("../BigCanvasDefinitions").Types;
+var BigCanvasTypes = require("../../rpc/BigCanvasDefinitions").Types;
 var BigInteger = require("big-integer");
 var Counters = require("./Counters");
 

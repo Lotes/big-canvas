@@ -25,19 +25,22 @@ Cache.prototype.delete = function(key) {
   var node = this.first;
   while(node != null && node.getKey() != key)
     node = node.next;
-  if(node != null) {
-    if(node.next != null)
-      node.next.prev = node.prev;
-    if(node.prev != null)
-      node.prev.next = node.next;
-  }
+  if(node.next != null)
+    node.next.prev = node.prev;
+  if(node.prev != null)
+    node.prev.next = node.next;
+  if(node == this.first)
+    this.first = node.next;
+  if(node == this.last)
+    this.last = node.prev;
   this.size--;
   delete this.elements[key];
 };
 
 Cache.prototype.add = function(key, value) {
-  //assert(key in this.elements)
+  //assert(!(key in this.elements))
   var node = new Node(key, value);
+  this.elements[key] = node;
   if(this.first == null) {
     this.first = node;
     this.last = node;

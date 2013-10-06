@@ -1,4 +1,4 @@
-var BigCanvasTypes = require("../BigCanvasDefinitions").Types;
+var BigCanvasTypes = require("../../rpc/BigCanvasDefinitions").Types;
 /**
  * Manages the "sessions" table.
  * @class Sessions
