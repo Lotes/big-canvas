@@ -31,22 +31,21 @@
              south__closable: false,
              north__spacing_open: 0,
              south__spacing_open: 0,
-             east__resizable: false,
+             /*east__resizable: false,
              east__closable: true,
              east__spacing_open: 0,
-             east__spacing_closed: 0,
+             east__spacing_closed: 0,*/
              
              paneClass: "region",
              north__paneSelector: "#header-region",
-             east__paneSelector: "#comments-region",
+             //east__paneSelector: "#comments-region",
              center__paneSelector: "#canvas-region",             
              south__paneSelector: "#tools-region",
              
              north__size: 50,
              south__size: 50,
-             east__size: 381 //like in google maps :D
+             //east__size: 381 //like in google maps :D
         });
-        layout.close("east");
         
         var color = "#FF0000";
         var $colorPickerDialog = $("#colorpicker-dialog");
@@ -114,7 +113,7 @@
 		}
 		$sizeSlider.slider({
 			orientation: "horizontal",
-			max: 300,
+			max: 100,
 			min: 1,
 			value: 10,
 			//slide: setSize,
@@ -158,6 +157,14 @@
             deactivateTools();
 			activateTool($eraserButton);
 			//TODO set big-canvas to ERASER mode
+        });
+		var $undoButton = $("#undo-button");
+		$undoButton.click(function() {
+            //TODO call undo
+        });
+		var $redoButton = $("#redo-button");
+		$redoButton.click(function() {
+            //TODO call redo
         });
 		activateTool($moveButton);
     });
@@ -233,10 +240,13 @@
 					</tr-->
 				</table>
 			</div>
+			<div id="undo-button" class="toolsbutton">
+                <img src="images/undo.png"/>
+            </div>
+			<div id="redo-button" class="toolsbutton">
+                <img src="images/redo.png"/>
+            </div>
         </div>
-    </div>
-    <div id="comments-region" class="ui-layout-east">
-        Comments
     </div>
     <div id="colorpicker-dialog" title="Choose a color">
         <span id="colorpicker" style="display: inline-block; vertical-align: top;"></span>
