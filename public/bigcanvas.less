@@ -3,7 +3,7 @@
 @options-border-color: #AAAAAA;
 @button-color: #DDDDDD;
 @button-hover-color: #EEEEEE;
-@button-activated-color: #CCCCCC;
+@button-activated-color: #AAAAAA;
 @button-padding: 0.5em;
 @tools-region-height: 50px;
 @color-bucket-width: 32px;
@@ -58,7 +58,7 @@ html, body {
   padding: @button-padding;
   margin: 0;
   height: @tools-region-height;
-  outline: 1px solid #AAAAAA;
+  /*outline: 1px solid #AAAAAA;*/
   cursor: pointer;
   background-color: @button-color;
 
@@ -68,7 +68,7 @@ html, body {
   
   img {
     position: relative;
-    bottom: -2px;
+    
   }
   
   .text {
@@ -77,14 +77,6 @@ html, body {
     bottom: 8px;
     margin-left: @button-padding;
   }
-}
-
-.toolsbutton:hover {
-  background-color: @button-hover-color;
-}
-
-.toolsbutton:active {
-  background-color: @button-activated-color;
 }
 
 .toolsbutton-activated {

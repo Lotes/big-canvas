@@ -48,10 +48,6 @@
         });
         layout.close("east");
         
-        $(".toolsbutton").click(function() {
-            alert($(this).find(".text").html());
-        });
-        
         var color = "#FF0000";
         var $colorPickerDialog = $("#colorpicker-dialog");
         $colorPickerDialog.dialog({
@@ -139,6 +135,31 @@
 			//slide: setSoftness,
 			change: setSoftness
 		});*/
+		function activateTool($element) {
+			$element.addClass("toolsbutton-activated");
+		}
+		function deactivateTools() {
+			$(".main-tools").removeClass("toolsbutton-activated");
+		}
+		var $moveButton = $("#move-button");
+		$moveButton.click(function() {
+            deactivateTools();
+			activateTool($moveButton);
+			//TODO set big-canvas to MOVE mode
+        });
+		var $brushButton = $("#brush-button");
+		$brushButton.click(function() {
+            deactivateTools();
+			activateTool($brushButton);
+			//TODO set big-canvas to BRUSH mode
+        });
+		var $eraserButton = $("#eraser-button");
+		$eraserButton.click(function() {
+            deactivateTools();
+			activateTool($eraserButton);
+			//TODO set big-canvas to ERASER mode
+        });
+		activateTool($moveButton);
     });
     </script>
 </head>
@@ -181,18 +202,19 @@
         </div>
         <div class="toolsbutton-group" style="margin: 0 auto">
             <!-- center buttons -->
-            <div class="toolsbutton">
-                <img src="images/layers.png"/>
-                <span class="text">X</span>
+            <div id="move-button" class="toolsbutton main-tools">
+                <img src="images/move.png"/>
             </div>
-            <div class="toolsbutton">
-                <img src="images/layers.png"/>
-                <span class="text">Y</span>
+            <div id="brush-button" class="toolsbutton main-tools">
+                <img src="images/brush.png"/>
             </div>
-            <div class="toolsbutton">
+            <div id="eraser-button" class="toolsbutton main-tools">
+                <img src="images/eraser.png"/>
+            </div>
+            <!--div class="toolsbutton">
                 <img src="images/layers.png"/>
                 <span class="text">Z</span>
-            </div>
+            </div-->
             <div class="color-bucket">
                 <div class="bucket-background"></div>
                 <div class="bucket-foreground"></div>
