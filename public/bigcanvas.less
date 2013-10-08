@@ -6,6 +6,9 @@
 @button-activated-color: #CCCCCC;
 @button-padding: 0.5em;
 @tools-region-height: 50px;
+@color-bucket-width: 32px;
+@color-bucket-offset: (@tools-region-height - @color-bucket-width)/2;
+
 
 html, body {
   width: 100%;
@@ -90,6 +93,40 @@ html, body {
 
 .toolsbutton-group {
   display: table;
+}
+
+.color-bucket {
+  .unselectable;
+  margin: 0;
+  padding: 0;
+  width: @tools-region-height;
+  height: @tools-region-height;
+  background-color: @button-color;
+
+  vertical-align: middle;
+  text-align: center;
+  
+  position: relative;
+}
+
+.bucket-background {
+	position: absolute;
+	top: @color-bucket-offset;
+	left: @color-bucket-offset;
+	width: @color-bucket-width;
+	height: @color-bucket-width;
+	background: url("images/transparent.png") repeat scroll 0 0 rgba(0,0,0,0);
+	outline: 1px solid black;
+}
+
+.bucket-foreground {
+	position: absolute;
+	top: @color-bucket-offset;
+	left: @color-bucket-offset;
+	width: @color-bucket-width;
+	height: @color-bucket-width;
+	outline: 1px solid black;
+	cursor: pointer;
 }
 
 /* LAYERS */

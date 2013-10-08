@@ -1,109 +1,178 @@
 <html>
 <head>
-	<title>big-canvas - gui prototype</title>
-	<!-- jquery -->
+    <title>big-canvas - gui prototype</title>
+    <!-- jquery -->
     <script type="text/javascript" src="jquery.min.js"></script>
-	<!-- jquery layout -->
-	<script type="text/javascript" src="jquery.layout.min.js"></script>
-	<link type="text/css" rel="stylesheet" href="layout-default.css"/>
-	<!-- jquery ui -->
-	<script type="text/javascript" src="jquery-ui/js/jquery-ui-1.10.3.custom.min.js"></script>
-	<link type="text/css" rel="stylesheet" href="jquery-ui/css/custom-theme/jquery-ui-1.10.3.custom.min.css"/>
-	<!-- mouse trap -->
+    <!-- jquery layout -->
+    <script type="text/javascript" src="jquery.layout.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="layout-default.css"/>
+    <!-- jquery ui -->
+    <script type="text/javascript" src="jquery-ui/js/jquery-ui-1.10.3.custom.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="jquery-ui/css/custom-theme/jquery-ui-1.10.3.custom.min.css"/>
+    <!-- jquery color picker -->
+    <script src="jquery-colorpicker/jquery.colorpicker.js"></script>
+    <link href="jquery-colorpicker/jquery.colorpicker.css" rel="stylesheet" type="text/css"/>
+    <script src="jquery-colorpicker/swatches/jquery.ui.colorpicker-pantone.js"></script>
+    <script src="jquery-colorpicker/parts/jquery.ui.colorpicker-rgbslider.js"></script>
+    <script src="jquery-colorpicker/parts/jquery.ui.colorpicker-memory.js"></script>
+    <script src="jquery-colorpicker/parsers/jquery.ui.colorpicker-cmyk-parser.js"></script>
+    <script src="jquery-colorpicker/parsers/jquery.ui.colorpicker-cmyk-percentage-parser.js"></script>
+    <!-- mouse trap -->
     <script type="text/javascript" src="mousetrap.min.js"></script>
-	<!-- big-canvas -->
-	<link type="text/css" rel="stylesheet" href="bigcanvas.css"/>
-	<script type="text/javascript">
-	$(document).ready(function () {
-		var layout = $('body').layout({
-			 pane__spacing: 0,
-			 north__resizable: false,
-			 north__closable: false,
-			 south__resizable: false,
-			 south__closable: false,
-			 north__spacing_open: 0,
-			 south__spacing_open: 0,
-			 east__resizable: false,
-			 east__closable: true,
-			 east__spacing_open: 0,
-			 east__spacing_closed: 0,
-			 
-			 paneClass: "region",
-			 north__paneSelector: "#header-region",
-			 east__paneSelector: "#comments-region",
-			 center__paneSelector: "#canvas-region",			 
-			 south__paneSelector: "#tools-region",
-			 
-			 north__size: 50,
-			 south__size: 50,
-			 east__size: 381 //like in google maps :D
-		});
-		layout.close("east");
-		
-		$(".toolsbutton").click(function() {
-			alert($(this).find(".text").html());
-		});
-		
-	});
-	</script>
+    <!-- big-canvas -->
+    <link type="text/css" rel="stylesheet" href="bigcanvas.css"/>
+    <script type="text/javascript">
+    $(document).ready(function () {
+        var layout = $('body').layout({
+             pane__spacing: 0,
+             north__resizable: false,
+             north__closable: false,
+             south__resizable: false,
+             south__closable: false,
+             north__spacing_open: 0,
+             south__spacing_open: 0,
+             east__resizable: false,
+             east__closable: true,
+             east__spacing_open: 0,
+             east__spacing_closed: 0,
+             
+             paneClass: "region",
+             north__paneSelector: "#header-region",
+             east__paneSelector: "#comments-region",
+             center__paneSelector: "#canvas-region",             
+             south__paneSelector: "#tools-region",
+             
+             north__size: 50,
+             south__size: 50,
+             east__size: 381 //like in google maps :D
+        });
+        layout.close("east");
+        
+        $(".toolsbutton").click(function() {
+            alert($(this).find(".text").html());
+        });
+        
+        var color = "#FF0000";
+        var $colorPickerDialog = $("#colorpicker-dialog");
+        $colorPickerDialog.dialog({
+            autoOpen: false,
+            minWidth: 600,
+            modal: true,
+            buttons: {
+              'Close': function() {
+                 $(this).dialog('close');
+              }
+            }
+        });
+        var $colorBucket = $(".color-bucket .bucket-foreground");
+        $colorBucket.click(function() {
+            $colorPickerDialog.dialog("open");
+        });
+        $('#colorpicker').colorpicker({
+            showOn: "click",
+            alpha: true,
+            color: color,
+            colorFormat: 'RGBA',
+            parts:  [
+            //    'header',
+                'alpha',
+                'map',
+                'bar',
+                'hex',
+                'hsv', 
+                'rgb',  
+                'lab', 
+                'cmyk',
+                'inputs',
+            //    'preview',
+            //    'swatches',
+            //    'footer'
+            ],
+            inlineFrame: false,
+            select: function(event, color) {
+              var m = /^rgba\((\d{1,3}),(\d{1,3}),(\d{1,3}),(\d+(\.\d+)?)\)$/.exec(color.formatted);
+              if (m) {
+				$colorBucket.css("background-color", color.formatted);
+                function rgb2hex(r, g, b, a) {
+                    return (256 + r).toString(16).substr(1) +
+                           (256 + g).toString(16).substr(1) +
+                           (256 + b).toString(16).substr(1);
+                }
+				var r = parseInt(m[1], 10);
+				var g = parseInt(m[2], 10);
+				var b = parseInt(m[3], 10);
+                var hexColor = "#"+rgb2hex(r, g, b);
+                var opacity = parseFloat(m[4]);
+                //TODO set big-canvas color/opacity
+              }
+            }
+        });
+        $colorBucket.css("background-color", color);
+    });
+    </script>
 </head>
 <body>
-	<div id="canvas-region" class="ui-layout-center">Canvas</div>
-	<div id="header-region" class="ui-layout-north">
-		big-canvas
-		<!--ul id="mainmenu">
-			<li>
-				<a href="#">File</a>
-				<ul>
-					<li><a href="#">Save</a></li>
-				</ul>
-			</li>
-			<li>
-				<a href="#">Edit</a>
-				<ul>
-					<li><a href="#">Undo</a></li>
-					<li><a href="#"><Redo</a></li>
-				</ul>
-			</li>
-		</ul-->
-	</div>
-	<div id="tools-region" class="ui-layout-south">		
-		<div class="toolsbutton-group" style="float: left">
-			<!-- left buttons -->
-			<div class="toolsbutton">
-				<img src="images/layers.png"/>
-				<span class="text">Layer 1</span>
-			</div>
-		</div>
-		<div class="toolsbutton-group" style="float: right">
-			<!-- right buttons -->
-			<div class="toolsbutton">
-				<img src="images/layers.png"/>
-				<span class="text">Comments</span>
-			</div>
-			<div class="toolsbutton">
-				<img src="images/layers.png"/>
-				<span class="text">D</span>
-			</div>
-		</div>
-		<div class="toolsbutton-group" style="margin: 0 auto">
-			<!-- center buttons -->
-			<div class="toolsbutton">
-				<img src="images/layers.png"/>
-				<span class="text">X</span>
-			</div>
-			<div class="toolsbutton">
-				<img src="images/layers.png"/>
-				<span class="text">Y</span>
-			</div>
-			<div class="toolsbutton">
-				<img src="images/layers.png"/>
-				<span class="text">Z</span>
-			</div>
-		</div>
-	</div>
-	<div id="comments-region" class="ui-layout-east">
-		Comments
-	</div>
+    <div id="canvas-region" class="ui-layout-center">
+        Canvas
+    </div>
+    <div id="header-region" class="ui-layout-north">
+        big-canvas
+        <!--ul id="mainmenu">
+            <li>
+                <a href="#">File</a>
+                <ul>
+                    <li><a href="#">Save</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#">Edit</a>
+                <ul>
+                    <li><a href="#">Undo</a></li>
+                    <li><a href="#"><Redo</a></li>
+                </ul>
+            </li>
+        </ul-->
+    </div>
+    <div id="tools-region" class="ui-layout-south">        
+        <div class="toolsbutton-group" style="float: left">
+            <!-- left buttons -->
+            <!--div class="toolsbutton">
+                <img src="images/layers.png"/>
+                <span class="text">Layer 1</span>
+            </div-->
+        </div>
+        <div class="toolsbutton-group" style="float: right">
+            <!-- right buttons -->
+            <!--div class="toolsbutton">
+                <img src="images/layers.png"/>
+                <span class="text">Comments</span>
+            </div-->
+        </div>
+        <div class="toolsbutton-group" style="margin: 0 auto">
+            <!-- center buttons -->
+            <div class="toolsbutton">
+                <img src="images/layers.png"/>
+                <span class="text">X</span>
+            </div>
+            <div class="toolsbutton">
+                <img src="images/layers.png"/>
+                <span class="text">Y</span>
+            </div>
+            <div class="toolsbutton">
+                <img src="images/layers.png"/>
+                <span class="text">Z</span>
+            </div>
+            <div class="color-bucket">
+                <div class="bucket-background"></div>
+                <div class="bucket-foreground"></div>
+            </div>            
+        </div>
+    </div>
+    <div id="comments-region" class="ui-layout-east">
+        Comments
+    </div>
+    <div id="colorpicker-dialog" title="Choose a color">
+        <span id="colorpicker" style="display: inline-block; vertical-align: top;"></span>
+    </div>
 </body>
 </html>
