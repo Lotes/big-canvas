@@ -108,6 +108,37 @@
             }
         });
         $colorBucket.css("background-color", color);
+		
+		var $sizeSlider = $("#size-slider .toolsslider-slider");
+		var $sizeSliderValue = $("#size-slider .toolsslider-value");
+		function setSize() {
+			var value = $sizeSlider.slider("value");
+			$sizeSliderValue.html(value);
+			//TODO set big-canvas size
+		}
+		$sizeSlider.slider({
+			orientation: "horizontal",
+			max: 300,
+			min: 1,
+			value: 10,
+			//slide: setSize,
+			change: setSize
+		});
+		
+		/*var $softnessSlider = $("#softness-slider .toolsslider-slider");
+		var $softnessSliderValue = $("#softness-slider .toolsslider-value");
+		function setSoftness() {
+			var value = $softnessSlider.slider("value");
+			$softnessSliderValue.html(value+" %");
+			//TODO set big-canvas softness
+		}
+		$softnessSlider.slider({
+			orientation: "horizontal",
+			max: 100,
+			value: 0,
+			//slide: setSoftness,
+			change: setSoftness
+		});*/
     });
     </script>
 </head>
@@ -165,7 +196,21 @@
             <div class="color-bucket">
                 <div class="bucket-background"></div>
                 <div class="bucket-foreground"></div>
-            </div>            
+            </div>
+			<div class="toolsslider-group">
+				<table>
+					<tr id="size-slider" class="toolsslider">
+						<td class="toolsslider-label">Size</td>
+						<td><div class="toolsslider-slider"></div></td>
+						<td class="toolsslider-value">10</td>
+					</tr>
+					<!--tr id="softness-slider" class="toolsslider">
+						<td class="toolsslider-label">Softness</td>
+						<td><div class="toolsslider-slider"></div></td>
+						<td class="toolsslider-value">0 %</td>
+					</tr-->
+				</table>
+			</div>
         </div>
     </div>
     <div id="comments-region" class="ui-layout-east">
