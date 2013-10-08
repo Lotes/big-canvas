@@ -25,6 +25,48 @@ html, body {
   user-select: none;
 }
  
+#logo {
+	.unselectable;
+	display: block; 
+	float: left;
+	color: white;
+	font-size: 20px
+}
+ 
+/* MENUS */
+#main-menu {
+	float: left;
+	display: block;
+	color: white;
+	font-size: 12px;
+
+	a {
+		color: white;
+		text-decoration: none;
+	}
+	
+	.subnav a {
+		color: black;
+		text-decoration: none;
+	}
+}
+
+ul{ 
+	list-style-type:none;
+	margin:0;
+	padding-right:1em;
+	overflow:hidden;
+}
+
+#menu>li{ 
+    float: left; 
+	width: 100px;
+}
+
+#menu>li>ul{
+	opacity: 0;
+}
+
 /* REGIONS */
 .region {
 
@@ -32,8 +74,6 @@ html, body {
 
 #header-region {
   background-color: @heading-color;
-  color: white;
-  font-size: 20px;
   padding: 10px;
 }
 
