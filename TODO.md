@@ -6,6 +6,7 @@
 * test big coordinates
 * own web design: http://openiconlibrary.sourceforge.net/gallery2/?./Icons/actions&200
 * calculate an offset for strokes to avoid overhead when sending big coordinates
+* filter actions (only send actions to the client which he does not own)
 
 ## v0.3
 * multiple layers (max. 5)
