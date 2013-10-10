@@ -124,7 +124,8 @@ function Deltas(strategies) {
       }
 
       //estimate region
-      var stroke = _.map(action.stroke, function(pt) { return new Point(pt.x, pt.y); });
+      var offset = new Point(action.offset.x, action.offset.y);
+      var stroke = _.map(action.stroke, function(pt) { return new Point(pt.x, pt.y).add(offset); });
       var bb = new BoundingBox();
       _.each(stroke, function(pt) { bb.addPoint(pt); });
       bb.extend(Math.ceil(action.width/2));

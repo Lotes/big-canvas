@@ -31,7 +31,7 @@ enum ActionType {
 type UserId = BigInteger
 type StrokeWidth = Integer in 1..100
 type StrokeOpacity = Float in 0.0..1.0
-type Stroke = list of Point
+type StrokePath = list of Point
 type ActionId = BigInteger
 type ActionIds = list of ActionId
 
@@ -41,11 +41,13 @@ struct Action {
       color: Color;
       width: StrokeWidth;
       opacity: StrokeOpacity;
-      stroke: Stroke;
+      offset: Point;
+      stroke: StrokePath;
     case ERASER:
       width: StrokeWidth;
       opacity: StrokeOpacity;
-      stroke: Stroke;
+      offset: Point;
+      stroke: StrokePath;
     case UNDO:
     case REDO:
   };

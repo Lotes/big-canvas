@@ -560,7 +560,7 @@ function BigCanvas(element) {
       //edit line
       if(line.length == 1)
         doStroke(line[0], last);
-      //send line
+      //prepare message
       var action = null;
       switch(mode) {
         case Mode.BRUSH:
@@ -579,7 +579,25 @@ function BigCanvas(element) {
           };
           break;
       }
-      action.stroke = _.map(line, function(point) { return point.toData(); });
+      //prepare stroke data
+      var minX = null, minY = null;
+      _.each(line, function(point) { //get offset
+        if(minX == null)
+          minX = point.x;
+        else
+          if(minX.greater(point.x))
+            minX = point.x;
+        if(minY == null)
+          minY = point.y;
+        else
+          if(minY.greater(point.y))
+            minY = point.y;
+      });
+      var offset = new Point(minX, minY);
+      action.offset = offset.toData();
+      action.stroke = _.map(line, function(point) {
+        return point.minus(offset).toData();
+      });
       var tempLayer = currentTempLayer;
       client.sendAction(action, function(err, actionId) {
         if(err) {

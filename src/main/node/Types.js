@@ -34,6 +34,16 @@ Point.prototype.minus = function(other) {
 };
 
 /**
+ * Adds the other point component-wise on this point.
+ * @method add
+ * @param {Point} other
+ * @return {Point}
+ */
+Point.prototype.add = function(other) {
+  return new Point(this.x.add(other.x), this.y.add(other.y));
+};
+
+/**
  * Transforms this object into a small data object just containing strings.
  * @method toData
  * @return {Object} Returns a small data object.
