@@ -45,7 +45,7 @@ function BigCanvas(element) {
     line = null,
     strokeWidth = 10,
     strokeColor = "#FF00FF",
-    strokeOpacity = 0.5,
+    strokeOpacity = 1,
 
     currentTempLayer = null;
 
@@ -53,6 +53,12 @@ function BigCanvas(element) {
 
   self.getColor = function() { return strokeColor; };
   self.setColor = function(color) { strokeColor = color; };
+
+  self.getOpacity = function() { return strokeOpacity; };
+  self.setOpacity = function(opacity) { strokeOpacity = opacity; };
+
+  self.getStrokeWidth = function() { return strokeWidth; };
+  self.setStrokeWidth = function(width) { strokeWidth = width; };
 
   function TileWindow() {
     var left = center.x.minus(Math.floor(width/2)),
@@ -363,11 +369,11 @@ function BigCanvas(element) {
           } else
             addEntry(newEntries, location, new Entry(location, $div));
 
-          if(min.column.add(c+r).add(min.row).mod(2).equals(BigInteger.zero)) {
+          /*if(min.column.add(c+r).add(min.row).mod(2).equals(BigInteger.zero)) {
             //TODO erase
             //$cell.css("border", "2px blue dotted");
             $cell.css("background-color", "blue");
-          }
+          } */
         }
         table.appendChild(row);
       }

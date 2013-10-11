@@ -1,72 +1,114 @@
+<!DOCTYPE html>
 <html>
 <head>
-	<title>big canvas</title>
+    <title>big-canvas</title>
+    <!-- jquery -->
     <script type="text/javascript" src="jquery.min.js"></script>
-    <link href="jquery-ui/css/ui-lightness/jquery-ui-1.10.3.custom.css" rel="stylesheet">
-    <script src="jquery-ui/js/jquery-ui-1.10.3.custom.js"></script>
+    <!-- jquery layout -->
+    <script type="text/javascript" src="jquery.layout.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="layout-default.css"/>
+    <!-- jquery ui -->
+    <script type="text/javascript" src="jquery-ui/js/jquery-ui-1.10.3.custom.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="jquery-ui/css/custom-theme/jquery-ui-1.10.3.custom.min.css"/>
+    <!-- jquery color picker -->
+    <script src="jquery-colorpicker/jquery.colorpicker.js"></script>
+    <link href="jquery-colorpicker/jquery.colorpicker.css" rel="stylesheet" type="text/css"/>
+    <script src="jquery-colorpicker/swatches/jquery.ui.colorpicker-pantone.js"></script>
+    <script src="jquery-colorpicker/parts/jquery.ui.colorpicker-rgbslider.js"></script>
+    <script src="jquery-colorpicker/parts/jquery.ui.colorpicker-memory.js"></script>
+    <script src="jquery-colorpicker/parsers/jquery.ui.colorpicker-cmyk-parser.js"></script>
+    <script src="jquery-colorpicker/parsers/jquery.ui.colorpicker-cmyk-percentage-parser.js"></script>
+    <!-- mouse trap -->
     <script type="text/javascript" src="mousetrap.min.js"></script>
-	<script type="text/javascript" src="jquery-palette/parse-color.js"></script>
-	<script type="text/javascript" src="jquery-palette/jquery.palette.js"></script>
-	<link type="text/css" rel="stylesheet" href="jquery-palette/css/palette.css" />
-	<script type="text/javascript" src="bigcanvas.js"></script>
-	<style type="text/css">
-		html, body {
-			width: 100%;
-			height: 100%;
-			padding: 0;
-			margin: 0;
-            overflow: hidden;
-		}
-		
-		#tools {
-			background-color: black;
-			left: 0;
-			top: 0;
-			position: fixed;
-            color: white;
-            font-size: 12px;
-		}
-
-		.button {
-			margin: 0.5em;
-			cursor: pointer;
-			display: block;
-			width: 32px;
-			height: 32px;
-		}
-		
-		.activated {
-			border: 1px white solid;
-		}
-
-        .separator {
-            height: 32px;
-        }
-
-        #big-canvas {
-            width: 100%;
-            height: 100%;
-            text-align: center;
-            padding: 0px;
-            margin: 0px;
-            border-width: 0px;
-            outline-width: 0px;
-            background-color: red;
-            overflow: hidden;
-        }
-	</style>
+    <!-- big-canvas -->
+    <link type="text/css" rel="stylesheet" href="bigcanvas.css"/>
+    <script type="text/javascript" src="bigcanvas.js"></script>
 </head>
 <body>
-<div id="big-canvas">No canvas supported :-(.</div>
-<div id="tools">
-	<img id="moveButton" class="button activated" src="images/move.png" title="Move"/>
-	<img id="brushButton" class="button" src="images/brush.png" title="Brush"/>
-    <img id="eraserButton" class="button" src="images/eraser.png"  title="Eraser"/>
-    <img id="undoButton" class="button" src="images/undo.png" title="Undo"/>
-    <img id="redoButton" class="button" src="images/redo.png" title="Redo"/>
-    <div class="separator"></div>
-    <div id="colorPicker" class="button" style="background-color: red"></div>
-    <div id="opacityButton" class="button" style="background-color: red"></div>
+<div id="canvas-region" class="ui-layout-center">
+    <!-- canvas -->
+</div>
+<div id="header-region" class="ui-layout-north">
+    <div id="logo">big-canvas</div>
+    <!--div id="main-menu">
+        <ul id="menu">
+            <li>
+                <a href="#">File</a>
+                <ul class="subnav">
+                    <li><a href="#">Nothing</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#">Edit</a>
+                <ul class="subnav">
+                    <li><a href="#">Undo</a></li>
+                    <li><a href="#">Redo</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#">Contact</a>
+            </li>
+        </ul>
+    </div-->
+</div>
+<div id="tools-region" class="ui-layout-south">
+    <div class="toolsbutton-group" style="float: left">
+        <!-- left buttons -->
+        <!--div class="toolsbutton">
+            <img src="images/layers.png"/>
+            <span class="text">Layer 1</span>
+        </div-->
+    </div>
+    <div class="toolsbutton-group" style="float: right">
+        <!-- right buttons -->
+        <!--div class="toolsbutton">
+            <img src="images/layers.png"/>
+            <span class="text">Comments</span>
+        </div-->
+    </div>
+    <div class="toolsbutton-group" style="margin: 0 auto">
+        <!-- center buttons -->
+        <div id="move-button" class="toolsbutton main-tools">
+            <img src="images/move.png"/>
+        </div>
+        <div id="brush-button" class="toolsbutton main-tools">
+            <img src="images/brush.png"/>
+        </div>
+        <div id="eraser-button" class="toolsbutton main-tools">
+            <img src="images/eraser.png"/>
+        </div>
+        <!--div class="toolsbutton">
+            <img src="images/layers.png"/>
+            <span class="text">Z</span>
+        </div-->
+        <div class="color-bucket">
+            <div class="bucket-background"></div>
+            <div class="bucket-foreground"></div>
+        </div>
+        <div class="toolsslider-group">
+            <table>
+                <tr id="size-slider" class="toolsslider">
+                    <td class="toolsslider-label">Size</td>
+                    <td><div class="toolsslider-slider"></div></td>
+                    <td class="toolsslider-value">10</td>
+                </tr>
+                <!--tr id="softness-slider" class="toolsslider">
+                    <td class="toolsslider-label">Softness</td>
+                    <td><div class="toolsslider-slider"></div></td>
+                    <td class="toolsslider-value">0 %</td>
+                </tr-->
+            </table>
+        </div>
+        <div id="undo-button" class="toolsbutton">
+            <img src="images/undo.png"/>
+        </div>
+        <div id="redo-button" class="toolsbutton">
+            <img src="images/redo.png"/>
+        </div>
+    </div>
+</div>
+<div id="colorpicker-dialog" title="Choose a color">
+    <span id="colorpicker" style="display: inline-block; vertical-align: top;"></span>
 </div>
 </body>
 </html>

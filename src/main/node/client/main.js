@@ -18,48 +18,149 @@ function randomBigInteger() {
 }
 
 $(function() {
-  var bigCanvasElement = $("#big-canvas")[0];
+  //initialize big-canvas
+  var bigCanvasElement = $("#canvas-region")[0];
   var bigCanvas = new BigCanvas(bigCanvasElement);
+
+  //initialize layout
+  var layout = $('body').layout({
+    pane__spacing: 0,
+    north__resizable: false,
+    north__closable: false,
+    south__resizable: false,
+    south__closable: false,
+    north__spacing_open: 0,
+    south__spacing_open: 0,
+    /*east__resizable: false,
+     east__closable: true,
+     east__spacing_open: 0,
+     east__spacing_closed: 0,*/
+
+    paneClass: "region",
+    north__paneSelector: "#header-region",
+    //east__paneSelector: "#comments-region",
+    center__paneSelector: "#canvas-region",
+    south__paneSelector: "#tools-region",
+
+    north__size: 50,
+    south__size: 50
+    //east__size: 381 //like in google maps :D
+  });
+
+  //initialize color picker
+  var color = bigCanvas.getColor();
+  var $colorPickerDialog = $("#colorpicker-dialog");
+  $colorPickerDialog.dialog({
+    autoOpen: false,
+    minWidth: 600,
+    modal: true,
+    buttons: {
+      'Close': function() {
+        $(this).dialog('close');
+      }
+    }
+  });
+  var $colorBucket = $(".color-bucket .bucket-foreground");
+  $colorBucket.click(function() {
+    $colorPickerDialog.dialog("open");
+  });
+  $('#colorpicker').colorpicker({
+    showOn: "click",
+    alpha: true,
+    color: color,
+    colorFormat: 'RGBA',
+    parts:  [
+      //    'header',
+      'alpha',
+      'map',
+      'bar',
+      'hex',
+      'hsv',
+      'rgb',
+      'lab',
+      'cmyk',
+      'inputs'
+      //    'preview',
+      //    'swatches',
+      //    'footer'
+    ],
+    inlineFrame: false,
+    select: function(event, color) {
+      var m = /^rgba\((\d{1,3}),(\d{1,3}),(\d{1,3}),(\d+(\.\d+)?)\)$/.exec(color.formatted);
+      if (m) {
+        $colorBucket.css("background-color", color.formatted);
+        function rgb2hex(r, g, b) {
+          return (256 + r).toString(16).substr(1) +
+            (256 + g).toString(16).substr(1) +
+            (256 + b).toString(16).substr(1);
+        }
+        var r = parseInt(m[1], 10);
+        var g = parseInt(m[2], 10);
+        var b = parseInt(m[3], 10);
+        var hexColor = "#"+rgb2hex(r, g, b);
+        var opacity = parseFloat(m[4]);
+        bigCanvas.setColor(hexColor);
+        bigCanvas.setOpacity(opacity);
+      }
+    }
+  });
+  $colorBucket.css("background-color", color);
+
+  //initialize sliders
+  var $sizeSlider = $("#size-slider .toolsslider-slider");
+  var $sizeSliderValue = $("#size-slider .toolsslider-value");
+  function setSize() {
+    var value = $sizeSlider.slider("value");
+    $sizeSliderValue.html(value);
+    bigCanvas.setStrokeWidth(value);
+  }
+  $sizeSlider.slider({
+    orientation: "horizontal",
+    max: 100,
+    min: 1,
+    value: bigCanvas.getStrokeWidth(),
+    //slide: setSize,
+    change: setSize
+  });
+
+  //initialize tools
+  function activateTool($element) {
+    $element.addClass("toolsbutton-activated");
+  }
+  function deactivateTools() {
+    $(".main-tools").removeClass("toolsbutton-activated");
+  }
+  var $moveButton = $("#move-button");
+  $moveButton.click(function() {
+    deactivateTools();
+    activateTool($moveButton);
+    bigCanvas.setMode("MOVE");
+  });
+  var $brushButton = $("#brush-button");
+  $brushButton.click(function() {
+    deactivateTools();
+    activateTool($brushButton);
+    bigCanvas.setMode("BRUSH");
+  });
+  var $eraserButton = $("#eraser-button");
+  $eraserButton.click(function() {
+    deactivateTools();
+    activateTool($eraserButton);
+    bigCanvas.setMode("ERASER");
+  });
+  var $undoButton = $("#undo-button");
+  $undoButton.click(function() {
+    bigCanvas.undo();
+  });
+  var $redoButton = $("#redo-button");
+  $redoButton.click(function() {
+    bigCanvas.redo();
+  });
+  activateTool($moveButton);
 
   //configure shortcuts
   Mousetrap.bind(['command+z', 'ctrl+z'], function() {
     bigCanvas.undo();
-  });
-
-  //configure buttons
-  var $moveButton = $("#moveButton");
-  var $brushButton = $("#brushButton");
-  var $eraserButton = $("#eraserButton");
-  var modeButtons = [$moveButton, $brushButton, $eraserButton];
-  function activateButton($button) {
-    for(var i=0; i<modeButtons.length; i++)
-      modeButtons[i].removeClass("activated");
-    $button.addClass("activated");
-  };
-  $("#undoButton").click(function() { bigCanvas.undo(); });
-  $("#redoButton").click(function() { bigCanvas.redo(); });
-  $moveButton.click(function() {
-    bigCanvas.setMode("MOVE");
-    activateButton($moveButton);
-  });
-  $brushButton.click(function() {
-    bigCanvas.setMode("BRUSH");
-    activateButton($brushButton);
-  });
-  $eraserButton.click(function() {
-    bigCanvas.setMode("ERASER");
-    activateButton($eraserButton);
-  });
-
-  //configure color picker
-  var $colorPicker = $('#colorPicker');
-  $colorPicker.palette({
-    color: bigCanvas.getColor(),
-    onChange: function() {
-      var color = "#"+$colorPicker.data('palette').palette.data("palette").color.hex;
-      bigCanvas.setColor(color);
-      $colorPicker.css("background-color", color);
-    }
   });
 
   //setup router
