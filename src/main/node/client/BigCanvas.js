@@ -493,12 +493,9 @@ function BigCanvas(element) {
     function beginStroke(first) {
       currentTempLayer = grid.addTempLayer();
       //edit line
-      var point = clientToCanvas(first);
-      line = [point];
+      line = [first];
     }
-    function doStroke(a, b) {
-      var from = clientToCanvas(a),
-          to = clientToCanvas(b);
+    function doStroke(from, to) {
       //edit line
       var last = line[line.length-1];
       if(!last.equals(from))
@@ -512,7 +509,7 @@ function BigCanvas(element) {
       switch(mode) {
         case Mode.BRUSH:
           g.globalAlpha = strokeOpacity;
-          g.globalCompositeOperation = "xor";
+          g.globalCompositeOperation = "none";
           g.strokeStyle = strokeColor;
           g.lineWidth = strokeWidth;
           g.lineCap = "round";
@@ -530,10 +527,10 @@ function BigCanvas(element) {
           var bbWidth = bb.getWidth().toJSNumber();
           var bbHeight = bb.getHeight().toJSNumber();
           var bbX = bbRelPosition.x.toJSNumber();
-          var bbY = bbRelPosition.y.toJSNumber()
+          var bbY = bbRelPosition.y.toJSNumber();
 
           g.globalAlpha = strokeOpacity;
-          g.globalCompositeOperation = "xor";
+          g.globalCompositeOperation = "none";
           g.strokeStyle = "#FFFFFF";
           g.lineWidth = strokeWidth;
           g.lineCap = "round";
@@ -561,8 +558,7 @@ function BigCanvas(element) {
           break;
       }
     }
-    function endStroke(a) {
-      var last = clientToCanvas(a);
+    function endStroke(last) {
       //edit line
       if(line.length == 1)
         doStroke(line[0], last);
@@ -624,7 +620,7 @@ function BigCanvas(element) {
       switch(mode) {
         case Mode.BRUSH:
         case Mode.ERASER:
-          beginStroke(pt);
+          beginStroke(clientToCanvas(pt));
           break;
         case Mode.MOVE:
           oldCenter = center;
@@ -636,7 +632,7 @@ function BigCanvas(element) {
         switch(mode) {
           case Mode.BRUSH:
           case Mode.ERASER:
-            doStroke(oldPosition, pt);
+            doStroke(clientToCanvas(oldPosition), clientToCanvas(pt));
             oldPosition = pt;
             break;
           case Mode.MOVE:
@@ -654,7 +650,7 @@ function BigCanvas(element) {
         switch(mode) {
           case Mode.BRUSH:
           case Mode.ERASER:
-            endStroke(pt);
+            endStroke(clientToCanvas(pt));
             break;
           case Mode.MOVE:
             self.trigger("move", center);
