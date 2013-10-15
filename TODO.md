@@ -4,12 +4,18 @@
 * take a look at the session expiration date
 * implement touch events for iPad
 * test big coordinates
-* own web design: http://openiconlibrary.sourceforge.net/gallery2/?./Icons/actions&200
+* correct web design (buttons)
 * filter actions (only send actions to the client which he does not own)
 * add tool cursors
+* insert Streberkraken
+* fix single point bug
+* apply line join := "round"
+* move opacity to tool options, not to "color"
+* insert tool preview
 
 ## v0.3
 * multiple layers (max. 5)
+* more brushes (Muro and Harmony)
 
 ## v0.4
 * read-only mode
