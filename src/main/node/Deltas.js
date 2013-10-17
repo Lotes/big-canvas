@@ -148,6 +148,7 @@ function Deltas(strategies) {
       g.strokeStyle = action.type === "BRUSH" ? action.color : "#FFFFFF";
       g.lineWidth = action.width;
       g.lineCap = "round";
+      g.lineJoin = "round";
       g.beginPath();
       _.each(stroke, function(pt, index) {
         var x = pt.x.toJSNumber(),

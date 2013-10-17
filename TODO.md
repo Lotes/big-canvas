@@ -9,7 +9,6 @@
 * add tool cursors
 * insert Streberkraken
 * fix single point bug
-* apply line join := "round"
 * move opacity to tool options, not to "color"
 * insert tool preview
 
