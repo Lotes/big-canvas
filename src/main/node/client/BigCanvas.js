@@ -49,6 +49,8 @@ function BigCanvas(element) {
 
     currentTempLayer = null;
 
+  $element.css("background", "url('images/transparent.png') repeat scroll 0 0 rgba(0,0,0,0)");
+
   _.extend(self, Backbone.Events);
 
   self.getColor = function() { return strokeColor; };
@@ -76,38 +78,6 @@ function BigCanvas(element) {
     this.equals = function(other) {
       return min.equals(other.getMin()) && max.equals(other.getMax());
     };
-  }
-
-  function BackgroundLayer() {
-    var canvas = document.createElement("canvas"),
-      $canvas = $(canvas),
-      g = canvas.getContext("2d"),
-      color = null;
-    $canvas.css("position", "absolute");
-    $canvas.css("left", "0px");
-    $canvas.css("top", "0px");
-    setUnselectable($canvas);
-    this.refresh = function() {
-      canvas.width = width;
-      canvas.height = height;
-      if(color == null) {
-        var size = Config.TRANSPARENT_POSTER_TILE_SIZE;
-        for(var x=0; x<width/size; x++)
-          for(var y=0; y<height/size; y++) {
-            g.fillStyle = (x+y)%2==0 ? "white" : "gray";
-            g.fillRect(x*size, y*size, size, size);
-          }
-      } else {
-        g.fillStyle = color;
-        g.fillRect(0, 0, width, height);
-      }
-    };
-    this.setColor = function(value) {
-      color = value;
-      this.refresh();
-    };
-    this.refresh();
-    $element.append(canvas);
   }
 
   function GridLayer() {
@@ -410,11 +380,9 @@ function BigCanvas(element) {
     };
   }
 
-  var background = new BackgroundLayer(),
-      grid = new GridLayer();
+  var grid = new GridLayer();
 
   function refresh() {
-    background.refresh();
     grid.refresh();
   }
 

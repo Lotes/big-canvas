@@ -7,7 +7,6 @@
 * correct web design (buttons)
 * filter actions (only send actions to the client which he does not own)
 * add tool cursors
-* insert Streberkraken
 * fix single point bug
 * move opacity to tool options, not to "color"
 * insert tool preview
@@ -15,6 +14,7 @@
 ## v0.3
 * multiple layers (max. 5)
 * more brushes (Muro and Harmony)
+* insert Streberkraken
 
 ## v0.4
 * read-only mode
