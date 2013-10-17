@@ -503,58 +503,46 @@ function BigCanvas(element) {
       line.push(to);
       //draw line
       var leftTop = currentTempLayer.getPosition(),
-        relativeFrom = from.minus(leftTop),
-        relativeTo = to.minus(leftTop),
-        g = currentTempLayer.getCanvas().getContext("2d");
+        canvas = currentTempLayer.getCanvas(),
+        width = canvas.width,
+        height = canvas.height,
+        g = canvas.getContext("2d");
       switch(mode) {
         case Mode.BRUSH:
+          g.clearRect(0, 0, width, height);
           g.globalAlpha = strokeOpacity;
           g.globalCompositeOperation = "none";
           g.strokeStyle = strokeColor;
           g.lineWidth = strokeWidth;
           g.lineCap = "round";
+          g.lineJoin = "round";
           g.beginPath();
-          g.moveTo(relativeFrom.x.toJSNumber(), relativeFrom.y.toJSNumber());
-          g.lineTo(relativeTo.x.toJSNumber(), relativeTo.y.toJSNumber());
+          _.each(line, function(point, index) {
+            var rel = point.minus(leftTop);
+            if(index == 0)
+              g.moveTo(rel.x.toJSNumber(), rel.y.toJSNumber());
+            else
+              g.lineTo(rel.x.toJSNumber(), rel.y.toJSNumber());
+          });
           g.stroke();
           break;
         case Mode.ERASER:
-          var bb = new BoundingBox();
-          bb.addPoint(from);
-          bb.addPoint(to);
-          bb.extend(Math.ceil(strokeWidth/2));
-          var bbRelPosition = bb.getMin().minus(leftTop);
-          var bbWidth = bb.getWidth().toJSNumber();
-          var bbHeight = bb.getHeight().toJSNumber();
-          var bbX = bbRelPosition.x.toJSNumber();
-          var bbY = bbRelPosition.y.toJSNumber();
-
+          g.clearRect(0, 0, width, height);
           g.globalAlpha = strokeOpacity;
           g.globalCompositeOperation = "none";
           g.strokeStyle = "#FFFFFF";
           g.lineWidth = strokeWidth;
           g.lineCap = "round";
+          g.lineJoin = "round";
           g.beginPath();
-          g.moveTo(relativeFrom.x.toJSNumber(), relativeFrom.y.toJSNumber());
-          g.lineTo(relativeTo.x.toJSNumber(), relativeTo.y.toJSNumber());
+          _.each(line, function(point, index) {
+            var rel = point.minus(leftTop);
+            if(index == 0)
+              g.moveTo(rel.x.toJSNumber(), rel.y.toJSNumber());
+            else
+              g.lineTo(rel.x.toJSNumber(), rel.y.toJSNumber());
+          });
           g.stroke();
-
-          var size = Config.TRANSPARENT_POSTER_TILE_SIZE;
-          var imageData = g.getImageData(bbX, bbY, bbWidth, bbHeight);
-          var data = imageData.data;
-          for(var w=0; w<bbWidth; w++) {
-            var x = bbX + w;
-            var col = Math.floor(x / size);
-            for(var h=0; h<bbHeight; h++) {
-              var y = bbY + h;
-              var row = Math.floor(y / size);
-              var dataIndex = 4*(h * bbWidth + w);
-              var color = (row+col)%2==0 ? Config.TRANSPARENT_POSTER_COLOR2 : Config.TRANSPARENT_POSTER_COLOR1;
-              for(var i=0; i<3; i++)
-                data[dataIndex+i] = color[i];
-            }
-          }
-          g.putImageData(imageData, bbX, bbY);
           break;
       }
     }
