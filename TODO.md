@@ -4,6 +4,7 @@
 * take a look at the session expiration date
 * implement touch events for iPad
 * test big coordinates
+* test why window resize fails displaying drawing scene
 * correct web design (buttons)
 * filter actions (only send actions to the client which he does not own)
 * add tool cursors
