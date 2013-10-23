@@ -1,0 +1,21 @@
+NOTES
+=====
+
+MURO
+----
+
+- es gibt Context, Buffer-Context, Brush-Context und STG-Context (Stage?)
+- es gibt Canvases für Assets (?)
+
+SHODO
+-----
+-TheShodo_001: (Core)
+-TheShodo_002: (FloatingPanel)
+-TheShodo_003: (Player)
+-TheShodo_004: (Resources)
+	- brush images
+	- paper
+	- brush class
+-TheShodo_005: (main?)
+	- Browser-spezifische Informationen
+-TheShodo_006: (Write)
