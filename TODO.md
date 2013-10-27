@@ -2,20 +2,22 @@
 
 ## v0.2
 * take a look at the session expiration date
-* implement touch events for iPad
 * test big coordinates
 * test why window resize fails displaying drawing scene
 * correct web design (buttons)
-* filter actions (only send actions to the client which he does not own)
-* add tool cursors
 * fix single point bug
-* move opacity to tool options, not to "color"
-* insert tool preview
 
 ## v0.3
 * multiple layers (max. 5)
+* set temporary layer opacity
+* implement touch events for iPad
+* move opacity to tool options, not to "color"
+* insert tool preview
+* filter actions (only send actions to the client which he does not own)
 * more brushes (Muro and Harmony)
+* add tool cursors
 * insert Streberkraken
+* navigator
 
 ## v0.4
 * read-only mode
