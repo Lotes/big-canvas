@@ -426,7 +426,7 @@ function BigCanvas(element) {
     //send window
     client.setWindow(x.toString(), y.toString(), width, height, function(err) {
       if(err)
-        alert("Error while sending new window: "+err.message);
+        console.log("Error while sending new window: "+err.message);
     });
   }
   self.moveTo = function(ctr) {

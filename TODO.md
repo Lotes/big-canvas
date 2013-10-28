@@ -1,13 +1,7 @@
 # TODO
 
-## v0.2
-* take a look at the session expiration date
-* test big coordinates
-* test why window resize fails displaying drawing scene
-* correct web design (buttons)
-* fix single point bug
-
 ## v0.3
+* fix single point bug
 * multiple layers (max. 5)
 * set temporary layer opacity
 * implement touch events for iPad
@@ -18,6 +12,10 @@
 * add tool cursors
 * insert Streberkraken
 * navigator
+* fix "too many connections" error when moving client's window
+* take a look at the session expiration date
+* test big coordinates
+* test why window resize fails displaying drawing scene
 
 ## v0.4
 * read-only mode
