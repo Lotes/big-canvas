@@ -1,14 +1,11 @@
 # TODO
 
 ## v0.3
-* fix single point bug
 * multiple layers (max. 5)
 * set temporary layer opacity
-* implement touch events for iPad
 * move opacity to tool options, not to "color"
 * insert tool preview
 * filter actions (only send actions to the client which he does not own)
-* more brushes (Muro and Harmony)
 * add tool cursors
 * insert Streberkraken
 * navigator
