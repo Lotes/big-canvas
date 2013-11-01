@@ -20,6 +20,12 @@
 ## v0.4
 * read-only mode
 * comments
+* tables
+  * comments (id, timestamp, userId, message)
+  * commentPins (col, row, x, y, commentId)
+  * commentRelations (commentId, parentCommentId, depth)
+  * commentReads (commentId, userId)
+  * commentLikes (commentId, userId)
 
 ## v0.5
 * live and static images
