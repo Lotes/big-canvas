@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>big-canvas</title>
+    <!-- jquery -->
+    <script type="text/javascript" src="../../jquery.min.js"></script>
+    <!-- jquery ui -->
+    <script type="text/javascript" src="../../jquery-ui/js/jquery-ui-1.10.3.custom.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="../../jquery-ui/css/custom-theme/jquery-ui-1.10.3.custom.min.css"/>
+    <!-- own widgets -->
+    <script type="text/javascript" src="jquery.ui.checkbox.js"></script>
+    <style type="text/css">
+      .ui-widget-checkbox {
+        width: 32px;
+        height: 32px;
+        border-color: black;
+      }
+
+      .ui-widget-checkbox-checked {
+        background: url('../../images/checked.png') no-repeat;
+      }
+    </style>
+</head>
+<body>
+<script type="text/javascript">
+$(function() {
+  var $checkbox = $("#checkbox");
+  $checkbox.checkbox({
+    checked: true,
+    change: function() {
+      alert($checkbox.checkbox("checked"));
+    }
+  });
+});
+</script>
+
+<div id="checkbox"></div>
+
+</body>
+</html>
