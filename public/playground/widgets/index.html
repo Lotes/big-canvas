@@ -14,10 +14,22 @@
         width: 32px;
         height: 32px;
         border-color: black;
+        cursor: pointer;
       }
-
+      
+      .ui-widget-checkbox .ui-state-disabled {
+		opacity: 0.5;
+	  }  
       .ui-widget-checkbox-checked {
         background: url('../../images/checked.png') no-repeat;
+      }
+    
+      .ui-widget-checkbox-visible {
+        background: url('../../images/visible.png') no-repeat;
+      }
+	  
+      .ui-widget-checkbox-lock {
+        background: url('../../images/lock.png') no-repeat;
       }
     </style>
 </head>
@@ -25,12 +37,16 @@
 <script type="text/javascript">
 $(function() {
   var $checkbox = $("#checkbox");
-  $checkbox.checkbox({
-    checked: true,
-    change: function() {
-      alert($checkbox.checkbox("checked"));
-    }
-  });
+  $checkbox
+    .checkbox({
+      checked: true,
+	  //disabled: true,
+      checkedClass: "ui-widget-checkbox-lock",
+	  change: function(checked) {
+        console.log("checked: "+checked);
+	  }
+    });
+  
 });
 </script>
 
