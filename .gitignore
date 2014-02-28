@@ -7,7 +7,7 @@ src/main/node/rpc/json-rpc-parser.js
 /yuidoc
 src/main/node/rpc/big-canvas.js
 /doc/dataModel.zargo~
-
+/private
 /public/bigcanvas.css
 /public/jquery-colorpicker/.gitignore
 /public/jquery-colorpicker/README.md

@@ -11,7 +11,7 @@ dependencies:
 	npm install -g browserify pegjs mocha yuidocjs less
 
 init-database:
-	./src/main/node/tools/initdb
+	node ./src/main/node/tools/initdb.js
 
 init-filesystem:
 	rm -rf private/tiles
@@ -21,7 +21,7 @@ build-doc:
 	yuidoc src/main/node/
 
 build-definition:
-	./src/main/node/tools/stringify ./src/main/node/rpc/big-canvas.types ./src/main/node/rpc/big-canvas.js
+	node ./src/main/node/tools/stringify.js ./src/main/node/rpc/big-canvas.types ./src/main/node/rpc/big-canvas.js
 
 build-parser:
 	pegjs --track-line-and-column src/main/node/rpc/json-rpc.grammar src/main/node/rpc/json-rpc-parser.js

@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 var DatabaseConnection = require("../server/DatabaseConnection");
 var connection = new DatabaseConnection();
 var scheme = require("../server/data/scheme");
