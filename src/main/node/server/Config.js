@@ -6,7 +6,7 @@ var Config = require("../Config");
 
 Config.DATABASE_HOST = "localhost";
 Config.DATABASE_USERNAME = "root";
-Config.DATABASE_PASSWORD = "";
+Config.DATABASE_PASSWORD = "root";
 Config.DATABASE_NAME = "bigcanvas";
 
 /**

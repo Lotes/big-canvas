@@ -16,3 +16,5 @@ src/main/node/rpc/big-canvas.js
 /public/jquery-colorpicker/jqcolorpicker.jquery.json
 /public/jquery-colorpicker/test/events.js
 /public/jquery-colorpicker/test/index.html
+/src/main/js
+/src/test/js
