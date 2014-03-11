@@ -27,7 +27,8 @@
     "ejs": "~0.8.4",
     "underscore": "~1.5.1",
     "ws": "~0.4.27",
-    "expect.js": "~0.2.0"
+    "expect.js": "~0.2.0",
+    "webworker-threads": "^0.4.11"
   },
   "devDependencies": {
     "grunt": "~0.4.2",
