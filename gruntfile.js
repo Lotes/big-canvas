@@ -46,7 +46,12 @@ module.exports = function(grunt) {
 				files: "src/main/coffee/**/*.coffee",
 				tasks: ["coffee:main", "browserify:client"]
 			}
-		}
+		},
+        exec: {
+            schema: {
+                cmd: "java -jar bin/jsonschemadsl-compiler.jar src/main/coffee/rpc/big-canvas.jsonschema"
+            }
+        }
 	});
 	
 	grunt.loadNpmTasks("grunt-browserify");
@@ -55,7 +60,8 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks("grunt-mocha-test");
 	grunt.loadNpmTasks('grunt-contrib-less');
 	grunt.loadNpmTasks('grunt-contrib-watch');
-	
+    grunt.loadNpmTasks('grunt-exec');
+
 	grunt.registerTask("default", ["less:main", "coffee:main", "browserify:client", "execute:server"]);
 	grunt.registerTask("test", ["coffee:test", "mochaTest:test"]);
 	grunt.registerTask("watching", ["watch:main"]);

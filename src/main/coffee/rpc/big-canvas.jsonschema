@@ -1,0 +1,100 @@
+### BASIC TYPES ###
+typedef Size = integer[0...]
+typedef Point = tuple of (integer, integer)
+typedef BigInteger = string /^-?[0-9]+$/
+typedef BigPoint = tuple of (BigInteger, BigInteger)
+typedef StrokeOpacity = number[0...1]
+typedef StrokeWidth = integer[1...100]
+typedef Color = string /^#[0-9A-Fa-f]{6}$/
+typedef Selection = nullable string
+typedef LayerId = integer[0...5)
+
+### TILES ###
+typedef TileLocation = tuple of (BigInteger, BigInteger, LayerId) #(col, row, layer)
+struct Region {
+	layer: LayerId;
+	tiles: list of tuple of (BigInteger, BigInteger);
+}
+
+### ACTIONS ###
+typedef ActionId = BigInteger
+abstract struct Action {}
+abstract struct StrokeAction: Action {
+	selection: Selection;
+	offset: BigPoint;
+	stroke: list of Point;
+	opacity: StrokeOpacity;
+	width: StrokeWidth;
+	layer: LayerId;
+}
+struct EraserAction: StrokeAction {}
+struct BrushAction: StrokeAction {
+	color: Color;
+}
+struct FillAction: Action  {
+	selection: Selection;
+	color: Color;
+	window: nullable UserWindow;
+}
+struct UndoAction: Action {}
+struct RedoAction: Action {}
+
+### UPDATES ###
+abstract struct Update {}
+struct ActionUpdate: Update {
+	userId: UserId;
+	action: Action;
+	region: Region;
+}
+abstract struct TileUpdate: Update {
+	location: TileLocation;
+}
+struct RenderedUpdate: TileUpdate {
+	revisionId: RevisionId;
+}
+struct HistoryUpdate: TileUpdate {
+	baseRevisionId: RevisionId;
+	tailRevisions: Revisions;
+}
+
+### USERS ###
+typedef UserId = BigInteger
+typedef UserName = string[1...40]
+struct UserInfo {
+	id: UserId;
+	name: UserName;
+	numUndos: Size; #really?
+	numRedos: Size;
+}
+typedef UserWindowWidth = integer[1...4096]
+typedef UserWindowHeight = integer[1...4096]
+struct UserWindow {
+	x: BigInteger;
+	y: BigInteger;
+	width: UserWindowWidth;
+	height: UserWindowHeight;
+}
+
+### IMAGES ###
+enum ImageType {
+	STATIC,
+	DYNAMIC
+}
+typedef ImageWidth = integer[1...4096]
+typedef ImageHeight = integer[1...4096]
+typedef ImageId = string[50] /^[a-zA-Z0-9_]+$/
+
+### REMOTE PROCEDURE CALL INTERFACE ###
+interface Main {
+	event update(update: Update);
+	function sendAction(action: Action): ActionId;
+	
+	function setUserWindow(window: UserWindow);
+
+	function getUserInfo(userId: UserId): UserInfo;
+	function setUserName(name: UserName);
+	function getLastUserAction(): nullable Action;
+	function getNextUserAction(): nullable Action;
+
+	function defineImage(type: ImageType, x: BigInteger, y: BigInteger, width: ImageWidth, height: ImageHeight): ImageId;
+}
