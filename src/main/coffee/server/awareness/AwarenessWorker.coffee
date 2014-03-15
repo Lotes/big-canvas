@@ -1,5 +1,5 @@
+#{ AwarenessWorker } = require("../../rpc/big-canvas")
+
 class AwarenessWorker
 
-class AwarenessClient
-
-module.exports = { AwarenessWorker, AwarenessClient }
+module.exports = { AwarenessWorker }

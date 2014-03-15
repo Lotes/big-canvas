@@ -18,3 +18,6 @@ src/main/node/rpc/big-canvas.js
 /public/jquery-colorpicker/test/index.html
 /src/main/js
 /src/test/js
+/src/main/coffee/rpc/JsonSchemaTypes.generated.coffee
+/src/main/coffee/rpc/big-canvas.coffee
+/src-gen
