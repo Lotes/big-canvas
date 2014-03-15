@@ -20,14 +20,14 @@ module.exports = function(grunt) {
 		browserify: {
 			client: {
 				files: {
-					"public/bigcanvas.js": ["src/main/js/client/main.js"],
+					"public2/big-canvas.js": ["src/main/js/client/main.js"]
 				}
 			}
 		},
 		less: {
 			main: {
 				files: {
-					"public/bigcanvas.css": "public/bigcanvas.less"
+					"public2/bigcanvas.css": "public2/bigcanvas.less"
 				}
 			}
 		},
@@ -62,7 +62,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-exec');
 
-	grunt.registerTask("default", ["less:main", "coffee:main", "browserify:client", "execute:server"]);
+	grunt.registerTask("default", [/*"less:main",*/ "coffee:main", "browserify:client", "execute:server"]);
 	grunt.registerTask("test", ["coffee:main", "coffee:test", "mochaTest:test"]);
 	grunt.registerTask("watching", ["watch:main"]);
 };

@@ -1,23 +1,35 @@
-AwarenessManager = require("./awareness/AwarenessProcess")
+config = require("./Config")
+express = require("express")
+http = require("http")
+WebSocketServer = require('ws').Server
 
-console.log("awarenesss manager start")
-manager = new AwarenessProcess({})
-console.log("awarenesss manager started")
-manager.login("123", "456", 0, "abc", (err) ->
-  console.log("awarenesss manager login")
-  if(err)
-    throw err
+app = express()
+app.configure(() ->
+  app.set("views", null) #config.SERVER_VIEW_PATH
+  app.set("view engine", "ejs")
+  app.use(express.bodyParser())
+  app.use(express.methodOverride())
+  app.use(app.router)
+  app.use(express.static(config.SERVER_WEB_PATH))
 )
 
-###Worker = require("webworker-threads").Worker
-
-worker = new Worker( ->
-  @postMessage("I'm working before postMessage('ali').")
-  @onmessage = (event) =>
-    @postMessage('Hi ' + event.data)
-    @close()
+app.configure('development', () ->
+  app.use(express.errorHandler({ dumpExceptions: true, showStack: true }))
 )
-worker.onmessage = (event) ->
-  console.log("Worker said: " + event.data)
-worker.postMessage('ali')
-###
+app.configure('production', () ->
+  app.use(express.errorHandler())
+)
+
+webServer = http.createServer(app)
+webServer.listen(config.SERVER_WEB_PORT)
+
+socketServer = new WebSocketServer({
+  server: webServer,
+  path: "/"+config.SERVER_SOCKET_PATH
+})
+
+socketServer.on("connection", (socket) ->
+  socket.on("message", (message) ->
+    socket.send(message+" PUNK!")
+  )
+)
