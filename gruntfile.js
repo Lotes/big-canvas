@@ -5,7 +5,7 @@ module.exports = function(grunt) {
 			main: {
 				expand: true,
 				cwd: "src/main/coffee",
-				src: ["**/*.coffee"],
+				src: ["**/*.coffee", "**/*.generated.coffee"],
 				dest: "src/main/js",
 				ext: ".js"
 			},
@@ -63,6 +63,6 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-exec');
 
 	grunt.registerTask("default", ["less:main", "coffee:main", "browserify:client", "execute:server"]);
-	grunt.registerTask("test", ["coffee:test", "mochaTest:test"]);
+	grunt.registerTask("test", ["coffee:main", "coffee:test", "mochaTest:test"]);
 	grunt.registerTask("watching", ["watch:main"]);
 };
