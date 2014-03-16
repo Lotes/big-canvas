@@ -2,6 +2,7 @@ config = require("./Config")
 express = require("express")
 http = require("http")
 WebSocketServer = require('ws').Server
+MainThread = require("./MainThread")
 
 app = express()
 app.configure(() ->
@@ -28,8 +29,4 @@ socketServer = new WebSocketServer({
   path: "/"+config.SERVER_SOCKET_PATH
 })
 
-socketServer.on("connection", (socket) ->
-  socket.on("message", (message) ->
-    socket.send(message+" PUNK!")
-  )
-)
+new MainThread(app, socketServer)

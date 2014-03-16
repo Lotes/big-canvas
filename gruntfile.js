@@ -69,4 +69,5 @@ module.exports = function(grunt) {
 	grunt.registerTask("test", ["coffee:main", "coffee:test", "mochaTest:test"]);
 	grunt.registerTask("watching", ["watch:main"]);
     grunt.registerTask("init", ["coffee:main", "execute:database"]);
+    grunt.registerTask("rpc", ["exec:schema"]);
 };

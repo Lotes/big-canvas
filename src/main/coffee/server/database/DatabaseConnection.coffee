@@ -9,6 +9,8 @@ module.exports = (multipleStatements) ->
     user     : config.DATABASE_USERNAME,
     password : config.DATABASE_PASSWORD,
     database : config.DATABASE_NAME,
+    supportBigNumbers: true,
+    bigNumberStrings: true,
     multipleStatements: multipleStatements
   })
   queues(connection, false)

@@ -65,11 +65,12 @@ interface AwarenessWorker {
   #session	
   function login(clientId: ClientId, userId: UserId, siteType: SiteType, siteId: SiteId);
   function logout(clientId: ClientId);	
-	
+
   #window
   function setWindow(clientId: ClientId, window: UserWindow);
   event windowChanged(clientIds: ClientList, changedClientId: ClientId, window: nullable UserWindow);
 
+  ###
   #actions
   function beginAction(clientId: ClientId, startInfo: ActionStartInfo);
   event onActionBegan(clientIds: ClientList, startingClientId: ClientId, startInfo: ActionStartInfo);
@@ -79,6 +80,11 @@ interface AwarenessWorker {
   event onActionCommitted(clientIds: ClientList, committingClientId: ClientId, action: Action);
   function cancelAction(clientIds: ClientList);
   event onActionCancelled(clientIds: ClientList, cancellingClientId: ClientId);
+  ###
+}
+
+interface PersistingWorker {
+  function persistAction(action: Action): ActionId;
 }
 
 interface MainWorker {
@@ -88,7 +94,8 @@ interface MainWorker {
   #window
   function setWindow(window: UserWindow);
   event windowChanged(clientId: ClientId, window: nullable UserWindow);
-  
+
+  ###
   #actions
   function beginAction(startInfo: ActionStartInfo);
   event onActionBegan(startingClientId: ClientId, startInfo: ActionStartInfo);
@@ -97,5 +104,6 @@ interface MainWorker {
   function commitAction(): ActionId;
   event onActionCommitted(committingClientId: ClientId, action: Action);
   function cancelAction();
-  event onActionCancelled(cancellingClientId: ClientId);	
+  event onActionCancelled(cancellingClientId: ClientId);
+  ###
 }
