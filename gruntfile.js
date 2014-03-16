@@ -34,7 +34,10 @@ module.exports = function(grunt) {
 		execute: {
 			server: {
 				src: ["src/main/js/server/main.js"]
-			}
+			},
+            database: {
+                src: ["src/main/js/tools/initdb.js"]
+            }
 		},
 		mochaTest: {
 			test: {
@@ -65,4 +68,5 @@ module.exports = function(grunt) {
 	grunt.registerTask("default", [/*"less:main",*/ "coffee:main", "browserify:client", "execute:server"]);
 	grunt.registerTask("test", ["coffee:main", "coffee:test", "mochaTest:test"]);
 	grunt.registerTask("watching", ["watch:main"]);
+    grunt.registerTask("init", ["coffee:main", "execute:database"]);
 };
