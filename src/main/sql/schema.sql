@@ -5,6 +5,7 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     defaultColor CHAR(7) NOT NULL
 );
+INSERT INTO users (id, name, password, defaultColor) VALUES (0, 'Demo user', '', '#FF0000');
 
 DROP TABLE IF EXISTS actions;
 CREATE TABLE actions (

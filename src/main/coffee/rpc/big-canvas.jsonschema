@@ -51,45 +51,21 @@ struct UserWindow {
 ### SITES ###
 enum SiteType {
 	READ_ONLY,
-	WRITEABLE
+	WRITABLE
 }
-
 typedef SiteId = string[...40] /^[a-zA-Z0-9]+$/
 
 ### CLIENTS ###
 typedef ClientId = BigInteger
-typedef ClientList = list of ClientId
 
 ### REMOTE PROCEDURE CALL INTERFACES ###
-interface AwarenessWorker {
-  #session	
-  function login(clientId: ClientId, userId: UserId, siteType: SiteType, siteId: SiteId);
-  function logout(clientId: ClientId);	
-
-  #window
-  function setWindow(clientId: ClientId, window: UserWindow);
-  event windowChanged(clientIds: ClientList, changedClientId: ClientId, window: nullable UserWindow);
-
-  ###
-  #actions
-  function beginAction(clientId: ClientId, startInfo: ActionStartInfo);
-  event onActionBegan(clientIds: ClientList, startingClientId: ClientId, startInfo: ActionStartInfo);
-  function doActionMove(clientId: ClientId, point: BigPoint);
-  event onActionMoved(clientIds: ClientList, movingClientId: ClientId, point: BigPoint);
-  function commitAction(clientId: ClientId): ActionId;
-  event onActionCommitted(clientIds: ClientList, committingClientId: ClientId, action: Action);
-  function cancelAction(clientIds: ClientList);
-  event onActionCancelled(clientIds: ClientList, cancellingClientId: ClientId);
-  ###
-}
-
 interface PersistingWorker {
-  function persistAction(action: Action): ActionId;
+  function persistAction(startInfo: ActionStartInfo, nextPoints: list of BigPoint): ActionId;
 }
 
 interface MainWorker {
   #session
-  function login(siteType: SiteType, siteId: SiteId);
+  function login(siteId: SiteId): SiteType;
   
   #window
   function setWindow(window: UserWindow);

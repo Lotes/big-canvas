@@ -24,4 +24,6 @@ Config.SERVER_SESSION_ID = "SESSION_ID"
 
 Config.ACTION_MAX_STROKE_SIZE = 4096
 
+Config.DEMO_USER_ID = "0"
+
 module.exports = Config
