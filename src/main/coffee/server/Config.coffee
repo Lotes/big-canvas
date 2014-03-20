@@ -24,6 +24,8 @@ Config.SERVER_SESSION_ID = "SESSION_ID"
 
 Config.ACTION_MAX_STROKE_SIZE = 4096
 
+#default values; see users table in schema.sql
 Config.DEMO_USER_ID = "0"
+Config.DEMO_SITE = "null"
 
 module.exports = Config

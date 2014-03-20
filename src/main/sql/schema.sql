@@ -7,15 +7,6 @@ CREATE TABLE users (
 );
 INSERT INTO users (id, name, password, defaultColor) VALUES (0, 'Demo user', '', '#FF0000');
 
-DROP TABLE IF EXISTS actions;
-CREATE TABLE actions (
-    id DECIMAL(65) PRIMARY KEY,
-    userId DECIMAL(65) NOT NULL,
-    undone BOOLEAN NOT NULL,
-    json LONGTEXT NOT NULL,
-    createdOn TIMESTAMP NOT NULL
-);
-
 DROP TABLE IF EXISTS tiles;
 CREATE TABLE tiles (
     id DECIMAL(65) PRIMARY KEY,
@@ -24,6 +15,24 @@ CREATE TABLE tiles (
     layerId TINYINT NOT NULL,
     currentFingerPrintId DECIMAL(65) NULL,
     UNIQUE (col, row, layerId)
+);
+INSERT INTO tiles (id, col, row, layerId, currentFingerPrintId) VALUES (0, 0, 0, 0, NULL);
+
+DROP TABLE IF EXISTS sites;
+CREATE TABLE sites (
+  id VARCHAR(255) PRIMARY KEY,
+  readOnly BOOLEAN NOT NULL,
+  tileId DECIMAL(65) NOT NULL
+);
+INSERT INTO sites (id, readOnly, tileId) VALUES ('null', 0, 0);
+
+DROP TABLE IF EXISTS actions;
+CREATE TABLE actions (
+    id DECIMAL(65) PRIMARY KEY,
+    userId DECIMAL(65) NOT NULL,
+    undone BOOLEAN NOT NULL,
+    json LONGTEXT NOT NULL,
+    createdOn TIMESTAMP NOT NULL
 );
 
 DROP TABLE IF EXISTS revisions;
@@ -55,11 +64,4 @@ CREATE TABLE fingerPrintRelations (
   parentFingerPrintId DECIMAL(65),
   distance DECIMAL(65) NOT NULL,
   PRIMARY KEY (fingerPrintId, parentFingerPrintId)
-);
-
-DROP TABLE IF EXISTS sites;
-CREATE TABLE sites (
-  id VARCHAR(255) PRIMARY KEY,
-  readOnly BOOLEAN NOT NULL,
-  tileId DECIMAL(65) NOT NULL
 );

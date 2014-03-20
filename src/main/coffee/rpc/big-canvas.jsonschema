@@ -42,10 +42,14 @@ typedef UserId = BigInteger
 typedef UserWindowWidth = integer[1...4096]
 typedef UserWindowHeight = integer[1...4096]
 struct UserWindow {
-	x: BigInteger;
-	y: BigInteger;
-	width: UserWindowWidth;
-	height: UserWindowHeight;
+  x: BigInteger;
+  y: BigInteger;
+  width: UserWindowWidth;
+  height: UserWindowHeight;
+}
+struct UserInfo {
+  name: string;
+  color: Color;
 }
 
 ### SITES ###
@@ -60,16 +64,20 @@ typedef ClientId = BigInteger
 
 ### REMOTE PROCEDURE CALL INTERFACES ###
 interface PersistingWorker {
-  function persistAction(startInfo: ActionStartInfo, nextPoints: list of BigPoint): ActionId;
+  function persistAction(userId: UserId, window: nullable UserWindow, startInfo: ActionStartInfo, nextPoints: list of BigPoint): ActionId;
 }
 
 interface MainWorker {
   #session
-  function login(siteId: SiteId): SiteType;
+  event initialized(clientId: ClientId, userId: UserId);
+  function setSite(siteId: SiteId): SiteType;
   
   #window
   function setWindow(window: UserWindow);
   event windowChanged(clientId: ClientId, window: nullable UserWindow);
+
+  #users
+  #function getUser(userId: UserId): UserInfo;
 
   ###
   #actions

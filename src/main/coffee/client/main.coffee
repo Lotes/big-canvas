@@ -6,12 +6,7 @@ MainClientStub = MainWorker.ClientStub
 socketUrl = "ws://"+document.location.hostname+":"+config.SERVER_WEB_PORT+"/"+config.SERVER_SOCKET_PATH
 socket = new WebSocket(socketUrl)
 socket.onopen = () ->
-  mainInterface.login("bla", (err, siteType) ->
-    if(err)
-      console.log(err.message)
-      return
-    console.log("siteType: "+siteType)
-  )
+  console.log("WebSocket opened!")
 socket.onerror = () ->
   console.log("WebSocket error!")
 socket.onclose = () ->
@@ -22,5 +17,7 @@ socket.onmessage = (msg) ->
 mainInterface = new MainClientStub({
   send: (object) ->
     socket.send(JSON.stringify(object))
+  initialized: (clientId, userId) ->
+    console.log("I am client "+clientId+" as user "+userId)
   windowChanged: (clientId, window) ->
 })
