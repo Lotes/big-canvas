@@ -1,4 +1,4 @@
-{ User } = require("../BasicTypes")
+{ User } = require("../../BasicTypes")
 
 module.exports = {
   get: (connection, userId, callback) ->
