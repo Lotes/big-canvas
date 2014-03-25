@@ -1,10 +1,16 @@
 config = require("./Config")
+{ Logger } = require("../logging/Logger")
+FileAppender = require("../logging/FileAppender")
+ConsoleAppender = require("../logging/ConsoleAppender")
 express = require("express")
 MemoryStore = express.session.MemoryStore
 http = require("http")
 WebSocketServer = require('ws').Server
 MainThread = require("./MainThread")
 signature = require('cookie-signature')
+
+Logger.addAppender(new ConsoleAppender())
+Logger.addAppender(new FileAppender())
 
 sessionStore = new MemoryStore()
 parseCookie = express.cookieParser()

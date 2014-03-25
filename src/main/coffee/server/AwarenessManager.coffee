@@ -1,6 +1,6 @@
 _ = require("underscore")
 { TileLocation, Site } = require("../BasicTypes")
-Logger = require("../logging/Logger")
+{ Logger } = require("../logging/Logger")
 Backbone = require("backbone")
 BigInteger = require("big-integer")
 #{ SiteType } = require("../rpc/big-canvas")
@@ -35,6 +35,10 @@ class AwarenessManager
     delete @clients[clientId]
     callback()
   setSite: (clientId, siteId, callback) ->
+    if(!@clients[clientId]?)
+      callback(new Error("Unknown connection "+clientId))
+      return
+    client = @clients[clientId]
     logger.info("connection " + clientId + " is trying to set site to '"+siteId+"'")
     connection = new DatabaseConnection()
     connection.connect((err) =>
@@ -47,10 +51,6 @@ class AwarenessManager
         if(err)
           callback(err)
           return
-        if(!@clients[clientId]?)
-          callback(new Error("Unknown connection "+clientId))
-          return
-        client = @clients[clientId]
         if(client.site != null)
           callback(new Error("Site is already set to '"+client.site.siteId+"'!"))
           return

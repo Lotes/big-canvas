@@ -1,4 +1,4 @@
-Logger = require("../logging/Logger")
+{ Logger } = require("../logging/Logger")
 BigInteger = require("big-integer")
 AwarenessManager = require("./AwarenessManager")
 { MainWorker } = require("../rpc/big-canvas")

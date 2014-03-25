@@ -1,29 +1,18 @@
 config = require("../Config")
-fs = require("fs")
 
-logFileName = config.SERVER_LOGS_PATH + "/main.log" #TODO derive a name from date time
-stream = fs.createWriteStream(logFileName, {
-  flags: 'w',
-  encoding: "utf8",
-  mode: 0o777
-})
+appenders = []
 
 log = (source, level, timestamp, message, annotations) ->
-  try
-    record = {
-      source: source,
-      level: level,
-      message: message,
-      timestamp: timestamp.toJSON(),
-      annotations: annotations
-    }
-    line = JSON.stringify(record)+"\n"
-    stream.write(line)
-    console.log("["+timestamp.toJSON()+"] ["+source+"] "+level+": "+message)
-  catch ex
-    console.log("Error while logging: "+ex.message)
+  for appender in appenders
+    appender.append(source, level, timestamp, message, annotations)
+
+class LogAppender
+  constructor: ->
+  append: (source, level, timestamp, message, annotations) ->
 
 class Logger
+  @addAppender: (appender) ->
+    appenders.push(appender)
   constructor: (@source, @defaultAnnotations) ->
     @source = @source || "<not source>"
     @defaultAnnotations = @defaultAnnotations || {}
@@ -47,4 +36,4 @@ class Logger
   error: (message, annotations) -> @log("ERROR", message, annotations)
   fatal: (message, annotations) -> @log("FATAL", message, annotations)
 
-module.exports = Logger
+module.exports = { Logger, LogAppender }
