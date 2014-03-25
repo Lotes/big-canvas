@@ -51,7 +51,7 @@ class User
   constructor: (@userId, @name, @defaultColor) ->
 
 class Site
-  constructor: (@siteId, @location) ->
+  constructor: (@siteId, @mode, @location) ->
 
 class UserWindow
   constructor: (x, y, width, height) ->

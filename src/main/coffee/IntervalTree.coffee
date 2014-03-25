@@ -50,6 +50,11 @@ class IntervalTree
     if(@nodesByKey[key]?)
       @_deleteNode(@nodesByKey[key])
       delete @nodesByKey[key]
+  get: (key) ->
+    if(@nodesByKey[key]?)
+      @nodesByKey[key].interval
+    else
+      null
   getOverlappings: (low, high) ->
     enumResultStack = []
     recursionNodeStack = [new RecursionNode(null, false, -1)]

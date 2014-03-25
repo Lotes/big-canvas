@@ -1,6 +1,6 @@
 config = require("../Config")
 BigInteger = require("big-integer")
-{ MainWorker } = require("../rpc/big-canvas")
+{ MainWorker, SiteType } = require("../rpc/big-canvas")
 MainClientStub = MainWorker.ClientStub
 
 socketUrl = "ws://"+document.location.hostname+":"+config.SERVER_WEB_PORT+"/"+config.SERVER_SOCKET_PATH
@@ -19,5 +19,14 @@ mainInterface = new MainClientStub({
     socket.send(JSON.stringify(object))
   initialized: (clientId, userId) ->
     console.log("I am client "+clientId+" as user "+userId)
+    siteId = "null"
+    console.log("Setting site to '"+siteId+"'")
+    mainInterface.setSite(siteId, (err, mode) =>
+      if(err)
+        console.log("Error: "+err.message)
+        return
+      mode = if(mode==SiteType.READ_ONLY)then "READ ONLY" else "WRITABLE"
+      console.log("Site mode is "+mode)
+    )
   windowChanged: (clientId, window) ->
 })

@@ -22,9 +22,10 @@ DROP TABLE IF EXISTS sites;
 CREATE TABLE sites (
   id VARCHAR(255) PRIMARY KEY,
   readOnly BOOLEAN NOT NULL,
-  tileId DECIMAL(65) NOT NULL
+  col DECIMAL(65) NOT NULL,
+  row DECIMAL(65) NOT NULL
 );
-INSERT INTO sites (id, readOnly, tileId) VALUES ('null', 0, 0);
+INSERT INTO sites (id, readOnly, col, row) VALUES ('null', 0, 0, 0);
 
 DROP TABLE IF EXISTS actions;
 CREATE TABLE actions (
