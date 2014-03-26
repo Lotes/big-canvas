@@ -2,6 +2,8 @@ config = require("./server/Config")
 BigInteger = require("big-integer")
 
 class Point
+  @createFromDifferentSite: (point, sourceSiteLocation, targetSiteLocation) ->
+    point.minus(sourceSiteLocation.toPoint()).add(targetSiteLocation.toPoint())
   constructor: (x, y) ->
     @x = BigInteger(x)
     @y = BigInteger(y)
@@ -64,6 +66,8 @@ class UserWindow
     topLeft = new Point(@x.add(offset.x), @y.add(offset.y))
     bottomRight = new Point(topLeft.x.add(@width).minus(1), topLeft.y.add(@height).minus(1))
     new TileWindow(topLeft.toLocation(), bottomRight.toLocation())
+  toString: ->
+    "UserWindow(x: "+@x.toString()+"; y: "+@y.toString()+"; width: "+@width.toString()+"; height: "+@height.toString()+")"
 
 class TileWindow
   constructor: (@min, @max) ->

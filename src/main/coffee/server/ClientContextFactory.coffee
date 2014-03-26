@@ -20,11 +20,8 @@ class ClientContext
           callback(null, user)
       )
     )
-  setSite: (siteId, callback) ->
-    #site
-  setWindow: (userWindow) ->
-    #window
-    #range
+  setSite: (@site) ->
+  setWindow: (@userWindow) ->
 
 class ClientContextFactory
   constructor: ->

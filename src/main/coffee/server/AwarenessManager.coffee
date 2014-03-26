@@ -1,9 +1,8 @@
 _ = require("underscore")
-{ TileLocation, Site } = require("../BasicTypes")
+{ Point, TileLocation, Site, UserWindow } = require("../BasicTypes")
 { Logger } = require("../logging/Logger")
 Backbone = require("backbone")
 BigInteger = require("big-integer")
-#{ SiteType } = require("../rpc/big-canvas")
 { ClientContextFactory } = require("./ClientContextFactory")
 WindowTree = require("../WindowTree")
 Sites = require("./entities/Sites")
@@ -59,8 +58,32 @@ class AwarenessManager
         callback(null, mode)
       )
     )
-  setWindow: (clientId, window) ->
-    #check if site is null
-    #broadcast window to visible clients
+  setWindow: (clientId, window, callback) ->
+    if(!@clients[clientId]?)
+      callback(new Error("Unknown connection "+clientId))
+      return
+    client = @clients[clientId]
+    if(!client.site?)
+      callback(new Error("Site missing!"))
+      return
+    location = client.site.location
+    userWindow = new UserWindow(window[0], window[1], window[2], window[3])
+    logger.info("connection " + clientId + " wants to update window")
+    client.setWindow(userWindow)
+    tileWindow = userWindow.toAbsoluteWindow(client.site)
+    @windows.addOrUpdate(clientId, tileWindow)
+    #TODO send also null windows back to non-intersecting clients when no more intersecting
+    intersectingClientIds = _.without(@windows.getOverlappings(tileWindow), clientId)
+    _.each(intersectingClientIds, (intersectingClientId) =>
+      if(!@clients[intersectingClientId]? || @clients[intersectingClientId].site == null)
+        return
+      intersectingSiteLocation = @clients[intersectingClientId].site.location
+      pt = Point.createFromDifferentSite(new Point(window[0], window[1]), location, intersectingSiteLocation).toData()
+      changedWindow = [pt[0], pt[1], window[2], window[3]]
+      @trigger("windowChanged", intersectingClientId, clientId, changedWindow)
+      #TODO send also the intersecting windows to the client
+    )
+    logger.info("connection " + clientId + " updated window '"+userWindow.toString()+"'")
+    callback(null)
 
 module.exports = AwarenessManager

@@ -27,5 +27,6 @@ Config.ACTION_MAX_STROKE_SIZE = 4096
 #default values; see users table in schema.sql
 Config.DEMO_USER_ID = "0"
 Config.DEMO_SITE = "null"
+Config.DEMO_SITE2 = "one"
 
 module.exports = Config

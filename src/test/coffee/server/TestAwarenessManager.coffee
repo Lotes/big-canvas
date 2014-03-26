@@ -15,5 +15,16 @@ describe("AwarenessManager", ->
         )
       )
     )
+    it("should return not an error on setting known site", (done) ->
+      manager = new AwarenessManager()
+      manager.addClient(config.DEMO_USER_ID, (err, clientId) ->
+        if(err)
+          throw err
+        manager.setSite(clientId, config.DEMO_SITE, (err, mode) ->
+          expect(err).to.be(null)
+          done()
+        )
+      )
+    )
   )
 )

@@ -14,7 +14,7 @@ class Logger
   @addAppender: (appender) ->
     appenders.push(appender)
   constructor: (@source, @defaultAnnotations) ->
-    @source = @source || "<not source>"
+    @source = @source || "<no source>"
     @defaultAnnotations = @defaultAnnotations || {}
   createChild: (annotations) ->
     annos = {}

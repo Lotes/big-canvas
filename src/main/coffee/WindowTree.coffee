@@ -10,8 +10,7 @@ class WindowTree
     maximum = BigInteger(-100)
     @horizontalTree = new IntervalTree(less, minimum, maximum)
     @verticalTree = new IntervalTree(less, minimum, maximum)
-  addOrUpdate: (name, userWindow) ->
-    tileWindow = userWindow.toAbsoluteWindow()
+  addOrUpdate: (name, tileWindow) ->
     @horizontalTree.add(
       name,
       new Interval(tileWindow.min.column, tileWindow.max.column)
@@ -23,8 +22,7 @@ class WindowTree
   remove: (name) ->
     @horizontalTree.remove(name)
     @verticalTree.remove(name)
-  getOverlappings: (userWindow) ->
-    tileWindow = userWindow.toAbsoluteWindow()
+  getOverlappings: (tileWindow) ->
     _.intersection(
       @horizontalTree.getOverlappings(tileWindow.min.column, tileWindow.max.column),
       @verticalTree.getOverlappings(tileWindow.min.row, tileWindow.max.row)

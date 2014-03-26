@@ -41,12 +41,8 @@ struct Action {
 typedef UserId = BigInteger
 typedef UserWindowWidth = integer[1...4096]
 typedef UserWindowHeight = integer[1...4096]
-struct UserWindow {
-  x: BigInteger;
-  y: BigInteger;
-  width: UserWindowWidth;
-  height: UserWindowHeight;
-}
+typedef UserWindow = tuple of (BigInteger, BigInteger, UserWindowWidth, UserWindowHeight) #x,y,w,h
+
 struct UserInfo {
   name: string;
   color: Color;

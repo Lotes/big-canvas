@@ -25,6 +25,9 @@ class MainThread
     })
 
     logger.info("initialize awareness manager")
+    awarenessManager.on("windowChanged", (receivingClientId, clientId, window) =>
+      mainInterface.windowChanged(receivingClientId, clientId, window)
+    )
 
     logger.info("initialize socket server")
     @socketServer.on("connection", (socket) =>

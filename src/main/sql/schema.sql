@@ -26,6 +26,7 @@ CREATE TABLE sites (
   row DECIMAL(65) NOT NULL
 );
 INSERT INTO sites (id, readOnly, col, row) VALUES ('null', 0, 0, 0);
+INSERT INTO sites (id, readOnly, col, row) VALUES ('one', 0, 1, 1);
 
 DROP TABLE IF EXISTS actions;
 CREATE TABLE actions (
