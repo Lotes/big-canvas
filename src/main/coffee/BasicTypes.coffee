@@ -2,8 +2,6 @@ config = require("./server/Config")
 BigInteger = require("big-integer")
 
 class Point
-  @createFromDifferentSite: (point, sourceSiteLocation, targetSiteLocation) ->
-    point.minus(sourceSiteLocation.toPoint()).add(targetSiteLocation.toPoint())
   constructor: (x, y) ->
     @x = BigInteger(x)
     @y = BigInteger(y)
@@ -59,15 +57,23 @@ class UserWindow
   constructor: (x, y, width, height) ->
     @x = BigInteger(x)
     @y = BigInteger(y)
-    @width = BigInteger(width)
-    @height = BigInteger(height)
+    @width = width #simple number
+    @height = height #simple number
   toAbsoluteWindow: (site) ->
     offset = site.location.toPoint()
     topLeft = new Point(@x.add(offset.x), @y.add(offset.y))
     bottomRight = new Point(topLeft.x.add(@width).minus(1), topLeft.y.add(@height).minus(1))
     new TileWindow(topLeft.toLocation(), bottomRight.toLocation())
   toString: ->
-    "UserWindow(x: "+@x.toString()+"; y: "+@y.toString()+"; width: "+@width.toString()+"; height: "+@height.toString()+")"
+    "UserWindow(x: "+@x.toString()+"; y: "+@y.toString()+"; width: "+@width+"; height: "+@height+")"
+  toData: ->
+    [@x.toString(), @y.toString(), @width, @width]
+  siteTranslate: (sourceSite, targetSite) ->
+    sourceOffset = sourceSite.location.toPoint()
+    targetOffset = targetSite.location.toPoint()
+    newX = @x.minus(sourceOffset.x).add(targetOffset.x)
+    newY = @y.minus(sourceOffset.y).add(targetOffset.y)
+    new UserWindow(newX, newY, @width, @height)
 
 class TileWindow
   constructor: (@min, @max) ->

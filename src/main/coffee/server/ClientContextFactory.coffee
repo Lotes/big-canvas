@@ -5,7 +5,7 @@ class ClientContext
   constructor: (@clientId) ->
     @user = null
     @site = null
-    @window = null
+    @window = null #user window
   setUser: (userId, callback) ->
     connection = new DatabaseConnection()
     connection.connect((err) =>
@@ -21,7 +21,7 @@ class ClientContext
       )
     )
   setSite: (@site) ->
-  setWindow: (@userWindow) ->
+  setWindow: (@window) ->
 
 class ClientContextFactory
   constructor: ->

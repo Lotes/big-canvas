@@ -49,7 +49,6 @@ class MainThread
           )
           #closing connection
           socket.on("close", ->
-            logger.info("closing connection " + clientId)
             delete socketsByClientId[clientId]
             awarenessManager.removeClient(clientId, (err) -> )
           )

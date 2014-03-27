@@ -30,8 +30,22 @@ class AwarenessManager
         callback(null, clientId)
     )
   removeClient: (clientId, callback) ->
-    #TODO send windowChanged event to all visible clients
+    if(!@clients[clientId]?)
+      callback(new Error("Unknown connection "+clientId))
+      return
+    client = @clients[clientId]
+    if(!client.site? || !client.window?)
+      callback()
+      return
+    @windows.remove(clientId)
+    site = client.site
+    userWindow = client.window
+    tileWindow = userWindow.toAbsoluteWindow(site)
+    _.each(@windows.getOverlappings(tileWindow), (otherId) =>
+      @trigger("windowChanged", otherId, clientId, null)
+    )
     delete @clients[clientId]
+    logger.info("connection "+clientId+" closed")
     callback()
   setSite: (clientId, siteId, callback) ->
     if(!@clients[clientId]?)
@@ -66,24 +80,32 @@ class AwarenessManager
     if(!client.site?)
       callback(new Error("Site missing!"))
       return
-    location = client.site.location
-    userWindow = new UserWindow(window[0], window[1], window[2], window[3])
     logger.info("connection " + clientId + " wants to update window")
-    client.setWindow(userWindow)
-    tileWindow = userWindow.toAbsoluteWindow(client.site)
-    @windows.addOrUpdate(clientId, tileWindow)
-    #TODO send also null windows back to non-intersecting clients when no more intersecting
-    intersectingClientIds = _.without(@windows.getOverlappings(tileWindow), clientId)
-    _.each(intersectingClientIds, (intersectingClientId) =>
-      if(!@clients[intersectingClientId]? || @clients[intersectingClientId].site == null)
-        return
-      intersectingSiteLocation = @clients[intersectingClientId].site.location
-      pt = Point.createFromDifferentSite(new Point(window[0], window[1]), location, intersectingSiteLocation).toData()
-      changedWindow = [pt[0], pt[1], window[2], window[3]]
-      @trigger("windowChanged", intersectingClientId, clientId, changedWindow)
-      #TODO send also the intersecting windows to the client
+    #compute tile windows and intersecting clients
+    site = client.site
+    oldUserWindow = client.window
+    oldTileWindow = if(oldUserWindow?)then oldUserWindow.toAbsoluteWindow(site) else null
+    newUserWindow = new UserWindow(window[0], window[1], window[2], window[3])
+    newTileWindow = newUserWindow.toAbsoluteWindow(site)
+    oldClientIds = if(oldTileWindow?)then _.without(@windows.getOverlappings(oldTileWindow), clientId) else []
+    newClientIds = _.without(@windows.getOverlappings(newTileWindow), clientId)
+    #set new window
+    client.setWindow(newUserWindow)
+    @windows.addOrUpdate(clientId, newTileWindow)
+    #notify disappearing clients
+    _.each(_.without(oldClientIds, newClientIds), (otherId) =>
+      @trigger("windowChanged", otherId, clientId, null)
+      @trigger("windowChanged", clientId, otherId, null)
     )
-    logger.info("connection " + clientId + " updated window '"+userWindow.toString()+"'")
+    #notify appearing clients
+    _.each(_.without(newClientIds, oldClientIds), (otherId) =>
+      other = @clients[otherId]
+      otherWindow = other.window
+      otherSite = other.site
+      @trigger("windowChanged", otherId, clientId, newUserWindow.siteTranslate(site, otherSite).toData())
+      @trigger("windowChanged", clientId, otherId, otherWindow.siteTranslate(otherSite, site).toData())
+    )
+    logger.info("connection " + clientId + " updated window '"+newUserWindow.toString()+"'")
     callback(null)
 
 module.exports = AwarenessManager

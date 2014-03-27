@@ -40,4 +40,5 @@ mainInterface = new MainClientStub({
       )
     )
   windowChanged: (clientId, window) ->
+    logger.info("incoming user window of client "+clientId+": "+JSON.stringify(window))
 })
