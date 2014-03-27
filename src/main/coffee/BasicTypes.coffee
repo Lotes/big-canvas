@@ -67,7 +67,7 @@ class UserWindow
   toString: ->
     "UserWindow(x: "+@x.toString()+"; y: "+@y.toString()+"; width: "+@width+"; height: "+@height+")"
   toData: ->
-    [@x.toString(), @y.toString(), @width, @width]
+    [@x.toString(), @y.toString(), @width, @height]
   siteTranslate: (sourceSite, targetSite) ->
     sourceOffset = sourceSite.location.toPoint()
     targetOffset = targetSite.location.toPoint()
