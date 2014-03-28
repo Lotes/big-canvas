@@ -23,7 +23,12 @@ mainInterface = new MainClientStub({
   send: (object) ->
     socket.send(JSON.stringify(object))
   initialized: (clientId, userId) ->
-    logger.info("I am client "+clientId+" as user "+userId)
+    mainInterface.getUserByUserId(userId, (err, user) ->
+      if(err)
+        logger.error(err.message)
+      else
+        logger.info("I am client "+clientId+" as user '"+user[1]+"'")
+    )
     siteId = "null"
     logger.info("Setting site to '"+siteId+"'")
     mainInterface.setSite(siteId, (err, mode) =>
@@ -40,5 +45,18 @@ mainInterface = new MainClientStub({
       )
     )
   windowChanged: (clientId, window) ->
-    logger.info("incoming user window of client "+clientId+": "+JSON.stringify(window))
+    if(window == null)
+      logger.info("removing user window of client "+clientId)
+    else
+      mainInterface.resolveClientId(clientId, (err, userId) ->
+        if(err)
+          logger.error(err.message)
+        else
+          mainInterface.getUserByUserId(userId, (err, user) ->
+            if(err)
+              logger.error(err.message)
+            else
+              logger.info("incoming user window of client "+clientId+" as user '"+user[1]+"': "+JSON.stringify(window))
+          )
+      )
 })

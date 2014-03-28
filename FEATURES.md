@@ -1,6 +1,9 @@
 # FEATURES
 
-## v0.2 (current progress)
+## v0.3 (current progress)
+* switch language to coffee script
+
+## v0.2
 * server is written with Node.js using the modules `express` and `ws`
 * the tools are a brush and an eraser (with adjustable opacity and width)
 * x- and y-coordinates are limited by 254-decimal-digit-integers

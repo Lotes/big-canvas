@@ -6,6 +6,7 @@ BigInteger = require("big-integer")
 { ClientContextFactory } = require("./ClientContextFactory")
 WindowTree = require("../WindowTree")
 Sites = require("./entities/Sites")
+Users = require("./entities/Users")
 DatabaseConnection = require("./database/DatabaseConnection")
 
 logger = new Logger("AwarenessManager")
@@ -65,7 +66,7 @@ class AwarenessManager
           callback(err)
           return
         if(client.site != null)
-          callback(new Error("Site is already set to '"+client.site.siteId+"'!"))
+          callback(new Error("Site is already set to '"+client.site.id+"'!"))
           return
         client.setSite(new Site(siteId, mode, new TileLocation(column, row)))
         logger.info("connection " + clientId + " set his site  to '"+siteId+"'")
@@ -107,5 +108,24 @@ class AwarenessManager
     )
     logger.info("connection " + clientId + " updated window '"+newUserWindow.toString()+"'")
     callback(null)
+  resolveClientId: (clientId, resolveClientId, callback) ->
+    if(!@clients[resolveClientId]?)
+      callback(new Error("Unknown connection!"))
+    else
+      callback(null, @clients[resolveClientId].user.id)
+  getUserByUserId: (clientId, userId, callback) ->
+    connection = new DatabaseConnection()
+    connection.connect((err) ->
+      if(err)
+        callback(err)
+      else
+        Users.get(connection, userId, (err, user) ->
+          connection.end()
+          if(err)
+            callback(err)
+          else
+            callback(null, [user.id, user.name, user.defaultColor])
+        )
+    )
 
 module.exports = AwarenessManager

@@ -70,18 +70,18 @@ interface MainWorker {
   event windowChanged(clientId: ClientId, window: nullable UserWindow);
 
   #users
-  #function resolveClientId(clientId: ClientId): UserId;
-  #function getUserByUserId(userId: UserId): UserInfo;
+  function resolveClientId(clientId: ClientId): UserId;
+  function getUserByUserId(userId: UserId): UserInfo;
 
   ###
   #actions
   function beginAction(startInfo: ActionStartInfo);
-  event onActionBegan(startingClientId: ClientId, startInfo: ActionStartInfo);
   function doActionMove(point: BigPoint);
-  event onActionMoved(movingClientId: ClientId, point: BigPoint);
   function commitAction(): ActionId;
-  event onActionCommitted(committingClientId: ClientId, action: Action);
   function cancelAction();
+  event onActionBegin(startingClientId: ClientId, startInfo: ActionStartInfo);
+  event onActionMoved(movingClientId: ClientId, point: BigPoint);
+  event onActionCommitted(committingClientId: ClientId, action: Action);
   event onActionCancelled(cancellingClientId: ClientId);
   ###
 }

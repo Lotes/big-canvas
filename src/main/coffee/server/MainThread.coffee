@@ -22,6 +22,10 @@ class MainThread
         awarenessManager.setSite(clientId, siteId, callback)
       setWindow: (clientId, window, callback) ->
         awarenessManager.setWindow(clientId, window, callback)
+      resolveClientId: (clientId, resolveClientId, callback) ->
+        awarenessManager.resolveClientId(clientId, resolveClientId, callback)
+      getUserByUserId: (clientId, userId, callback) ->
+        awarenessManager.getUserByUserId(clientId, userId, callback)
     })
 
     logger.info("initialize awareness manager")

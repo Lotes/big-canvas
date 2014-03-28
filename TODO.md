@@ -1,6 +1,8 @@
 # TODO
 
 ## v0.3
+* switch language to coffee script
+* review architecture
 * multiple layers (max. 5)
 * set temporary layer opacity
 * move opacity to tool options, not to "color"

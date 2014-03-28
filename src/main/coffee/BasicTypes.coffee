@@ -48,10 +48,10 @@ class TileLocation
     @column.equals(other.column) && @row.equals(other.row)
 
 class User
-  constructor: (@userId, @name, @defaultColor) ->
+  constructor: (@id, @name, @defaultColor) ->
 
 class Site
-  constructor: (@siteId, @mode, @location) ->
+  constructor: (@id, @mode, @location) ->
 
 class UserWindow
   constructor: (x, y, width, height) ->

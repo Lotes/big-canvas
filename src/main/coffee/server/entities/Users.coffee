@@ -1,7 +1,7 @@
 { User } = require("../../BasicTypes")
 
 module.exports = {
-  #REMARK: lock the users table before applying this function
+  #REMARK: lock the users table before applying this function, because a new id could be generated
   findAndUpdateGoogle: (connection, openId, name, callback) ->
     connection.query("SELECT id FROM users WHERE openId=? LIMIT 1", [openId], (err, results) ->
       if(err)
