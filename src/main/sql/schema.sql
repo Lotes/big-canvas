@@ -2,10 +2,10 @@ DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     id DECIMAL(65) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    password VARCHAR(255) NOT NULL,
+    openId VARCHAR(255) NULL,
     defaultColor CHAR(7) NOT NULL
 );
-INSERT INTO users (id, name, password, defaultColor) VALUES (0, 'Demo user', '', '#FF0000');
+INSERT INTO users (id, name, openId, defaultColor) VALUES (0, 'Demo user', NULL, '#FF0000');
 
 DROP TABLE IF EXISTS tiles;
 CREATE TABLE tiles (

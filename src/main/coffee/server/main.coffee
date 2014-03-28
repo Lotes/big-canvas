@@ -5,12 +5,47 @@ ConsoleAppender = require("../logging/ConsoleAppender")
 express = require("express")
 MemoryStore = express.session.MemoryStore
 http = require("http")
-WebSocketServer = require('ws').Server
+WebSocketServer = require("ws").Server
 MainThread = require("./MainThread")
-signature = require('cookie-signature')
+signature = require("cookie-signature")
+Users = require("./entities/Users")
+passport = require("passport")
+GoogleStrategy = require("passport-google").Strategy
+DatabaseConnection = require("./database/DatabaseConnection")
+lock = require("./lock")
 
 Logger.addAppender(new ConsoleAppender())
 Logger.addAppender(new FileAppender())
+
+passport.use(new GoogleStrategy({
+    returnURL: "http://"+config.SERVER_WEB_ADDRESS+"/auth/google/return",
+    realm: "http://"+config.SERVER_WEB_ADDRESS+"/"
+  },
+  (identifier, profile, callback) ->
+    lock("users", (done) ->
+      connection = new DatabaseConnection()
+      connection.connect((err) ->
+        if(err)
+          callback(err)
+          done()
+        else
+          Users.findAndUpdateGoogle(connection, identifier, profile.displayName, (err, userId) ->
+            connection.end()
+            if(err)
+              callback(err)
+            else
+              callback(null, userId)
+            done()
+          )
+      )
+    )
+))
+passport.serializeUser((user, done) ->
+  done(null, user)
+)
+passport.deserializeUser((user, done) ->
+  done(null, user)
+)
 
 sessionStore = new MemoryStore()
 parseCookie = express.cookieParser()
@@ -27,6 +62,8 @@ app.configure(() ->
     key: config.SERVER_SESSION_ID,
     store: sessionStore
   }))
+  app.use(passport.initialize())
+  app.use(passport.session())
   app.use(app.router)
   app.use(express.static(config.SERVER_WEB_PATH))
 )
@@ -36,6 +73,14 @@ app.configure('development', () ->
 )
 app.configure('production', () ->
   app.use(express.errorHandler())
+)
+
+app.get("/auth/google", passport.authenticate("google"))
+app.get("/auth/google/return",
+  passport.authenticate("google", {
+    successRedirect: "/",
+    failureRedirect: "/login.html"
+  })
 )
 
 webServer = http.createServer(app)
@@ -51,13 +96,13 @@ socketToUserId = (socket, callback) ->
     if(err)
       callback(null, config.DEMO_USER_ID)
       return
-    sessionID = socket.upgradeReq.cookies[config.SERVER_SESSION_ID]
-    sessionID = signature.unsign(sessionID.slice(2), config.SERVER_SESSION_SECRET)
-    sessionStore.get(sessionID, (err, session) ->
-      if(err || !session || !session.userId)
+    sessionId = socket.upgradeReq.cookies[config.SERVER_SESSION_ID]
+    sessionId = signature.unsign(sessionId.slice(2), config.SERVER_SESSION_SECRET)
+    sessionStore.get(sessionId, (err, session) ->
+      if(err || !session || !session.passport || !session.passport.user)
         callback(null, config.DEMO_USER_ID)
       else
-        callback(null, session.userId)
+        callback(null, session.passport.user)
     )
   )
 

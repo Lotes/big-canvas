@@ -8,6 +8,7 @@ Config = {}
 * @default 8080
 ###
 Config.SERVER_WEB_PORT = 8080
+Config.SERVER_WEB_ADDRESS = "localhost:"+Config.SERVER_WEB_PORT
 
 ###
 * the path of the web socket
