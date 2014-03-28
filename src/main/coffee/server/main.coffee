@@ -52,7 +52,7 @@ parseCookie = express.cookieParser()
 
 app = express()
 app.configure(() ->
-  app.set("views", null) #config.SERVER_VIEW_PATH
+  app.set("views", config.SERVER_VIEW_PATH)
   app.set("view engine", "ejs")
   app.use(express.bodyParser())
   app.use(express.methodOverride())

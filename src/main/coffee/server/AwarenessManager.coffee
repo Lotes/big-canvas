@@ -108,12 +108,12 @@ class AwarenessManager
     )
     logger.info("connection " + clientId + " updated window '"+newUserWindow.toString()+"'")
     callback(null)
-  resolveClientId: (clientId, resolveClientId, callback) ->
+  resolveClientId: (resolveClientId, callback) ->
     if(!@clients[resolveClientId]?)
       callback(new Error("Unknown connection!"))
     else
       callback(null, @clients[resolveClientId].user.id)
-  getUserByUserId: (clientId, userId, callback) ->
+  getUserByUserId: (userId, callback) ->
     connection = new DatabaseConnection()
     connection.connect((err) ->
       if(err)

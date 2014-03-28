@@ -29,7 +29,7 @@ mainInterface = new MainClientStub({
       else
         logger.info("I am client "+clientId+" as user '"+user[1]+"'")
     )
-    siteId = "null"
+    #siteId = "null" #is set by the template
     logger.info("Setting site to '"+siteId+"'")
     mainInterface.setSite(siteId, (err, mode) =>
       if(err)

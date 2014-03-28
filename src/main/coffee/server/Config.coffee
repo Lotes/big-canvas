@@ -16,7 +16,7 @@ Config.DATABASE_NAME = "bigcanvas"
 * @default "/public"
 ###
 Config.SERVER_WEB_PATH = __dirname + "/../../../../public2"
-Config.SERVER_VIEW_PATH = __dirname + "/../../../../private/views"
+Config.SERVER_VIEW_PATH = __dirname + "/../../../../private/pages"
 Config.SERVER_TILES_PATH = __dirname + "/../../../../private/tiles"
 Config.SERVER_LOGS_PATH = __dirname + "/../../../../private/logs"
 Config.SERVER_SESSION_SECRET = "keyboard cat"

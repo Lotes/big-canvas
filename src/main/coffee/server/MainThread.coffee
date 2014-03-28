@@ -3,6 +3,8 @@ BigInteger = require("big-integer")
 AwarenessManager = require("./AwarenessManager")
 { MainWorker } = require("../rpc/big-canvas")
 MainServerStub = MainWorker.ServerStub
+DatabaseConnection = require("./database/DatabaseConnection")
+Sites = require("./entities/Sites")
 
 logger = new Logger("MainThread")
 
@@ -10,6 +12,23 @@ class MainThread
   constructor: (@app, @socketToUserId, @socketServer) ->
     socketsByClientId = {}
     awarenessManager = new AwarenessManager()
+
+    logger.info("initialize web interface")
+    @app.get("/sites/:id", (req, res, next) ->
+      siteId = req.params.id
+      connection = new DatabaseConnection()
+      connection.connect((err) ->
+        if(err)
+          next(err)
+        else
+          Sites.get(connection, siteId, (err, site) ->
+            if(err)
+              next(err)
+            else
+              res.render("site.ejs", {siteId: siteId })
+          )
+      )
+    )
 
     logger.info("initialize main worker server stub")
     mainInterface = new MainServerStub({
@@ -23,9 +42,9 @@ class MainThread
       setWindow: (clientId, window, callback) ->
         awarenessManager.setWindow(clientId, window, callback)
       resolveClientId: (clientId, resolveClientId, callback) ->
-        awarenessManager.resolveClientId(clientId, resolveClientId, callback)
+        awarenessManager.resolveClientId(resolveClientId, callback)
       getUserByUserId: (clientId, userId, callback) ->
-        awarenessManager.getUserByUserId(clientId, userId, callback)
+        awarenessManager.getUserByUserId(userId, callback)
     })
 
     logger.info("initialize awareness manager")
