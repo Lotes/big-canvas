@@ -47,8 +47,8 @@ typedef UserInfo = tuple of (UserId, UserName, Color)
 
 ### SITES ###
 enum SiteType {
-	READ_ONLY,
-	WRITABLE
+  READ_ONLY,
+  WRITABLE
 }
 typedef SiteId = string[...40] /^[a-zA-Z0-9]+$/
 
@@ -83,5 +83,7 @@ interface MainWorker {
   event onActionMoved(movingClientId: ClientId, point: BigPoint);
   event onActionCommitted(committingClientId: ClientId, action: Action);
   event onActionCancelled(cancellingClientId: ClientId);
+  function undo(actionId: nullable ActionId); #actionId=null means users last action
+  function redo(actionId: nullable ActionId);
   ###
 }

@@ -1,0 +1,277 @@
+<html>
+<head>
+    <title>big-canvas - gui prototype</title>
+    <!-- jquery -->
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <!-- jquery layout -->
+    <script type="text/javascript" src="jquery.layout.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="layout-default.css"/>
+    <!-- jquery ui -->
+    <script type="text/javascript" src="jquery-ui/js/jquery-ui-1.10.3.custom.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="jquery-ui/css/custom-theme/jquery-ui-1.10.3.custom.min.css"/>
+    <!-- jquery color picker -->
+    <script src="jquery-colorpicker/jquery.colorpicker.js"></script>
+    <link href="jquery-colorpicker/jquery.colorpicker.css" rel="stylesheet" type="text/css"/>
+    <script src="jquery-colorpicker/swatches/jquery.ui.colorpicker-pantone.js"></script>
+    <script src="jquery-colorpicker/parts/jquery.ui.colorpicker-rgbslider.js"></script>
+    <script src="jquery-colorpicker/parts/jquery.ui.colorpicker-memory.js"></script>
+    <script src="jquery-colorpicker/parsers/jquery.ui.colorpicker-cmyk-parser.js"></script>
+    <script src="jquery-colorpicker/parsers/jquery.ui.colorpicker-cmyk-percentage-parser.js"></script>
+    <!-- mouse trap -->
+    <script type="text/javascript" src="mousetrap.min.js"></script>
+    <!-- big-canvas -->
+    <link type="text/css" rel="stylesheet" href="bigcanvas.css"/>
+    <script type="text/javascript">
+    $(document).ready(function () {
+        var layout = $('body').layout({
+             pane__spacing: 0,
+             north__resizable: false,
+             north__closable: false,
+             south__resizable: false,
+             south__closable: false,
+             north__spacing_open: 0,
+             south__spacing_open: 0,
+             /*east__resizable: false,
+             east__closable: true,
+             east__spacing_open: 0,
+             east__spacing_closed: 0,*/
+             
+             paneClass: "region",
+             north__paneSelector: "#header-region",
+             //east__paneSelector: "#comments-region",
+             center__paneSelector: "#canvas-region",             
+             south__paneSelector: "#tools-region",
+             
+             north__size: 50,
+             south__size: 50,
+             //east__size: 381 //like in google maps :D
+        });
+        
+        var color = "#FF0000";
+        var $colorPickerDialog = $("#colorpicker-dialog");
+        $colorPickerDialog.dialog({
+            autoOpen: false,
+            minWidth: 600,
+            modal: true,
+            buttons: {
+              'Close': function() {
+                 $(this).dialog('close');
+              }
+            }
+        });
+        var $colorBucket = $(".color-bucket .bucket-foreground");
+        $colorBucket.click(function() {
+            $colorPickerDialog.dialog("open");
+        });
+        $('#colorpicker').colorpicker({
+            showOn: "click",
+            alpha: true,
+            color: color,
+            colorFormat: 'RGBA',
+            parts:  [
+            //    'header',
+                'alpha',
+                'map',
+                'bar',
+                'hex',
+                'hsv', 
+                'rgb',  
+                'lab', 
+                'cmyk',
+                'inputs',
+            //    'preview',
+            //    'swatches',
+            //    'footer'
+            ],
+            inlineFrame: false,
+            select: function(event, color) {
+              var m = /^rgba\((\d{1,3}),(\d{1,3}),(\d{1,3}),(\d+(\.\d+)?)\)$/.exec(color.formatted);
+              if (m) {
+                $colorBucket.css("background-color", color.formatted);
+                function rgb2hex(r, g, b, a) {
+                    return (256 + r).toString(16).substr(1) +
+                           (256 + g).toString(16).substr(1) +
+                           (256 + b).toString(16).substr(1);
+                }
+                var r = parseInt(m[1], 10);
+                var g = parseInt(m[2], 10);
+                var b = parseInt(m[3], 10);
+                var hexColor = "#"+rgb2hex(r, g, b);
+                var opacity = parseFloat(m[4]);
+                //TODO set big-canvas color/opacity
+              }
+            }
+        });
+        $colorBucket.css("background-color", color);
+        
+        var $sizeSlider = $("#size-slider .toolsslider-slider");
+        var $sizeSliderValue = $("#size-slider .toolsslider-value");
+        function setSize() {
+            var value = $sizeSlider.slider("value");
+            $sizeSliderValue.html(value);
+            //TODO set big-canvas size
+        }
+        $sizeSlider.slider({
+            orientation: "horizontal",
+            max: 100,
+            min: 1,
+            value: 10,
+            //slide: setSize,
+            change: setSize
+        });
+        
+        /*var $softnessSlider = $("#softness-slider .toolsslider-slider");
+        var $softnessSliderValue = $("#softness-slider .toolsslider-value");
+        function setSoftness() {
+            var value = $softnessSlider.slider("value");
+            $softnessSliderValue.html(value+" %");
+            //TODO set big-canvas softness
+        }
+        $softnessSlider.slider({
+            orientation: "horizontal",
+            max: 100,
+            value: 0,
+            //slide: setSoftness,
+            change: setSoftness
+        });*/
+        function activateTool($element) {
+            $element.addClass("toolsbutton-activated");
+        }
+        function deactivateTools() {
+            $(".main-tools").removeClass("toolsbutton-activated");
+        }
+        var $moveButton = $("#move-button");
+        $moveButton.click(function() {
+            deactivateTools();
+            activateTool($moveButton);
+            //TODO set big-canvas to MOVE mode
+        });
+        var $brushButton = $("#brush-button");
+        $brushButton.click(function() {
+            deactivateTools();
+            activateTool($brushButton);
+            //TODO set big-canvas to BRUSH mode
+        });
+        var $eraserButton = $("#eraser-button");
+        $eraserButton.click(function() {
+            deactivateTools();
+            activateTool($eraserButton);
+            //TODO set big-canvas to ERASER mode
+        });
+        var $undoButton = $("#undo-button");
+        $undoButton.click(function() {
+            //TODO call undo
+        });
+        var $redoButton = $("#redo-button");
+        $redoButton.click(function() {
+            //TODO call redo
+        });
+        activateTool($moveButton);
+        
+        $(".subnav").menu().hide();
+        $("#menu>li").each(function(index, el){
+            $(el).hover(function(){
+                $(this).closest('li')
+                    .find('ul')
+                    .show()
+                    .animate({"opacity":1}, 250);
+            },function() {
+                 $(this)
+                    .closest('li')
+                    .find('ul')
+                    .animate({"opacity":0}, 250, function() {
+                        $(this).hide();   
+                    });
+            });
+        });
+    });
+    </script>
+</head>
+<body>
+    <div id="canvas-region" class="ui-layout-center">
+        <!-- canvas -->
+    </div>
+    <div id="header-region" class="ui-layout-north">
+		<div id="logo">big-canvas</div>
+        <!--div id="main-menu">
+            <ul id="menu">
+                <li>
+                    <a href="#">File</a>
+                    <ul class="subnav">
+                        <li><a href="#">Nothing</a></li>
+                    </ul>
+                </li>
+                <li>
+					<a href="#">Edit</a>
+					<ul class="subnav">
+						<li><a href="#">Undo</a></li>
+						<li><a href="#">Redo</a></li>
+					</ul>
+                </li>
+				<li>
+					<a href="#">Contact</a>
+                </li>
+            </ul>
+        </div-->
+    </div>
+    <div id="tools-region" class="ui-layout-south">        
+        <div class="toolsbutton-group" style="float: left">
+            <!-- left buttons -->
+            <!--div class="toolsbutton">
+                <img src="images/layers.png"/>
+                <span class="text">Layer 1</span>
+            </div-->
+        </div>
+        <div class="toolsbutton-group" style="float: right">
+            <!-- right buttons -->
+            <!--div class="toolsbutton">
+                <img src="images/layers.png"/>
+                <span class="text">Comments</span>
+            </div-->
+        </div>
+        <div class="toolsbutton-group" style="margin: 0 auto">
+            <!-- center buttons -->
+            <div id="move-button" class="toolsbutton main-tools">
+                <img src="images/move.png"/>
+            </div>
+            <div id="brush-button" class="toolsbutton main-tools">
+                <img src="images/brush.png"/>
+            </div>
+            <div id="eraser-button" class="toolsbutton main-tools">
+                <img src="images/eraser.png"/>
+            </div>
+            <!--div class="toolsbutton">
+                <img src="images/layers.png"/>
+                <span class="text">Z</span>
+            </div-->
+            <div class="color-bucket">
+                <div class="bucket-background"></div>
+                <div class="bucket-foreground"></div>
+            </div>
+            <div class="toolsslider-group">
+                <table>
+                    <tr id="size-slider" class="toolsslider">
+                        <td class="toolsslider-label">Size</td>
+                        <td><div class="toolsslider-slider"></div></td>
+                        <td class="toolsslider-value">10</td>
+                    </tr>
+                    <!--tr id="softness-slider" class="toolsslider">
+                        <td class="toolsslider-label">Softness</td>
+                        <td><div class="toolsslider-slider"></div></td>
+                        <td class="toolsslider-value">0 %</td>
+                    </tr-->
+                </table>
+            </div>
+            <div id="undo-button" class="toolsbutton">
+                <img src="images/undo.png"/>
+            </div>
+            <div id="redo-button" class="toolsbutton">
+                <img src="images/redo.png"/>
+            </div>
+        </div>
+    </div>
+    <div id="colorpicker-dialog" title="Choose a color">
+        <span id="colorpicker" style="display: inline-block; vertical-align: top;"></span>
+    </div>
+</body>
+</html>

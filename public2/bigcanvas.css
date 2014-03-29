@@ -1,0 +1,148 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+.unselectable {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+#logo {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  display: block;
+  float: left;
+  color: white;
+  font-size: 20px;
+}
+/* MENUS */
+#main-menu {
+  float: left;
+  display: block;
+  color: white;
+  font-size: 12px;
+}
+#main-menu a {
+  color: white;
+  text-decoration: none;
+}
+#main-menu .subnav a {
+  color: black;
+  text-decoration: none;
+}
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding-right: 1em;
+  overflow: hidden;
+}
+#menu > li {
+  float: left;
+  width: 100px;
+}
+#menu > li > ul {
+  opacity: 0;
+}
+/* REGIONS */
+#header-region {
+  background-color: #666666;
+  padding: 10px;
+}
+#canvas-region {
+  background-color: white;
+}
+#tools-region {
+  background-color: #dddddd;
+  border-top: 1px solid #aaaaaa;
+  text-align: center;
+}
+#comments-region {
+  background-color: #dddddd;
+  border-left: 1px solid #aaaaaa;
+}
+/* TOOLS */
+.toolsbutton {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  padding: 2px 5px;
+  margin: 0;
+  height: 50px;
+  /*outline: 1px solid #AAAAAA;*/
+  cursor: pointer;
+  background-color: #dddddd;
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
+}
+.toolsbutton img {
+  position: relative;
+}
+.toolsbutton .text {
+  font-size: 20px;
+  position: relative;
+  bottom: 8px;
+  margin-left: 0.5em;
+}
+.toolsbutton-activated {
+  background-color: #aaaaaa;
+}
+.toolsbutton-group {
+  display: table;
+}
+.color-bucket {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  margin: 0;
+  padding: 0;
+  width: 50px;
+  height: 50px;
+  background-color: #dddddd;
+  vertical-align: middle;
+  text-align: center;
+  position: relative;
+}
+.bucket-background {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  width: 32px;
+  height: 32px;
+  background: url("images/transparent.png") repeat scroll 0 0 rgba(0, 0, 0, 0);
+  outline: 1px solid black;
+}
+.bucket-foreground {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  width: 32px;
+  height: 32px;
+  outline: 1px solid black;
+  cursor: pointer;
+}
+.toolsslider-group {
+  height: 50px;
+  display: table-cell;
+  vertical-align: middle;
+}
+.toolsslider-slider {
+  width: 100px;
+  margin: 0 0.5em;
+}
+.toolsslider-label {
+  font-size: 10px;
+}
+.toolsslider-value {
+  font-size: 10px;
+  width: 30px;
+}

@@ -1,0 +1,185 @@
+@heading-color: #666666;
+@options-background-color: #DDDDDD;
+@options-border-color: #AAAAAA;
+@button-color: #DDDDDD;
+@button-hover-color: #EEEEEE;
+@button-activated-color: #AAAAAA;
+@button-padding: 0.5em;
+@tools-region-height: 50px;
+@color-bucket-width: 32px;
+@color-bucket-offset: (@tools-region-height - @color-bucket-width)/2;
+
+
+html, body {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.unselectable {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+ 
+#logo {
+	.unselectable;
+	display: block; 
+	float: left;
+	color: white;
+	font-size: 20px
+}
+ 
+/* MENUS */
+#main-menu {
+	float: left;
+	display: block;
+	color: white;
+	font-size: 12px;
+
+	a {
+		color: white;
+		text-decoration: none;
+	}
+	
+	.subnav a {
+		color: black;
+		text-decoration: none;
+	}
+}
+
+ul{ 
+	list-style-type:none;
+	margin:0;
+	padding-right:1em;
+	overflow:hidden;
+}
+
+#menu>li{ 
+    float: left; 
+	width: 100px;
+}
+
+#menu>li>ul{
+	opacity: 0;
+}
+
+/* REGIONS */
+.region {
+
+}
+
+#header-region {
+  background-color: @heading-color;
+  padding: 10px;
+}
+
+#canvas-region {
+  background-color: white;
+}
+
+#tools-region {
+  background-color: @options-background-color;
+  border-top: 1px solid @options-border-color;
+  text-align: center;
+}
+
+#comments-region {
+  background-color: @options-background-color;
+  border-left: 1px solid @options-border-color;
+}
+
+/* TOOLS */
+.toolsbutton {
+  .unselectable;
+  padding: 2px 5px;
+  margin: 0;
+  height: @tools-region-height;
+  /*outline: 1px solid #AAAAAA;*/
+  cursor: pointer;
+  background-color: @button-color;
+
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
+
+  img {
+    position: relative;
+  }
+  
+  .text {
+    font-size: 20px;
+    position: relative;
+    bottom: 8px;
+    margin-left: @button-padding;
+  }
+}
+
+.toolsbutton-activated {
+  background-color: @button-activated-color;
+}
+
+.toolsbutton-group {
+  display: table;
+}
+
+.color-bucket {
+  .unselectable;
+  margin: 0;
+  padding: 0;
+  width: @tools-region-height;
+  height: @tools-region-height;
+  background-color: @button-color;
+
+  vertical-align: middle;
+  text-align: center;
+  
+  position: relative;
+}
+
+.bucket-background {
+	position: absolute;
+	top: @color-bucket-offset;
+	left: @color-bucket-offset;
+	width: @color-bucket-width;
+	height: @color-bucket-width;
+	background: url("images/transparent.png") repeat scroll 0 0 rgba(0,0,0,0);
+	outline: 1px solid black;
+}
+
+.bucket-foreground {
+	position: absolute;
+	top: @color-bucket-offset;
+	left: @color-bucket-offset;
+	width: @color-bucket-width;
+	height: @color-bucket-width;
+	outline: 1px solid black;
+	cursor: pointer;
+}
+
+.toolsslider-group {
+	height: @tools-region-height;
+	display: table-cell;
+	vertical-align: middle;
+}
+
+.toolsslider {
+
+}
+
+.toolsslider-slider {
+	width: 100px;
+	margin: 0 0.5em;
+}
+
+.toolsslider-label {
+	font-size: 10px;
+}
+
+.toolsslider-value {
+	font-size: 10px;
+	width: 30px;
+}
