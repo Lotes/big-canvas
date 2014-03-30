@@ -41,6 +41,16 @@ class MainThread
         awarenessManager.setSite(clientId, siteId, callback)
       setWindow: (clientId, window, callback) ->
         awarenessManager.setWindow(clientId, window, callback)
+
+      beginAction: (clientId, startInfo, callback) ->
+        awarenessManager.beginAction(clientId, startInfo, callback)
+      doActionMove: (clientId, point, callback) ->
+        awarenessManager.doActionMove(clientId, point, callback)
+      commitAction: (clientId, callback) ->
+        awarenessManager.commitAction(clientId, callback)
+      cancelAction: (clientId, callback) ->
+        awarenessManager.cancelAction(clientId, callback)
+
       resolveClientId: (clientId, resolveClientId, callback) ->
         awarenessManager.resolveClientId(resolveClientId, callback)
       getUserByUserId: (clientId, userId, callback) ->

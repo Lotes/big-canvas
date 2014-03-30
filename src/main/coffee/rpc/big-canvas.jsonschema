@@ -8,21 +8,22 @@ typedef StrokeWidth = integer[1...100]
 typedef Color = string /^#[0-9A-Fa-f]{6}$/
 typedef Selection = nullable string
 typedef LayerId = integer[0...5)
+typedef Timestamp = integer
 
 ### TILES ###
-typedef TileLocation = tuple of (BigInteger, BigInteger, LayerId) #(col, row, layer)
+typedef TileLocation = tuple of (BigInteger, BigInteger) #(col, row)
 
 ### ACTIONS ###
 typedef ActionId = BigInteger
 abstract struct ActionStartInfo {}
 abstract struct DrawActionStartInfo: ActionStartInfo {
   selection: Selection;
+  layer: LayerId;
 }
 abstract struct StrokeActionStartInfo: DrawActionStartInfo {
   startPoint: BigPoint;
   opacity: StrokeOpacity;
   width: StrokeWidth;
-  layer: LayerId;
 }
 struct EraserActionStartInfo: StrokeActionStartInfo {}
 struct BrushActionStartInfo: StrokeActionStartInfo {
@@ -39,6 +40,7 @@ struct Action {
 
 ### USERS ###
 typedef UserId = BigInteger
+typedef UserIds = list of UserId
 typedef UserWindowWidth = integer[1...4096]
 typedef UserWindowHeight = integer[1...4096]
 typedef UserWindow = tuple of (BigInteger, BigInteger, UserWindowWidth, UserWindowHeight) #x,y,w,h
@@ -51,6 +53,12 @@ enum SiteType {
   WRITABLE
 }
 typedef SiteId = string[...40] /^[a-zA-Z0-9]+$/
+
+### COMMENTS ###
+typedef AnnotationId = BigInteger #randomly generated
+typedef Annotation = tuple of (AnnotationId, string, Timestamp, boolean) #id, title, timestamp, read
+typedef Post = tuple of (UserId, string, Timestamp, UserIds) #author, text, timestamp, likes
+typedef Posts = list of Post
 
 ### CLIENTS ###
 typedef ClientId = BigInteger
@@ -73,8 +81,8 @@ interface MainWorker {
   function resolveClientId(clientId: ClientId): UserId;
   function getUserByUserId(userId: UserId): UserInfo;
 
-  ###
   #actions
+  ###
   function beginAction(startInfo: ActionStartInfo);
   function doActionMove(point: BigPoint);
   function commitAction(): ActionId;
@@ -83,7 +91,13 @@ interface MainWorker {
   event onActionMoved(movingClientId: ClientId, point: BigPoint);
   event onActionCommitted(committingClientId: ClientId, action: Action);
   event onActionCancelled(cancellingClientId: ClientId);
-  function undo(actionId: nullable ActionId); #actionId=null means users last action
+  function undo(actionId: nullable ActionId); #actionId=null means "user's last action"
   function redo(actionId: nullable ActionId);
+  ###
+
+  #comments
+  ###
+  event onAnnotation(annotation: Annotation);
+  function getAnnotation(annotationId: AnnotationId): Posts;
   ###
 }

@@ -1,11 +1,18 @@
 DatabaseConnection = require("./database/DatabaseConnection")
 Users = require("./entities/Users")
 
+class ActionState
+  constructor: (@startInfo) ->
+    @points = []
+  addPoint: (point) ->
+    @points.push(point)
+
 class ClientContext
   constructor: (@clientId) ->
     @user = null
     @site = null
     @window = null #user window
+    @actionState = null
   setUser: (userId, callback) ->
     connection = new DatabaseConnection()
     connection.connect((err) =>
@@ -22,6 +29,12 @@ class ClientContext
     )
   setSite: (@site) ->
   setWindow: (@window) ->
+  beginAction: (startInfo) ->
+    @actionState = new ActionState(startInfo)
+  moveAction: (point) ->
+    @actionState.addPoint(point)
+  endAction: ->
+    @actionState = null
 
 class ClientContextFactory
   constructor: ->
@@ -35,6 +48,7 @@ class ClientContextFactory
     )
 
 module.exports = {
+  ActionState,
   ClientContext,
   ClientContextFactory
 }

@@ -31,20 +31,20 @@
              south__closable: false,
              north__spacing_open: 0,
              south__spacing_open: 0,
-             /*east__resizable: false,
+             east__resizable: false,
              east__closable: true,
              east__spacing_open: 0,
-             east__spacing_closed: 0,*/
+             east__spacing_closed: 0,
              
              paneClass: "region",
              north__paneSelector: "#header-region",
-             //east__paneSelector: "#comments-region",
+             east__paneSelector: "#comments-region",
              center__paneSelector: "#canvas-region",             
              south__paneSelector: "#tools-region",
              
              north__size: 50,
              south__size: 50,
-             //east__size: 381 //like in google maps :D
+             east__size: 381
         });
         
         var color = "#FF0000";
@@ -190,6 +190,9 @@
 <body>
     <div id="canvas-region" class="ui-layout-center">
         <!-- canvas -->
+    </div>
+    <div id="comments-region" class="ui-layout-east">
+
     </div>
     <div id="header-region" class="ui-layout-north">
 		<div id="logo">big-canvas</div>

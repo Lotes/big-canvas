@@ -1,20 +1,20 @@
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
-    id DECIMAL(65) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    openId VARCHAR(255) NULL,
-    defaultColor CHAR(7) NOT NULL
+  id DECIMAL(65) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  openId VARCHAR(255) NULL,
+  defaultColor CHAR(7) NOT NULL
 );
 INSERT INTO users (id, name, openId, defaultColor) VALUES (0, 'Demo user', NULL, '#FF0000');
 
 DROP TABLE IF EXISTS tiles;
 CREATE TABLE tiles (
-    id DECIMAL(65) PRIMARY KEY,
-    col DECIMAL(65) NOT NULL,
-    row DECIMAL(65) NOT NULL,
-    layerId TINYINT NOT NULL,
-    currentFingerPrintId DECIMAL(65) NULL,
-    UNIQUE (col, row, layerId)
+  id DECIMAL(65) PRIMARY KEY,
+  col DECIMAL(65) NOT NULL,
+  row DECIMAL(65) NOT NULL,
+  layerId TINYINT NOT NULL,
+  currentFingerPrintId DECIMAL(65) NULL,
+  UNIQUE (col, row, layerId)
 );
 INSERT INTO tiles (id, col, row, layerId, currentFingerPrintId) VALUES (0, 0, 0, 0, NULL);
 
@@ -30,11 +30,11 @@ INSERT INTO sites (id, readOnly, col, row) VALUES ('one', 0, 1, 1);
 
 DROP TABLE IF EXISTS actions;
 CREATE TABLE actions (
-    id DECIMAL(65) PRIMARY KEY,
-    userId DECIMAL(65) NOT NULL,
-    undone BOOLEAN NOT NULL,
-    json LONGTEXT NOT NULL,
-    createdOn TIMESTAMP NOT NULL
+  id DECIMAL(65) PRIMARY KEY,
+  userId DECIMAL(65) NOT NULL,
+  undone BOOLEAN NOT NULL,
+  json LONGTEXT NOT NULL,
+  createdAt DATETIME NOT NULL
 );
 
 DROP TABLE IF EXISTS revisions;
@@ -66,4 +66,37 @@ CREATE TABLE fingerPrintRelations (
   parentFingerPrintId DECIMAL(65),
   distance DECIMAL(65) NOT NULL,
   PRIMARY KEY (fingerPrintId, parentFingerPrintId)
+);
+
+DROP TABLE IF EXISTS annotations;
+CREATE TABLE annotations (
+  id DECIMAL(65) PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  x DECIMAL(65) NOT NULL,
+  y DECIMAL(65) NOT NULL
+);
+
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id DECIMAL(65) PRIMARY KEY,
+  authorId DECIMAL(65) NOT NULL,
+  text TEXT NOT NULL,
+  createdAt DATETIME NOT NULL,
+  annotationId DECIMAL(65)
+);
+
+DROP TABLE IF EXISTS postLikes;
+CREATE TABLE postLikes (
+  postId DECIMAL(65),
+  userId DECIMAL(65),
+  likedAt DATETIME NOT NULL,
+  PRIMARY KEY (postId, userId)
+);
+
+DROP TABLE IF EXISTS annotationReads;
+CREATE TABLE annotationReads (
+  annotationId DECIMAL(65),
+  userId DECIMAL(65),
+  readAt DATETIME NOT NULL,
+  PRIMARY KEY (annotationId, userId)
 );
