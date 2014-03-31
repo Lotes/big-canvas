@@ -19,6 +19,10 @@
     <script src="jquery-colorpicker/parsers/jquery.ui.colorpicker-cmyk-percentage-parser.js"></script>
     <!-- mouse trap -->
     <script type="text/javascript" src="mousetrap.min.js"></script>
+	<!-- knockout -->
+	<script type="text/javascript" src="knockout.min.js"></script>
+	<!-- moment -->
+	<script type="text/javascript" src="moment.min.js"></script>
     <!-- big-canvas -->
     <link type="text/css" rel="stylesheet" href="bigcanvas.css"/>
     <script type="text/javascript">
@@ -184,6 +188,97 @@
                     });
             });
         });
+		
+		function getRandomDate() {
+			return new Date().getTime() - Math.round(Math.random()*1000*60*60*24*365);
+		}
+		
+		var annotations = [
+			[
+				"123456",             //id
+				"Fantastic drawing!", //title
+				getRandomDate(), //timestamp
+				"1",                  //author
+				false                 //already read?
+			],
+			[
+				"abcdef",
+				"Could be better?!",
+				getRandomDate(),
+				"2",
+				true
+			]
+		];
+		var posts = {
+			"abcdef": [
+				[
+					"1",             //author id
+					"Hello! Nice!",  //text
+					getRandomDate(), //timestamp
+					["1", "2"]       //liking users
+				],
+				[
+					"2",
+					"Quark!",
+					getRandomDate(),
+					[]
+				]
+			],
+			"123456": [
+				[
+					"2",
+					"Hello world!",
+					getRandomDate(),
+					["2"]
+				]
+			]
+		};
+		var users = {
+			"1": ["1", "Markus", "#FF0000"],
+			"2": ["2", "Rebecca", "#00FF00"]
+		};
+		var me = "1";
+		function UserViewModel(user) {
+			this.id = user[0];
+			this.name = user[1];
+			this.color = ko.observable(user[2]);
+		}
+		function PostViewModel(post) {
+			this.author = users[post[0]];
+			this.text = post[1];
+			var self = this;
+			var time = new Date();
+			time.setTime(post[2]);
+			this.timestamp = moment(time).fromNow();
+			this.likes = ko.observableArray(post[3]);
+		}
+		function AnnotationViewModel(annotation) {
+			var self = this;
+			var time = new Date();
+			time.setTime(annotation[2]);
+			this.id = annotation[0];
+			this.title = annotation[1];
+			this.author = users[annotation[3]];
+			this.timestamp = moment(time).fromNow();
+			this.read = ko.observable(annotation[4]);
+			this.closed = ko.observable(true);
+			this.posts = ko.observableArray([]);
+			this.open = function() {
+				self.closed(false);
+				self.posts([]);
+				for(var i=0; i<posts[self.id].length; i++)
+					self.posts.push(new PostViewModel(posts[self.id][i]));
+			};
+		}
+		function AnnotationManagerViewModel(annotations) {
+			var items = [];
+			for(var i=0; i<annotations.length; i++)
+				items.push(new AnnotationViewModel(annotations[i]));
+			this.annotations = ko.observableArray(items);
+		} 
+		for(var uid in users)
+			users[uid] = new UserViewModel(users[uid]);
+		ko.applyBindings(new AnnotationManagerViewModel(annotations));
     });
     </script>
 </head>
@@ -191,8 +286,16 @@
     <div id="canvas-region" class="ui-layout-center">
         <!-- canvas -->
     </div>
-    <div id="comments-region" class="ui-layout-east">
-
+    <div id="comments-region" class="ui-layout-east" data-bind="foreach: annotations">
+		<div>
+			<span data-bind="text: author.name, style: {backgroundColor: author.color}"></span>: <strong data-bind="text: title, click: open"></strong> (<span data-bind="text: timestamp"></span>)
+			<div data-bind="foreach: posts">
+				<div>
+					<strong data-bind="text: author.name"></strong>:
+					<span data-bind="text: text"></span> (<span data-bind="text: timestamp"></span>)
+				</div>
+			</div>
+		</div>
     </div>
     <div id="header-region" class="ui-layout-north">
 		<div id="logo">big-canvas</div>
