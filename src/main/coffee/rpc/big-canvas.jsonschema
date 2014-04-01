@@ -56,9 +56,23 @@ typedef SiteId = string[...40] /^[a-zA-Z0-9]+$/
 
 ### COMMENTS ###
 typedef AnnotationId = BigInteger #randomly generated
-typedef Annotation = tuple of (AnnotationId, string, Timestamp, boolean) #id, title, timestamp, read
-typedef Post = tuple of (UserId, string, Timestamp, UserIds) #author, text, timestamp, likes
-typedef Posts = list of Post
+struct Annotation {
+  id: AnnotationId;
+  position: BigPoint;
+  authorId: UserId;
+  title: string;
+  createdAt: Timestamp;
+  read: boolean;
+  posts: list of PostId;
+}
+typedef PostId = BigInteger #randomly generated
+struct Post {
+  id: PostId;
+  authorId: UserId;
+  text: string;
+  createdAt: Timestamp;
+  likingUsers: UserIds;
+}
 
 ### CLIENTS ###
 typedef ClientId = BigInteger

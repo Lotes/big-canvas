@@ -29,7 +29,9 @@
     "ws": "~0.4.27",
     "expect.js": "~0.2.0",
     "passport": "^0.2.0",
-    "passport-google": "^0.3.0"
+    "passport-google": "^0.3.0",
+    "knockback": "^0.18.4",
+    "knockout": "^3.1.0"
   },
   "devDependencies": {
     "grunt": "~0.4.2",

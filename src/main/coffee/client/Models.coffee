@@ -1,7 +1,55 @@
+Backbone = require("backbone")
 { Logger } = require("../logging/Logger")
+{ Point } = require("../BasicTypes")
 
-logger = new Logger("Editor")
+logger = new Logger("Models")
 
+class User extends Backbone.Model
+  @create: (data) -> null
+  defaults: {
+    id: null,
+    name: "[no user]",
+    color: "#FF0000",
+    pictureURL: "images/noUser.png"
+  }
+
+class Manager
+  get: (id) -> null
+
+class UserManager extends Manager
+
+class Annotation extends Backbone.Model
+  @create: (data) -> null
+  defaults: {
+    id: null,
+    title: "[untitled]",
+    position: new Point(0, 0),
+    author: null,
+    read: false,
+    createdAt: new Date()
+    posts: []
+  }
+
+class Post extends Backbone.Model
+  @create: (data) -> null
+  defaults: {
+    id: null,
+    author: null,
+    createdAt: new Date(),
+    likingUsers: []
+  }
+
+class AnnotationViewModel
+  open: null
+  close: null
+
+class PostViewModel
+  like: null
+  unlike: null
+
+class UserViewModel #???
+
+###
 class ToolOption
   constructor: (@name, @defaultValue) ->
 
@@ -35,14 +83,6 @@ class Layer
   constructor: ->
   setVisible: (visible) ->
   setLock: (locked) ->
-  ###
-  - 1 grid
-  - n TemporaryCanvas
-  ###
-
-class Grid
-
-class TemporaryCanvas
 
 class Editor
   constructor: (divContainer, readOnly) ->
@@ -51,14 +91,6 @@ class Editor
   setMode: (mode) -> #or set tool?
   selectLayer: (index) ->
   resize: ->
-  ###
-  -input
-    -setTileHistory
-  -output
-    -onBegin(startInfo)
-    -onMove(mousePosition)
-    -onCommit()
-    -onCancel()
-  ###
+###
 
 module.exports = { Editor }

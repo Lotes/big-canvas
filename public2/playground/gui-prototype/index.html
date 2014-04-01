@@ -124,7 +124,7 @@
             change: setSize
         });
         
-        /*var $softnessSlider = $("#softness-slider .toolsslider-slider");
+        var $softnessSlider = $("#softness-slider .toolsslider-slider");
         var $softnessSliderValue = $("#softness-slider .toolsslider-value");
         function setSoftness() {
             var value = $softnessSlider.slider("value");
@@ -137,7 +137,7 @@
             value: 0,
             //slide: setSoftness,
             change: setSoftness
-        });*/
+        });
         function activateTool($element) {
             $element.addClass("toolsbutton-activated");
         }
@@ -361,11 +361,11 @@
                         <td><div class="toolsslider-slider"></div></td>
                         <td class="toolsslider-value">10</td>
                     </tr>
-                    <!--tr id="softness-slider" class="toolsslider">
+                    <tr id="softness-slider" class="toolsslider">
                         <td class="toolsslider-label">Softness</td>
                         <td><div class="toolsslider-slider"></div></td>
                         <td class="toolsslider-value">0 %</td>
-                    </tr-->
+                    </tr>
                 </table>
             </div>
             <div id="undo-button" class="toolsbutton">

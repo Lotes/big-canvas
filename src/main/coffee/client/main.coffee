@@ -6,7 +6,9 @@ ConsoleAppender = require("../logging/ConsoleAppender")
 Logger.addAppender(new ConsoleAppender())
 logger = new Logger("main")
 
+###
 client = new Client(siteId) #siteId will be set by the template
 client.on("initialized", ->
   logger.info("initialized")
 )
+###
