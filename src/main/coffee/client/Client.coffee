@@ -37,8 +37,36 @@ class Client
             return
           @readOnly = mode == SiteType.READ_ONLY
           @trigger("initialized")
+
+          mainInterface.setWindow(["-1000", "-1000", 2000, 2000], (err) ->
+            if(err)
+              log.error("Could not set window: "+err.message)
+            else
+              logger.debug("window set!")
+          )
         )
       windowChanged: (clientId, window) ->
+        logger.debug("window changed: "+JSON.stringify(window))
+      onAnnotationsChanged: (annotationIds) ->
+        logger.debug("annotations changed: "+JSON.stringify(annotationIds))
+        ###
+        for annotationId in annotationIds
+          mainInterface.getAnnotation(annotationId, (err, annotation) =>
+            if(err)
+              logger.error("Could not get annotation: "+err.message)
+            else
+              logger.debug("Annotation loaded: "+JSON.stringify(annotation))
+              for postId in annotation.posts
+                mainInterface.getPost(postId, (err, post) =>
+                  if(err)
+                    logger.error("Could not get post: "+err.message)
+                  else
+                    logger.debug("Post loaded: "+JSON.stringify(post))
+                )
+          )
+        ###
+      onPostChanged: (annotationId, postId) ->
+        logger.debug("post changed: "+annotationId+"."+postId)
     })
 
 module.exports = { Client }

@@ -51,6 +51,19 @@ class MainThread
       cancelAction: (clientId, callback) ->
         awarenessManager.cancelAction(clientId, callback)
 
+      getAnnotation: (clientId, annotationId, callback) ->
+        awarenessManager.getAnnotation(clientId, annotationId, callback)
+      getPost: (clientId, postId, callback) ->
+        awarenessManager.getPost(clientId, postId, callback)
+      createAnnotation: (clientId, position, title, text, callback) ->
+        awarenessManager.createAnnotation(clientId, position, title, text, callback)
+      replyAnnotation: (clientId, annotationId, text, callback) ->
+        awarenessManager.replyAnnotation(clientId, annotationId, text, callback)
+      openAnnotation: (clientId, annotationId, callback) ->
+        awarenessManager.openAnnotation(clientId, annotationId, callback)
+      closeAnnotation: (clientId, annotationId, callback) ->
+        awarenessManager.closeAnnotation(clientId, annotationId, callback)
+
       resolveClientId: (clientId, resolveClientId, callback) ->
         awarenessManager.resolveClientId(resolveClientId, callback)
       getUserByUserId: (clientId, userId, callback) ->
@@ -60,6 +73,9 @@ class MainThread
     logger.info("initialize awareness manager")
     awarenessManager.on("windowChanged", (receivingClientId, clientId, window) =>
       mainInterface.windowChanged(receivingClientId, clientId, window)
+    )
+    awarenessManager.on("annotationsChanged", (clientId, annotationIds) =>
+      mainInterface.onAnnotationsChanged(clientId, annotationIds)
     )
 
     logger.info("initialize socket server")

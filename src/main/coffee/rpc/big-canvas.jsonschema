@@ -56,6 +56,7 @@ typedef SiteId = string[...40] /^[a-zA-Z0-9]+$/
 
 ### COMMENTS ###
 typedef AnnotationId = BigInteger #randomly generated
+typedef AnnotationIds = list of AnnotationId
 struct Annotation {
   id: AnnotationId;
   position: BigPoint;
@@ -63,9 +64,10 @@ struct Annotation {
   title: string;
   createdAt: Timestamp;
   read: boolean;
-  posts: list of PostId;
+  posts: PostIds;
 }
 typedef PostId = BigInteger #randomly generated
+typedef PostIds = list of PostId
 struct Post {
   id: PostId;
   authorId: UserId;
@@ -110,8 +112,21 @@ interface MainWorker {
   ###
 
   #comments
-  ###
-  event onAnnotation(annotation: Annotation);
-  function getAnnotation(annotationId: AnnotationId): Posts;
-  ###
+  event onAnnotationsChanged(annotationIds: AnnotationIds);
+  event onPostChanged(annotationId: AnnotationId, postId: postId);
+  function getAnnotation(annotationId: AnnotationId): Annotation;
+  function getPost(postId: PostId): Post;
+  function createAnnotation(position: BigPoint, title: string, text: string): AnnotationId;
+  function replyAnnotation(annotationId: AnnotationId, text: string): PostId;
+  function openAnnotation(annotationId: AnnotationId);
+  function closeAnnotation(annotationId: AnnotationId);
+  #function watchAnnotation(annotationId: AnnotationId);
+  #function unwatchAnnotation(annotationId: AnnotationId);
+  #function likePost(postId: PostId);
+  #function unlikePost(postId: PostId);
+
+  #chat
+  #function createChatRoom(title: string): ChatRoomId;
+  #function addChatUser(roomId: ChatRoomId, userId: UserId);
+  #function removeChatUser(roomId: ChatRoomId, userId: UserId);
 }

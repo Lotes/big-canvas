@@ -75,6 +75,8 @@ CREATE TABLE annotations (
   x DECIMAL(65) NOT NULL,
   y DECIMAL(65) NOT NULL
 );
+INSERT INTO annotations (id, title, x, y) VALUES (0, "Hello world!", 10, 10);
+INSERT INTO annotations (id, title, x, y) VALUES (1, "Another test!", -100, -100);
 
 DROP TABLE IF EXISTS posts;
 CREATE TABLE posts (
@@ -84,6 +86,8 @@ CREATE TABLE posts (
   createdAt DATETIME NOT NULL,
   annotationId DECIMAL(65)
 );
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (0, 0, "This is the first entry :-).", NOW(), 0);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (1, 0, "This is the second entry :-).", NOW(), 1);
 
 DROP TABLE IF EXISTS postLikes;
 CREATE TABLE postLikes (
@@ -98,5 +102,12 @@ CREATE TABLE annotationReads (
   annotationId DECIMAL(65),
   userId DECIMAL(65),
   readAt DATETIME NOT NULL,
+  PRIMARY KEY (annotationId, userId)
+);
+
+DROP TABLE IF EXISTS annotationWatches;
+CREATE TABLE annotationWatches (
+  annotationId DECIMAL(65),
+  userId DECIMAL(65),
   PRIMARY KEY (annotationId, userId)
 );

@@ -9,14 +9,8 @@ class User extends Backbone.Model
   defaults: {
     id: null,
     name: "[no user]",
-    color: "#FF0000",
-    pictureURL: "images/noUser.png"
+    color: "#FF0000"
   }
-
-class Manager
-  get: (id) -> null
-
-class UserManager extends Manager
 
 class Annotation extends Backbone.Model
   @create: (data) -> null
@@ -26,6 +20,7 @@ class Annotation extends Backbone.Model
     position: new Point(0, 0),
     author: null,
     read: false,
+    watch: false,
     createdAt: new Date()
     posts: []
   }
@@ -38,6 +33,11 @@ class Post extends Backbone.Model
     createdAt: new Date(),
     likingUsers: []
   }
+
+class Manager
+  get: (id) -> null
+
+class UserManager extends Manager
 
 class AnnotationViewModel
   open: null

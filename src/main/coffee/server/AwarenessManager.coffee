@@ -7,6 +7,7 @@ BigInteger = require("big-integer")
 WindowTree = require("../WindowTree")
 Sites = require("./entities/Sites")
 Users = require("./entities/Users")
+Comments = require("./entities/Comments")
 DatabaseConnection = require("./database/DatabaseConnection")
 
 logger = new Logger("AwarenessManager")
@@ -48,13 +49,13 @@ class AwarenessManager
     delete @clients[clientId]
     logger.info("connection "+clientId+" closed")
     callback()
-  _getClient: (callback) ->
+  _getClient: (clientId, callback) ->
     if(!@clients[clientId]?)
       callback(new Error("Unknown connection "+clientId))
     else
-      callback(null, clients[clientId])
-  _getClientAndSite: (callback) ->
-    @_getClient((err, client) ->
+      callback(null, @clients[clientId])
+  _getClientAndSite: (clientId, callback) ->
+    @_getClient(clientId, (err, client) ->
       if(err)
         callback(err)
       else
@@ -63,8 +64,8 @@ class AwarenessManager
         else
           callback(null, client, client.site)
     )
-  _getClientSiteAndWindow: (callback) ->
-    @_getClientAndSite((err, client, site) ->
+  _getClientSiteAndWindow: (clientId, callback) ->
+    @_getClientAndSite(clientId, (err, client, site) ->
       if(err)
         callback(err)
       else
@@ -74,7 +75,7 @@ class AwarenessManager
           callback(null, client, site, client.window)
     )
   setSite: (clientId, siteId, callback) ->
-    @_getClient((err, client) =>
+    @_getClient(clientId, (err, client) =>
       if(err)
         callback(err)
         return
@@ -100,7 +101,7 @@ class AwarenessManager
       )
     )
   setWindow: (clientId, window, callback) ->
-    @_getClientAndSite((err, client, site) =>
+    @_getClientAndSite(clientId, (err, client, site) =>
       if(err)
         callback(err)
         return
@@ -128,14 +129,63 @@ class AwarenessManager
         @trigger("windowChanged", otherId, clientId, newUserWindow.siteTranslate(site, otherSite).toData())
         @trigger("windowChanged", clientId, otherId, otherWindow.siteTranslate(otherSite, site).toData())
       )
-      logger.info("connection " + clientId + " updated window '"+newUserWindow.toString()+"'")
-      callback(null)
+      #update annotations
+      connection = new DatabaseConnection()
+      connection.connect((err) =>
+        if(err)
+          callback(err)
+        else
+          Comments.getAnnotationsInWindow(connection, newUserWindow, (err, annotationIds) =>
+            connection.end()
+            @trigger("annotationsChanged", clientId, annotationIds)
+            logger.info("connection " + clientId + " updated window '"+newUserWindow.toString()+"'")
+            callback(null)
+          )
+      )
     )
 
   beginAction: (clientId, startInfo, callback) -> #TODO
   doActionMove: (clientId, point, callback) -> #TODO
   commitAction: (clientId, callback) -> #TODO
   cancelAction: (clientId, callback) -> #TODO
+
+  getAnnotation: (clientId, annotationId, callback) -> #@returns Annotation
+    @_getClient(clientId, (err, client) ->
+      if(err)
+        callback(err)
+        return
+      connection = new DatabaseConnection()
+      connection.connect((err) ->
+        if(err)
+          callback(err)
+          return
+        Comments.getAnnotation(connection, annotationId, client.user.id, (err, annotation) ->
+          connection.end()
+          if(err)
+            callback(err)
+          else
+            callback(null, annotation)
+        )
+      )
+    )
+  getPost: (clientId, postId, callback) -> #@returns Post
+    connection = new DatabaseConnection()
+    connection.connect((err) ->
+      if(err)
+        callback(err)
+        return
+      Comments.getPost(connection, postId, (err, post) ->
+        connection.end()
+        if(err)
+          callback(err)
+        else
+          callback(null, post)
+      )
+    )
+  createAnnotation: (clientId, position, title, text, callback) -> #@returns AnnotationId
+  replyAnnotation: (clientId, annotationId, text, callback) -> #@returns PostId
+  openAnnotation: (clientId, annotationId, callback) ->
+  closeAnnotation: (clientId, annotationId, callback) ->
 
   resolveClientId: (resolveClientId, callback) ->
     if(!@clients[resolveClientId]?)
