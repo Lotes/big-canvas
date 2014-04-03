@@ -4,6 +4,8 @@
     <title>big-canvas - <%= siteId %></title>
     <!-- jquery -->
     <script type="text/javascript" src="/jquery.min.js"></script>
+    <!-- knockback -->
+    <script type="text/javascript" src="/knockback.min.js"></script>
     <!-- big-canvas -->
     <script type="text/javascript">
         var siteId = "<%= siteId %>";
@@ -11,6 +13,10 @@
     <script type="text/javascript" src="/big-canvas.js"></script>
 </head>
 <body>
+<div id="annotations" data-bind="foreach: collection">
+    <div data-bind="text: title"></div>
+</div>
+<!--
 - login/logout
 - canvas
 - tools
@@ -24,5 +30,6 @@
 - undo manager
 - hints
   - bookmark writable sites!
+-->
 </body>
 </html>

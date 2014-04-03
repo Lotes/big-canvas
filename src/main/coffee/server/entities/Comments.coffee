@@ -37,7 +37,6 @@ module.exports = {
             callback(err)
             return
           readAnno = results.length == 1
-          console.log("DATE: "+first.createdAt)
           callback(null, {
             $type: "Annotation",
             id: annotationId,

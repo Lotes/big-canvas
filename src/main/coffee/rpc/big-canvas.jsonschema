@@ -113,7 +113,6 @@ interface MainWorker {
 
   #comments
   event onAnnotationsChanged(annotationIds: AnnotationIds);
-  event onPostChanged(annotationId: AnnotationId, postId: postId);
   function getAnnotation(annotationId: AnnotationId): Annotation;
   function getPost(postId: PostId): Post;
   function createAnnotation(position: BigPoint, title: string, text: string): AnnotationId;

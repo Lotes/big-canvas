@@ -5,49 +5,48 @@ Backbone = require("backbone")
 logger = new Logger("Models")
 
 class User extends Backbone.Model
-  @create: (data) -> null
   defaults: {
     id: null,
     name: "[no user]",
     color: "#FF0000"
   }
+dummyUser = new User({ id: "-1" })
+
+class UserCollection extends Backbone.Collection
+  model: User
+
+class Post extends Backbone.Model
+  defaults: {
+    id: null,
+    author: dummyUser,
+    createdAt: new Date(),
+    likingUsers: new UserCollection()
+  }
+dummyPost = new Post({ id: "-1" })
+
+class PostCollection extends Backbone.Collection
+  model: Post
 
 class Annotation extends Backbone.Model
-  @create: (data) -> null
   defaults: {
     id: null,
     title: "[untitled]",
     position: new Point(0, 0),
-    author: null,
+    author: dummyUser,
     read: false,
-    watch: false,
     createdAt: new Date()
-    posts: []
+    posts: new PostCollection()
   }
+dummyAnnotation = new Annotation({ id: "-1" })
 
-class Post extends Backbone.Model
-  @create: (data) -> null
-  defaults: {
-    id: null,
-    author: null,
-    createdAt: new Date(),
-    likingUsers: []
-  }
+class AnnotationCollection extends Backbone.Collection
+  model: Annotation
 
-class Manager
-  get: (id) -> null
-
-class UserManager extends Manager
-
-class AnnotationViewModel
-  open: null
-  close: null
-
-class PostViewModel
-  like: null
-  unlike: null
-
-class UserViewModel #???
+module.exports = {
+  Annotation, AnnotationCollection,
+  Post, PostCollection,
+  User, UserCollection
+}
 
 ###
 class ToolOption
@@ -92,5 +91,3 @@ class Editor
   selectLayer: (index) ->
   resize: ->
 ###
-
-module.exports = { Editor }
