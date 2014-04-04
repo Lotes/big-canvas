@@ -1,4 +1,5 @@
 { Logger } = require("../logging/Logger")
+moment = require("moment")
 
 logger = new Logger("ViewModels")
 
@@ -15,6 +16,10 @@ class AnnotationViewModel extends kb.ViewModel
     factory = new kb.Factory()
     factory.addPathMapping("author", UserViewModel)
     @author = kb.observable(model, { key: "author", factory: factory })
+    @createdAt = kb.observable(model, "createdAt")
+    @createdAtFormatted = ko.computed(() =>
+      moment(@createdAt()).fromNow()
+    )
 
 class AnnotationsViewModel
   constructor: (collection) ->
