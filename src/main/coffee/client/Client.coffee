@@ -17,15 +17,13 @@ class Client extends MainClientStub
         logger.info("outgoing message: "+message)
         socket.send(message)
       initialized: (clientId, userId) =>
-        @clientId = clientId
-        @userId = userId
         @setSite(siteId, (err, mode) =>
           if(err)
             logger.error("Could not set site: "+err.message)
             socket.close()
             return
-          @readOnly = mode == SiteType.READ_ONLY
-          @trigger("initialized")
+          readOnly = mode == SiteType.READ_ONLY
+          @trigger("initialized", clientId, userId, readOnly)
         )
       windowChanged: (clientId, window) ->
         @trigger("windowChanged", clientId, new UserWindow(window[0], window[1], window[2], window[3]))

@@ -2,34 +2,20 @@
 { Logger } = require("../logging/Logger")
 ConsoleAppender = require("../logging/ConsoleAppender")
 { Client } = require("./Client")
-{ AnnotationCollection, Annotation, User, UserCollection } = require("./models")
+{ AnnotationCollection, Annotation } = require("./models")
 { AnnotationsViewModel } = require("./viewModels")
+{ UserManager } = require("./UserManager")
 
 Logger.addAppender(new ConsoleAppender())
 logger = new Logger("main")
 
 $(->
-  users = new UserCollection()
   annotations = new AnnotationCollection()
   annotationsViewModel = new AnnotationsViewModel(annotations)
   ko.applyBindings(annotationsViewModel, $("#annotations")[0])
 
   client = new Client(siteId) #siteId will be set by the template
-
-  getUser = (userId) ->
-    user = users.get(userId)
-    if(!user)
-      user = users.push({ id: userId })
-      client.getUserByUserId(userId, (err, data) ->
-        if(!err)
-          user.set({
-            name: data[1],
-            color: data[2]
-          })
-        else
-          logger.error("getting user: "+err.message)
-      )
-    return user
+  users = new UserManager(client)
 
   getAnnotation = (annotationId) ->
     annotation = annotations.get(annotationId)
@@ -37,7 +23,7 @@ $(->
       annotation = annotations.push({ id: annotationId })
     client.getAnnotation(annotationId, (err, data) ->
       if(!err)
-        data.author = getUser(data.authorId)
+        data.author = users.get(data.authorId)
         date = new Date()
         date.setTime(data.createdAt)
         data.createdAt = date
@@ -47,8 +33,8 @@ $(->
     )
     return annotation
 
-  client.on("initialized", ->
-    logger.info("initialized")
+  client.on("initialized", (clientId, userId, readOnly) ->
+    logger.info("initialized as user "+userId+", site is "+(if(readOnly)then "read only" else "writable" ))
     client.setWindow(["-1000", "-1000", 2000, 2000], (err) ->
       if(err)
         logger.error("Could not set window: "+err.message)

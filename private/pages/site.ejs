@@ -11,14 +11,53 @@
         var siteId = "<%= siteId %>";
     </script>
     <script type="text/javascript" src="/big-canvas.js"></script>
+    <link type="text/css" rel="stylesheet" href="/big-canvas.css"/>
+
+    <script>
+        var front = true;
+        var front2 = true;
+        $(function() {
+            $(".comment-region").click(function(){
+                front = !front;
+                if(!front)
+                    $(this).addClass("flip");
+                else
+                    $(this).removeClass("flip");
+            });
+
+            $(".demo").click(function(){
+                front2 = !front2;
+                if(!front2)
+                    $(this).addClass("flip");
+                else
+                    $(this).removeClass("flip");
+            });
+        });
+    </script>
 </head>
 <body>
-<div id="annotations" data-bind="foreach: collection">
-    <div>
-        <strong data-bind="text: author().name()">Author</strong>:
-        <span data-bind="text: title"></span>
-        (<span data-bind="text: createdAtFormatted"></span>)
+<div class="comment-region flip-panel">
+    <div class="annotation-panel front">
+        <div class="pagination">
+            <ul>
+                <li><a>1</a></li>
+                <li><a>2</a></li>
+            </ul>
+        </div>
+        <div id="annotations" data-bind="foreach: collection">
+            <div>
+                <strong data-bind="text: author().name">Author</strong>:
+                <span data-bind="text: title"></span>
+                (<span data-bind="text: createdAtFormatted"></span>)
+            </div>
+        </div>
     </div>
+    <div class="post-panel back">test2</div>
+</div>
+
+<div class="demo flip-panel" style="width: 100px; height: 100px">
+    <div class="front" style="background-color: red"></div>
+    <div class="back" style="background-color: blue"></div>
 </div>
 <!--
 - login/logout

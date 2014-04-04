@@ -1,3 +1,4 @@
+{ Annotation, AnnotationCollection, Post, PostCollection } = require("./models")
 { Logger } = require("../logging/Logger")
 moment = require("moment")
 
@@ -28,8 +29,14 @@ class AnnotationsViewModel
         "models": AnnotationViewModel
       }
     })
-  open: null
-  close: null
+    #filter by current user window
+    #sort by last update first
+    #pagination
+  openAnnotation: (annotationId) ->
+    #go to post view for the given annotation
+    #load post data
+  closeAnnotation: ->
+    #close and go back to annotation overview
 
 ###
 class PostViewModel
