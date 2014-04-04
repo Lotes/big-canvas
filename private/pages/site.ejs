@@ -14,7 +14,10 @@
 </head>
 <body>
 <div id="annotations" data-bind="foreach: collection">
-    <div data-bind="text: title"></div>
+    <div>
+        <strong data-bind="text: author().name()">Author</strong>:
+        <span data-bind="text: title"></span>
+    </div>
 </div>
 <!--
 - login/logout
