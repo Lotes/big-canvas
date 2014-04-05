@@ -1,18 +1,22 @@
-{ Annotation, AnnotationCollection, Post, PostCollection } = require("./models")
-
 class PaginationViewModel
   constructor: (collection, @options) ->
+    if(!@options.collectionClass)
+      @options.collectionClass = Backbone.Collection
     if(!@options.filter)
       @options.filter = -> true
     if(!@options.viewModel)
       @options.viewModel = kb.ViewModel
+    if(!options.comparator)
+      @options.comparator = (model) -> 0
     @pageNumber = ko.observable(0)
     @perPageCount = 5
     @pagesCount = ko.observable(0)
     @totalPages = ko.observableArray([])
     @allCollection = collection
-    @filteredCollection = new AnnotationCollection()
-    @pageCollection = new AnnotationCollection()
+    @filteredCollection = new @options.collectionClass({
+      comparator: @options.comparator
+    })
+    @pageCollection = new @options.collectionClass()
     @allCollection.on("change", => @update())
     @filteredCollection.on("change", => @updatePage())
     @pageNumber.subscribe(=> @updatePage())
@@ -33,6 +37,8 @@ class PaginationViewModel
     @previous = =>
       if(@pageNumber() != 0)
         @pageNumber(@pageNumber() - 1)
+    @first = => @pageNumber(0)
+    @last = => @pageNumber(@pagesCount()-1)
     @update()
   update: ->
     @filteredCollection.reset(@allCollection.filter(@options.filter))

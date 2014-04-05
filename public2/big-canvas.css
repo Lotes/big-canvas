@@ -1,3 +1,7 @@
+body {
+    font-family: "Helvetica Neue Light", "HelveticaNeue-Light", "Helvetica Neue", Calibri, Helvetica, Arial;
+}
+
 .comment-region {
     width: 300px;
     height: 500px;
@@ -76,9 +80,8 @@
 }
 
 .pagination {
-    border-radius: 4px;
     display: inline-block;
-    margin: 20px 0;
+    margin: 0;
     padding: 0;
 }
 
@@ -91,11 +94,16 @@
 {
     background-color: #FFFFFF;
     border: 1px solid #DDDDDD;
-    color: #428BCA;
+    color: #000000;
     float: left;
     line-height: 1.42857;
     margin-left: -1px;
     padding: 6px 12px;
     position: relative;
     text-decoration: none;
+}
+
+.pagination > li > a.active {
+    background-color: #EEEEEE;
+    color: black;
 }

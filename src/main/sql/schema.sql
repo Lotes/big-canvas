@@ -95,17 +95,17 @@ CREATE TABLE posts (
   createdAt DATETIME NOT NULL,
   annotationId DECIMAL(65)
 );
-INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (0, 0, "This is the first entry :-).", NOW(), 0);
-INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (1, 0, "This is the second entry :-).", NOW(), 1);
-INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (2, 0, "This is the third entry :-).", NOW(), 2);
-INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (3, 0, "This is the fourth entry :-).", NOW(), 3);
-INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (4, 0, "This is the fifth entry :-).", NOW(), 4);
-INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (5, 0, "This is the sixth entry :-).", NOW(), 5);
-INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (6, 0, "This is the seventh entry :-).", NOW(), 6);
-INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (7, 0, "This is the eighth entry :-).", NOW(), 7);
-INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (8, 0, "This is the ninth entry :-).", NOW(), 8);
-INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (9, 0, "This is the tenth entry :-).", NOW(), 9);
-INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (10, 0, "This is the eleventh entry :-).", NOW(), 10);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (0, 0, "This is the first entry :-).", "2014-04-05 12:00:00", 0);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (1, 0, "This is the second entry :-).", "2014-04-04 12:00:00", 1);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (2, 0, "This is the third entry :-).", "2014-04-05 12:00:00", 2);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (3, 0, "This is the fourth entry :-).", "2014-04-05 12:00:00", 3);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (4, 0, "This is the fifth entry :-).", "2014-01-05 12:00:00", 4);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (5, 0, "This is the sixth entry :-).", "2014-04-05 12:00:00", 5);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (6, 0, "This is the seventh entry :-).", "2014-03-23 12:00:00", 6);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (7, 0, "This is the eighth entry :-).", "2014-04-05 12:00:00", 7);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (8, 0, "This is the ninth entry :-).", "2014-02-05 12:00:00", 8);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (9, 0, "This is the tenth entry :-).", "2014-04-05 12:00:00", 9);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (10, 0, "This is the eleventh entry :-).", "2014-03-05 12:00:00", 10);
 
 DROP TABLE IF EXISTS postLikes;
 CREATE TABLE postLikes (

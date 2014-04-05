@@ -32,7 +32,10 @@ class AnnotationsViewModel
     })
     @annotations = new PaginationViewModel(collection, {
       filter: (model) -> true #TODO filter visibles
-      viewModel: AnnotationViewModel
+      viewModel: AnnotationViewModel,
+      collectionClass: AnnotationCollection,
+      comparator: (model) ->
+        -model.get("createdAt").getTime()
     })
   openAnnotation: (annotationId) ->
     #go to post view for the given annotation

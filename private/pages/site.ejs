@@ -14,23 +14,13 @@
     <link type="text/css" rel="stylesheet" href="/big-canvas.css"/>
 
     <script>
-        var front = true;
-        var front2 = true;
         $(function() {
-            /*$(".comment-region").click(function(){
-                front = !front;
-                if(!front)
-                    $(this).addClass("flip");
-                else
-                    $(this).removeClass("flip");
-            });*/
+            $(".flip-button").click(function(){
+                $(".comment-region").toggleClass("flip");
+            });
 
             $(".demo").click(function(){
-                front2 = !front2;
-                if(!front2)
-                    $(this).addClass("flip");
-                else
-                    $(this).removeClass("flip");
+                $(this).toggleClass("flip");
             });
         });
     </script>
@@ -38,15 +28,20 @@
 <body>
 <div class="comment-region flip-panel">
     <div class="annotation-panel front">
+        <div>
+            Comments
+        </div>
         <div id="annotations" data-bind="with: annotations">
             <ul class="pagination">
-                <li data-bind="visible: hasPrevious, click: previous"><a href="#">&laquo;</a></li>
+                <li data-bind="enable: hasPrevious, click: first"><a href="#">&laquo;</a></li>
+                <li data-bind="enable: hasPrevious, click: previous"><a href="#">&lsaquo;</a></li>
                 <!-- ko foreach: totalPages -->
                 <li>
-                    <a data-bind="click: pageClick, text: page, style: { fontWeight: selected ? 'bold' : 'normal' }" href="#"></a>
+                    <a data-bind="click: pageClick, text: page, css: { active: selected }" href="#"></a>
                 </li>
                 <!-- /ko -->
-                <li data-bind="visible: hasNext, click: next"><a href="#">&raquo;</a></li>
+                <li data-bind="enable: hasPrevious, click: next"><a href="#">&rsaquo;</a></li>
+                <li data-bind="enable: hasNext, click: last"><a href="#">&raquo;</a></li>
             </ul>
             <!-- ko foreach: paginated -->
             <div>
@@ -55,9 +50,12 @@
                 (<span data-bind="text: createdAtFormatted"></span>)
             </div>
             <!-- /ko -->
+            <button class="flip-button">flip</button>
         </div>
     </div>
-    <div class="post-panel back">test2</div>
+    <div class="post-panel back">
+        <button class="flip-button">flip</button>
+    </div>
 </div>
 
 <div class="demo flip-panel" style="width: 100px; height: 100px">
