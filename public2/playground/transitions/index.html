@@ -1,0 +1,103 @@
+<html>
+<head>
+    <title>transition prototype</title>
+    <!-- jquery -->
+    <script type="text/javascript" src="../../jquery.min.js"></script>
+    <!-- jquery transit -->
+    <script type="text/javascript" src="jquery.transit.min.js"></script>
+	
+	<style>
+		.frame {
+			position: relative;
+			width: 100px;
+			height: 100px;
+		}
+		.box {
+			position: absolute;
+			width: inherit;
+			height: inherit;
+			-webkit-backface-visibility: hidden;
+			-moz-backface-visibility: hidden;
+		}
+		.hidden {
+			display: none;
+		}
+	</style>
+    <script type="text/javascript">
+	function TransitionMachine(boxes, index) {
+		var self = this;
+	
+		self.all = $(boxes);
+		self.lastIndex = null;
+		self.last = null;
+		self.currentIndex = index;
+		self.current = $(self.all[index]);
+		
+		self.all.addClass("hidden");
+		self.current.removeClass("hidden");
+		
+		self.translate = function(index) {
+			if(self.currentIndex == index)
+				return;
+			var time = 400;
+			var next = $(self.all[index]);
+			self.current
+				.css("z-index", 1000)
+				.transition({
+				  perspective: "100px",
+				  rotateY: "0deg"
+				}, 0)
+				.removeClass("hidden")
+				.transition({
+				  perspective: "100px",
+				  rotateY: "-180deg"
+				}, time);
+			next
+				.css("z-index", 2000)
+				.transition({
+				  perspective: "100px",
+				  rotateY: "180deg"
+				}, 0)
+				.removeClass("hidden")
+				.transition({
+				  perspective: "100px",
+				  rotateY: "0deg"
+				}, time);
+			if(self.last != null && index != self.lastIndex)
+				self.last.addClass("hidden");
+			self.last = self.current;
+			self.current = next;
+			self.lastIndex = self.currentIndex;
+			self.currentIndex = index;
+		}
+	}
+	
+    $(document).ready(function () {
+		var boxes = $(".box");
+		var machine = new TransitionMachine(boxes, 0);
+		var index = 0;
+		boxes.click(function() {
+			index = (index + 1) % boxes.length;
+			//index = Math.floor(Math.random() * boxes.length);
+			machine.translate(index);
+		});
+    });
+    </script>
+</head>
+<body>
+	<div class="frame">
+		<div class="box" style="background-color: red">
+			AAAA BBBB CCCC DDDD
+		</div>
+		<div class="box" style="background-color: green">
+			EEEE FFFF GGGG HHHH
+		</div>
+		<!--div class="box" style="background-color: blue">
+			IIII JJJJ KKKK LLLL
+		</div>
+		<!--div class="box" style="background-color: yellow">
+			MMMM NNNN OOOO PPPP
+		</div-->
+	</div>
+</body>
+</html>

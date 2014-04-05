@@ -6,6 +6,10 @@
     <script type="text/javascript" src="/jquery.min.js"></script>
     <!-- knockback -->
     <script type="text/javascript" src="/knockback.min.js"></script>
+    <!-- bootstrap -->
+    <link rel="stylesheet" href="/bootstrap.min.css">
+    <link rel="stylesheet" href="/bootstrap-theme.min.css">
+    <script type="text/javascript" src="/bootstrap.min.js"></script>
     <!-- big-canvas -->
     <script type="text/javascript">
         var siteId = "<%= siteId %>";
@@ -28,26 +32,29 @@
 <body>
 <div class="comment-region flip-panel">
     <div class="annotation-panel front">
-        <div>
-            Comments
-        </div>
         <div id="annotations" data-bind="with: annotations">
+            <button style="float: right">New</button>
+            <h2>Comments</h2>
             <ul class="pagination">
                 <li data-bind="enable: hasPrevious, click: first"><a href="#">&laquo;</a></li>
                 <li data-bind="enable: hasPrevious, click: previous"><a href="#">&lsaquo;</a></li>
                 <!-- ko foreach: totalPages -->
-                <li>
-                    <a data-bind="click: pageClick, text: page, css: { active: selected }" href="#"></a>
+                <li data-bind="css: { active: selected }">
+                    <a data-bind="click: pageClick, text: page" href="#"></a>
                 </li>
                 <!-- /ko -->
                 <li data-bind="enable: hasPrevious, click: next"><a href="#">&rsaquo;</a></li>
                 <li data-bind="enable: hasNext, click: last"><a href="#">&raquo;</a></li>
             </ul>
             <!-- ko foreach: paginated -->
-            <div>
-                <strong data-bind="text: author().name">Author</strong>:
-                <span data-bind="text: title"></span>
-                (<span data-bind="text: createdAtFormatted"></span>)
+            <div class="annotation-item">
+                <a class="user-image" href="#" data-bind="click: authorClick"><img src="/avatar.jpg" width="32" height="32"></a>
+                <div class="annotation-details">
+                    <a class="title-field" href="#" data-bind="text: title, click: annotationClick"></a><br/>
+                    by <a class="author-field" data-bind="text: author().name, click: authorClick" href="#">Author</a>,
+                    <span class="created-at-field" data-bind="text: createdAtFormatted"></span>,
+                    <span data-bind="text: postsCount"></span> posts
+                </div>
             </div>
             <!-- /ko -->
             <button class="flip-button">flip</button>

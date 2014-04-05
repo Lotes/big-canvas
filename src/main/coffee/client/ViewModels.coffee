@@ -8,6 +8,7 @@ logger = new Logger("ViewModels")
 class UserViewModel extends kb.ViewModel
   constructor: (model, options) ->
     super()
+    @id = kb.observable(model, "id")
     @name = kb.observable(model, "name")
     @color = kb.observable(model, "color")
 
@@ -22,14 +23,14 @@ class AnnotationViewModel extends kb.ViewModel
     @createdAtFormatted = ko.computed(() =>
       moment(@createdAt()).fromNow()
     )
+    @postsCount = model.get("posts").length
+    @authorClick = =>
+      alert("user "+@author().id())
+    @annotationClick = =>
+      alert("annotation "+model.get("id"))
 
 class AnnotationsViewModel
   constructor: (collection) ->
-    @collection = kb.collectionObservable(collection, {
-      factories: {
-        "models": AnnotationViewModel
-      }
-    })
     @annotations = new PaginationViewModel(collection, {
       filter: (model) -> true #TODO filter visibles
       viewModel: AnnotationViewModel,
@@ -37,6 +38,7 @@ class AnnotationsViewModel
       comparator: (model) ->
         -model.get("createdAt").getTime()
     })
+  createAnnotation: ->
   openAnnotation: (annotationId) ->
     #go to post view for the given annotation
     #load post data

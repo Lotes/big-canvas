@@ -79,7 +79,33 @@ body {
     border: 1px dotted black;
 }
 
-.pagination {
+.annotation-item {
+    padding: 5px;
+    border: 1px dotted black;
+}
+
+.user-image {
+    float: left;
+    margin-right: 5px;
+}
+
+.annotation-details {
+
+}
+
+.title-field {
+    font-size: larger;
+}
+
+.author-field {
+    font-weight: bold;
+}
+
+.created-at-field {
+
+}
+
+/*.pagination {
     display: inline-block;
     margin: 0;
     padding: 0;
@@ -106,4 +132,4 @@ body {
 .pagination > li > a.active {
     background-color: #EEEEEE;
     color: black;
-}
+}*/
