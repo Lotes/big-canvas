@@ -28,6 +28,9 @@ module.exports = {
         if(err)
           callback(err)
           return
+        if(results.length == 0)
+          callback(new Error("Buggy annotation: missing posts!"))
+          return
         first = results[0]
         postIds = []
         for post in results

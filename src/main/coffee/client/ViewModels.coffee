@@ -1,5 +1,6 @@
 { Annotation, AnnotationCollection, Post, PostCollection } = require("./models")
 { Logger } = require("../logging/Logger")
+{ PaginationViewModel } = require("./PaginationViewModel")
 moment = require("moment")
 
 logger = new Logger("ViewModels")
@@ -29,9 +30,10 @@ class AnnotationsViewModel
         "models": AnnotationViewModel
       }
     })
-    #filter by current user window
-    #sort by last update first
-    #pagination
+    @annotations = new PaginationViewModel(collection, {
+      filter: (model) -> true #TODO filter visibles
+      viewModel: AnnotationViewModel
+    })
   openAnnotation: (annotationId) ->
     #go to post view for the given annotation
     #load post data

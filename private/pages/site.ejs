@@ -17,13 +17,13 @@
         var front = true;
         var front2 = true;
         $(function() {
-            $(".comment-region").click(function(){
+            /*$(".comment-region").click(function(){
                 front = !front;
                 if(!front)
                     $(this).addClass("flip");
                 else
                     $(this).removeClass("flip");
-            });
+            });*/
 
             $(".demo").click(function(){
                 front2 = !front2;
@@ -38,18 +38,23 @@
 <body>
 <div class="comment-region flip-panel">
     <div class="annotation-panel front">
-        <div class="pagination">
-            <ul>
-                <li><a>1</a></li>
-                <li><a>2</a></li>
+        <div id="annotations" data-bind="with: annotations">
+            <ul class="pagination">
+                <li data-bind="visible: hasPrevious, click: previous"><a href="#">&laquo;</a></li>
+                <!-- ko foreach: totalPages -->
+                <li>
+                    <a data-bind="click: pageClick, text: page, style: { fontWeight: selected ? 'bold' : 'normal' }" href="#"></a>
+                </li>
+                <!-- /ko -->
+                <li data-bind="visible: hasNext, click: next"><a href="#">&raquo;</a></li>
             </ul>
-        </div>
-        <div id="annotations" data-bind="foreach: collection">
+            <!-- ko foreach: paginated -->
             <div>
                 <strong data-bind="text: author().name">Author</strong>:
                 <span data-bind="text: title"></span>
                 (<span data-bind="text: createdAtFormatted"></span>)
             </div>
+            <!-- /ko -->
         </div>
     </div>
     <div class="post-panel back">test2</div>

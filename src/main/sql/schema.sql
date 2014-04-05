@@ -77,6 +77,15 @@ CREATE TABLE annotations (
 );
 INSERT INTO annotations (id, title, x, y) VALUES (0, "Hello world!", 10, 10);
 INSERT INTO annotations (id, title, x, y) VALUES (1, "Another test!", -100, -100);
+INSERT INTO annotations (id, title, x, y) VALUES (2, "Homer", -100, -100);
+INSERT INTO annotations (id, title, x, y) VALUES (3, "Marge", -100, -100);
+INSERT INTO annotations (id, title, x, y) VALUES (4, "Lisa", -100, -100);
+INSERT INTO annotations (id, title, x, y) VALUES (5, "Bart", -100, -100);
+INSERT INTO annotations (id, title, x, y) VALUES (6, "Maggie", -100, -100);
+INSERT INTO annotations (id, title, x, y) VALUES (7, "Moe", -100, -100);
+INSERT INTO annotations (id, title, x, y) VALUES (8, "Cletus", -100, -100);
+INSERT INTO annotations (id, title, x, y) VALUES (9, "Mr. Burns", -100, -100);
+INSERT INTO annotations (id, title, x, y) VALUES (10, "Fruchtalarm!", -100, -100);
 
 DROP TABLE IF EXISTS posts;
 CREATE TABLE posts (
@@ -88,6 +97,15 @@ CREATE TABLE posts (
 );
 INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (0, 0, "This is the first entry :-).", NOW(), 0);
 INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (1, 0, "This is the second entry :-).", NOW(), 1);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (2, 0, "This is the third entry :-).", NOW(), 2);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (3, 0, "This is the fourth entry :-).", NOW(), 3);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (4, 0, "This is the fifth entry :-).", NOW(), 4);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (5, 0, "This is the sixth entry :-).", NOW(), 5);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (6, 0, "This is the seventh entry :-).", NOW(), 6);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (7, 0, "This is the eighth entry :-).", NOW(), 7);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (8, 0, "This is the ninth entry :-).", NOW(), 8);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (9, 0, "This is the tenth entry :-).", NOW(), 9);
+INSERT INTO posts (id, authorId, text, createdAt, annotationId) VALUES (10, 0, "This is the eleventh entry :-).", NOW(), 10);
 
 DROP TABLE IF EXISTS postLikes;
 CREATE TABLE postLikes (

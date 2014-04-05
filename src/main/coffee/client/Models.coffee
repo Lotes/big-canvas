@@ -41,6 +41,7 @@ dummyAnnotation = new Annotation({ id: "-1" })
 
 class AnnotationCollection extends Backbone.Collection
   model: Annotation
+  comparator: (model) -> return -model.get("createdAt").getTime()
 
 module.exports = {
   Annotation, AnnotationCollection,
