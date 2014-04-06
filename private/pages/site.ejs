@@ -4,6 +4,11 @@
     <title>big-canvas - <%= siteId %></title>
     <!-- jquery -->
     <script type="text/javascript" src="/jquery.min.js"></script>
+    <!-- jquery layout -->
+    <script type="text/javascript" src="/jquery.layout.min.js"></script>
+    <link rel="stylesheet" href="/layout-default.css">
+    <!-- jquery transit -->
+    <script type="text/javascript" src="/jquery.transit.min.js"></script>
     <!-- knockback -->
     <script type="text/javascript" src="/knockback.min.js"></script>
     <!-- bootstrap -->
@@ -18,71 +23,100 @@
     <link type="text/css" rel="stylesheet" href="/big-canvas.css"/>
 
     <script>
+        function TransitionMachine(boxes, index) {
+            var self = this;
+
+            self.all = $(boxes);
+            self.lastIndex = null;
+            self.last = null;
+            self.currentIndex = index;
+            self.current = $(self.all[index]);
+
+            self.all.addClass("hidden");
+            self.current.removeClass("hidden");
+
+            self.translate = function(index) {
+                if(self.currentIndex == index)
+                    return;
+                var time = 400;
+                var perspective = "600px";
+                var next = $(self.all[index]);
+                self.current
+                    .css("z-index", 1000)
+                    .transition({
+                        perspective: perspective,
+                        rotateY: "0deg"
+                    }, 0)
+                    .removeClass("hidden")
+                    .transition({
+                        perspective: perspective,
+                        rotateY: "-180deg"
+                    }, time);
+                next
+                    .css("z-index", 2000)
+                    .transition({
+                        perspective: perspective,
+                        rotateY: "180deg"
+                    }, 0)
+                    .removeClass("hidden")
+                    .transition({
+                        perspective: perspective,
+                        rotateY: "0deg"
+                    }, time);
+                if(self.last != null && index != self.lastIndex)
+                    self.last.addClass("hidden");
+                self.last = self.current;
+                self.current = next;
+                self.lastIndex = self.currentIndex;
+                self.currentIndex = index;
+            }
+        }
         $(function() {
-            $(".flip-button").click(function(){
-                $(".comment-region").toggleClass("flip");
+            var boxes = $(".comments-panel");
+            var machine = new TransitionMachine(boxes, 0);
+            var index = 0;
+            $(".flip-button").click(function() {
+                index = (index + 1) % boxes.length;
+                //index = Math.floor(Math.random() * boxes.length);
+                machine.translate(index);
             });
 
-            $(".demo").click(function(){
-                $(this).toggleClass("flip");
+            var layout = $('body').layout({
+                pane__spacing: 0,
+                north__resizable: false,
+                north__closable: false,
+                south__resizable: false,
+                south__closable: false,
+                north__spacing_open: 0,
+                south__spacing_open: 0,
+                east__resizable: false,
+                east__closable: true,
+                east__spacing_open: 0,
+                east__spacing_closed: 0,
+
+                paneClass: "region",
+                north__paneSelector: "#header-region",
+                east__paneSelector: "#comments-region",
+                center__paneSelector: "#canvas-region",
+                south__paneSelector: "#tools-region",
+
+                north__size: 50,
+                south__size: 50,
+                east__size: 381
             });
         });
     </script>
 </head>
 <body>
-<div class="comment-region flip-panel">
-    <div class="annotation-panel front">
-        <div id="annotations" data-bind="with: annotations">
-            <button style="float: right">New</button>
-            <h2>Comments</h2>
-            <ul class="pagination">
-                <li data-bind="enable: hasPrevious, click: first"><a href="#">&laquo;</a></li>
-                <li data-bind="enable: hasPrevious, click: previous"><a href="#">&lsaquo;</a></li>
-                <!-- ko foreach: totalPages -->
-                <li data-bind="css: { active: selected }">
-                    <a data-bind="click: pageClick, text: page" href="#"></a>
-                </li>
-                <!-- /ko -->
-                <li data-bind="enable: hasPrevious, click: next"><a href="#">&rsaquo;</a></li>
-                <li data-bind="enable: hasNext, click: last"><a href="#">&raquo;</a></li>
-            </ul>
-            <!-- ko foreach: paginated -->
-            <div class="annotation-item">
-                <a class="user-image" href="#" data-bind="click: authorClick"><img src="/avatar.jpg" width="32" height="32"></a>
-                <div class="annotation-details">
-                    <a class="title-field" href="#" data-bind="text: title, click: annotationClick"></a><br/>
-                    by <a class="author-field" data-bind="text: author().name, click: authorClick" href="#">Author</a>,
-                    <span class="created-at-field" data-bind="text: createdAtFormatted"></span>,
-                    <span data-bind="text: postsCount"></span> posts
-                </div>
-            </div>
-            <!-- /ko -->
-            <button class="flip-button">flip</button>
-        </div>
-    </div>
-    <div class="post-panel back">
-        <button class="flip-button">flip</button>
-    </div>
-</div>
+<div id="canvas-region" class="ui-layout-center">
 
-<div class="demo flip-panel" style="width: 100px; height: 100px">
-    <div class="front" style="background-color: red"></div>
-    <div class="back" style="background-color: blue"></div>
 </div>
-<!--
-- login/logout
-- canvas
-- tools
-  - move
-  - mark
-  - brush
-  - undo, redo
-  - color, width, opacity
-- layers
-- zoom window
-- undo manager
-- hints
-  - bookmark writable sites!
--->
+<div id="header-region" class="ui-layout-north">
+    <div id="logo">big-canvas</div>
+</div>
+<div id="tools-region" class="ui-layout-south">
+
+</div>
+<% include comments.ejs %>
 </body>
 </html>

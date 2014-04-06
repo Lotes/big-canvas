@@ -1,135 +1,41 @@
-body {
-    font-family: "Helvetica Neue Light", "HelveticaNeue-Light", "Helvetica Neue", Calibri, Helvetica, Arial;
+#canvas-region,
+#header-region,
+#tools-region,
+#comments-region {
+  border: 1px dotted black;
 }
-
-.comment-region {
-    width: 300px;
-    height: 500px;
-    margin: 0;
+.comments-panel {
+  background-color: white;
 }
-
-.flip-panel {
-    position: relative;
-    -webkit-perspective: 600px;
-    -moz-perspective: 600px;
-}
-
-.front {
-    position: absolute;
-    top: 0;
-    z-index: 900;
-    width: inherit;
-    height: inherit;
-
-    -webkit-transform: rotateX(0deg) rotateY(0deg);
-    -webkit-transform-style: preserve-3d;
-    -webkit-backface-visibility: hidden;
-    -moz-transform: rotateX(0deg) rotateY(0deg);
-    -moz-transform-style: preserve-3d;
-    -moz-backface-visibility: hidden;
-    /* -- transition is the magic sauce for animation -- */
-    -o-transition: all .4s ease-in-out;
-    -ms-transition: all .4s ease-in-out;
-    -moz-transition: all .4s ease-in-out;
-    -webkit-transition: all .4s ease-in-out;
-    transition: all .4s ease-in-out;
-}
-
-.flip .front {
-    z-index: 900;
-    -webkit-transform: rotateY(180deg);
-    -moz-transform: rotateY(180deg);
-}
-
-.back {
-    position: absolute;
-    top: 0;
-    z-index: 800;
-    width: inherit;
-    height: inherit;
-
-    -webkit-transform: rotateY(-180deg);
-    -webkit-transform-style: preserve-3d;
-    -webkit-backface-visibility: hidden;
-
-    -moz-transform: rotateY(-180deg);
-    -moz-transform-style: preserve-3d;
-    -moz-backface-visibility: hidden;
-    /* -- transition is the magic sauce for animation -- */
-    -o-transition: all .4s ease-in-out;
-    -ms-transition: all .4s ease-in-out;
-    -moz-transition: all .4s ease-in-out;
-    -webkit-transition: all .4s ease-in-out;
-    transition: all .4s ease-in-out;
-}
-
-.flip .back {
-    z-index: 1000;
-    -webkit-transform: rotateX(0deg) rotateY(0deg);
-    -moz-transform: rotateX(0deg) rotateY(0deg);
-}
-
-.annotation-panel {
-    background-color: white;
-    border: 1px dotted black;
-}
-
-.post-panel {
-    background-color: white;
-    border: 1px dotted black;
-}
-
 .annotation-item {
-    padding: 5px;
-    border: 1px dotted black;
+  padding: 5px;
+  border: 1px dotted black;
 }
-
 .user-image {
-    float: left;
-    margin-right: 5px;
+  float: left;
+  margin-right: 5px;
 }
-
-.annotation-details {
-
-}
-
 .title-field {
-    font-size: larger;
+  font-size: larger;
 }
-
 .author-field {
-    font-weight: bold;
+  font-weight: bold;
 }
-
-.created-at-field {
-
+.flip-frame {
+  position: relative;
+  width: 100px;
+  height: 100px;
 }
-
-/*.pagination {
-    display: inline-block;
-    margin: 0;
-    padding: 0;
+.flip-panel {
+  position: absolute;
+  width: inherit;
+  height: inherit;
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
 }
-
-.pagination > li {
-    display: inline;
+.hidden {
+  display: none;
 }
-
-.pagination > li > a,
-.pagination > li > span
-{
-    background-color: #FFFFFF;
-    border: 1px solid #DDDDDD;
-    color: #000000;
-    float: left;
-    line-height: 1.42857;
-    margin-left: -1px;
-    padding: 6px 12px;
-    position: relative;
-    text-decoration: none;
+body {
+  font-family: "Helvetica Neue Light", "HelveticaNeue-Light", "Helvetica Neue", Calibri, Helvetica, Arial;
 }
-
-.pagination > li > a.active {
-    background-color: #EEEEEE;
-    color: black;
-}*/

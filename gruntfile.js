@@ -27,7 +27,7 @@ module.exports = function(grunt) {
 		less: {
 			main: {
 				files: {
-					"public2/bigcanvas.css": "public2/bigcanvas.less"
+					"public2/big-canvas.css": "src/main/less/main.less"
 				}
 			}
 		},
@@ -48,7 +48,11 @@ module.exports = function(grunt) {
 			main: {
 				files: "src/main/coffee/**/*.coffee",
 				tasks: ["coffee:main", "browserify:client"]
-			}
+			},
+            style: {
+                files: "src/main/less/**/*.less",
+                tasks: ["less:main"]
+            }
 		},
         exec: {
             schema: {
@@ -70,4 +74,5 @@ module.exports = function(grunt) {
 	grunt.registerTask("watching", ["watch:main"]);
     grunt.registerTask("init", ["coffee:main", "execute:database"]);
     grunt.registerTask("rpc", ["exec:schema"]);
+    grunt.registerTask("style", ["less:main"]);
 };
