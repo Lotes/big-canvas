@@ -12,7 +12,6 @@ logger = new Logger("main")
 $(->
   annotations = new AnnotationCollection()
   annotationsViewModel = new AnnotationsViewModel(annotations)
-  ko.applyBindings(annotationsViewModel, $("#annotations")[0])
 
   client = new Client(siteId) #siteId will be set by the template
   users = new UserManager(client)

@@ -1,5 +1,5 @@
 <div id="comments-region" class="ui-layout-east flip-frame">
-    <div class="comments-panel flip-panel">
+    <div id="annotations-panel" class="comments-panel flip-panel">
         <div id="annotations" data-bind="with: annotations">
             <button style="float: right">New</button>
             <h2>Comments</h2>
@@ -14,21 +14,23 @@
                 <li data-bind="enable: hasPrevious, click: next"><a href="#">&rsaquo;</a></li>
                 <li data-bind="enable: hasNext, click: last"><a href="#">&raquo;</a></li>
             </ul>
-            <!-- ko foreach: paginated -->
-            <div class="annotation-item">
-                <a class="user-image" href="#" data-bind="click: authorClick"><img src="/avatar.jpg" width="32" height="32"></a>
-                <div class="annotation-details">
-                    <a class="title-field" href="#" data-bind="text: title, click: annotationClick"></a><br/>
-                    by <a class="author-field" data-bind="text: author().name, click: authorClick" href="#">Author</a>,
-                    <span class="created-at-field" data-bind="text: createdAtFormatted"></span>,
-                    <span data-bind="text: postsCount"></span> posts
+            <div class="scrollBox">
+                <!-- ko foreach: paginated -->
+                <div class="annotation-item">
+                    <a class="user-image" href="#" data-bind="click: authorClick"><img src="/avatar.jpg" width="32" height="32"></a>
+                    <div class="annotation-details">
+                        <a class="title-field" href="#" data-bind="text: title, click: annotationClick"></a><br/>
+                        by <a class="author-field" data-bind="text: author().name, click: authorClick" href="#">Author</a>,
+                        <span class="created-at-field" data-bind="text: createdAtFormatted"></span>,
+                        <span data-bind="text: postsCount"></span> posts
+                    </div>
                 </div>
+                <!-- /ko -->
             </div>
-            <!-- /ko -->
-            <button class="flip-button">flip</button>
+            <button class="flip-button" data-bind="click: $root.gotoPosts">flip</button>
         </div>
     </div>
-    <div class="comments-panel flip-panel">
-        <button class="flip-button">flip</button>
+    <div id="posts-panel" class="comments-panel flip-panel">
+        <button class="flip-button" data-bind="click: $root.gotoAnnotations">flip</button>
     </div>
 </div>

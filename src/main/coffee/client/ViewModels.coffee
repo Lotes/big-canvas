@@ -1,6 +1,7 @@
 { Annotation, AnnotationCollection, Post, PostCollection } = require("./models")
 { Logger } = require("../logging/Logger")
 { PaginationViewModel } = require("./PaginationViewModel")
+{ TransitionMachine } = require("./TransitionMachine")
 moment = require("moment")
 
 logger = new Logger("ViewModels")
@@ -31,6 +32,10 @@ class AnnotationViewModel extends kb.ViewModel
 
 class AnnotationsViewModel
   constructor: (collection) ->
+    @panels = new TransitionMachine({
+      annotations: "#annotations-panel",
+      posts: "#posts-panel"
+    }, "annotations")
     @annotations = new PaginationViewModel(collection, {
       filter: (model) -> true #TODO filter visibles
       viewModel: AnnotationViewModel,
@@ -38,17 +43,8 @@ class AnnotationsViewModel
       comparator: (model) ->
         -model.get("createdAt").getTime()
     })
-  createAnnotation: ->
-  openAnnotation: (annotationId) ->
-    #go to post view for the given annotation
-    #load post data
-  closeAnnotation: ->
-    #close and go back to annotation overview
-
-###
-class PostViewModel
-  like: null
-  unlike: null
-###
+    @gotoPosts = => @panels.goto("posts")
+    @gotoAnnotations = => @panels.goto("annotations")
+    ko.applyBindings(this, $("#comments-region")[0])
 
 module.exports = { AnnotationsViewModel }

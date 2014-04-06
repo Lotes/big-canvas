@@ -23,64 +23,7 @@
     <link type="text/css" rel="stylesheet" href="/big-canvas.css"/>
 
     <script>
-        function TransitionMachine(boxes, index) {
-            var self = this;
-
-            self.all = $(boxes);
-            self.lastIndex = null;
-            self.last = null;
-            self.currentIndex = index;
-            self.current = $(self.all[index]);
-
-            self.all.addClass("hidden");
-            self.current.removeClass("hidden");
-
-            self.translate = function(index) {
-                if(self.currentIndex == index)
-                    return;
-                var time = 400;
-                var perspective = "600px";
-                var next = $(self.all[index]);
-                self.current
-                    .css("z-index", 1000)
-                    .transition({
-                        perspective: perspective,
-                        rotateY: "0deg"
-                    }, 0)
-                    .removeClass("hidden")
-                    .transition({
-                        perspective: perspective,
-                        rotateY: "-180deg"
-                    }, time);
-                next
-                    .css("z-index", 2000)
-                    .transition({
-                        perspective: perspective,
-                        rotateY: "180deg"
-                    }, 0)
-                    .removeClass("hidden")
-                    .transition({
-                        perspective: perspective,
-                        rotateY: "0deg"
-                    }, time);
-                if(self.last != null && index != self.lastIndex)
-                    self.last.addClass("hidden");
-                self.last = self.current;
-                self.current = next;
-                self.lastIndex = self.currentIndex;
-                self.currentIndex = index;
-            }
-        }
         $(function() {
-            var boxes = $(".comments-panel");
-            var machine = new TransitionMachine(boxes, 0);
-            var index = 0;
-            $(".flip-button").click(function() {
-                index = (index + 1) % boxes.length;
-                //index = Math.floor(Math.random() * boxes.length);
-                machine.translate(index);
-            });
-
             var layout = $('body').layout({
                 pane__spacing: 0,
                 north__resizable: false,
