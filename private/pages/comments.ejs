@@ -27,10 +27,21 @@
                 </div>
                 <!-- /ko -->
             </div>
-            <button class="flip-button" data-bind="click: $root.gotoPosts">flip</button>
+            <button class="flip-button" data-bind="click: $root.gotoRandom">flip</button>
         </div>
     </div>
-    <div id="posts-panel" class="comments-panel flip-panel">
-        <button class="flip-button" data-bind="click: $root.gotoAnnotations">flip</button>
+    <div id="create-annotation-panel" class="comments-panel flip-panel">
+        <h2>Create annotation</h2>
+        <button class="flip-button" data-bind="click: $root.gotoRandom">flip</button>
+        <textarea id="tinyeditor" data-bind="value: postContent"></textarea>
+        <button data-bind="click: alertContent">content?</button>
     </div>
+    <!--div id="posts-panel" class="comments-panel flip-panel">
+        <h2>Comments</h2>
+        <button class="flip-button" data-bind="click: $root.gotoRandom">flip</button>
+    </div>
+    <div id="edit-post-panel" class="comments-panel flip-panel">
+        <h2>Edit post</h2>
+        <button class="flip-button" data-bind="click: $root.gotoRandom">flip</button>
+    </div-->
 </div>
