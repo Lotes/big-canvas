@@ -1,0 +1,123 @@
+<html>
+<head>
+    <title>editor prototype</title>
+    <!-- jquery -->
+    <script type="text/javascript" src="../../jquery.min.js"></script>
+    <script type="text/javascript" src="../../knockback.min.js"></script>
+	
+	<style>
+		.editor-toolbar {
+			float: left;
+			height: 24px;
+			background-color: white;
+			outline: 1px solid black;
+			width: 100%;
+		}
+		.editor-toolbutton {
+			margin: 1px;
+			width: 22px;
+			height: 22px;
+			float: left;
+			background-image:url(editor-toolbar-buttons.gif);
+			background-repeat:no-repeat;
+			cursor: pointer;
+		}
+		.editor-toolbutton:hover {
+			outline: 1px black solid;
+		}
+		.editor-toolbutton-bold {
+			background-position: 0px 0px;
+		}
+		.editor-toolbutton-italic {
+			background-position: -72px 0px;
+		}
+		.editor-toolbutton-underline {
+			background-position: -288px 0px;
+		}
+		.editor-toolbutton-strike {
+			background-position: -216px 0px;
+		}
+		.editor-textarea {
+			height: 100%;
+			background-color: white;
+			border: 1px solid black;
+		}
+	</style>
+    <script type="text/javascript">
+		function wrap(tag) {
+			 if (window.getSelection) {
+				// not IE case
+				var selObj = window.getSelection();
+				var selRange = selObj.getRangeAt(0);
+				
+				var newElement = document.createElement(tag);
+				var documentFragment = selRange.extractContents();
+				newElement.appendChild(documentFragment);
+				selRange.insertNode(newElement);
+				
+				selObj.removeAllRanges();
+			} else if (document.selection && document.selection.createRange && document.selection.type != "None") {
+				// IE case
+				var range = document.selection.createRange();
+				var selectedText = range.htmlText;
+				var newText = "<"+tag+">" + selectedText + "</"+tag+">";
+				document.selection.createRange().pasteHTML(newText);
+			}
+		}
+		function Editor(element) {
+			var buttons = {
+				"bold" : {title : "Bold", tag : "b", iconClass: "editor-toolbutton-bold"},
+				"italic" : {title : "Italic", tag : "i", iconClass: "editor-toolbutton-italic"},
+				"underline" : {title : "Underline", tag : "u", iconClass: "editor-toolbutton-underline"},
+				"strike" : {title : "Strike", tag: "strike", iconClass: "editor-toolbutton-strike"}
+			};
+			var $element = $(element);
+			$element.html("<div class='editor-toolbar'></div><div class='editor-textarea'></div>");
+			this.$toolbar = $element.find(".editor-toolbar");
+			this.$textarea = $element.find(".editor-textarea");
+			//setup toolbar
+			for(var name in buttons) {
+				var button = buttons[name];
+				var $button = $("<button></button>");
+				$button.addClass("editor-toolbutton");
+				$button.addClass(button.iconClass);
+				$button.click((function(button) {
+					return function() {
+						wrap(button.tag);
+					};
+				})(button));
+				this.$toolbar.append($button);
+			}
+			//setup textarea
+			this.$textarea.attr("contenteditable", "true");
+		}
+		$(function() {
+			ko.bindingHandlers.editorContent = {
+				init: function(element, valueAccessor, allBindings, viewModel, bindingContext) {
+					var editor = new Editor(element);
+					editor.$textarea.bind("input", function() { valueAccessor()(editor.$textarea.html()); });
+					$(element).data("editor", editor);
+				},
+				update: function(element, valueAccessor, allBindings) {
+					var editor = $(element).data("editor");
+					if(editor.$textarea.html() != valueAccessor()())
+						editor.$textarea.html(valueAccessor()());
+				}
+			};
+			
+			var viewModel = {
+				content: ko.observable("Hello there, <b>World</b>!"),
+				getContent: function() { alert(viewModel.content()); }
+			};
+			ko.applyBindings(viewModel);
+			viewModel.content("Quak");
+		});
+    </script>
+</head>
+<body>
+	<div data-bind="editorContent: content" style="height: 300px; width: 200px; background-color: green">
+		
+	</div>
+	<button data-bind="click: getContent">Content?</button>
+</body>
+</html>
