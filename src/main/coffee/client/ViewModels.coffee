@@ -34,7 +34,9 @@ class AnnotationsViewModel
   constructor: (collection) ->
     @panels = new TransitionMachine({
       annotations: "#annotations-panel",
-      posts: "#posts-panel"
+      #posts: "#posts-panel",
+      create: "#create-annotation-panel",
+      #edit: "#edit-post-panel"
     }, "annotations")
     @annotations = new PaginationViewModel(collection, {
       filter: (model) -> true #TODO filter visibles
@@ -43,6 +45,11 @@ class AnnotationsViewModel
       comparator: (model) ->
         -model.get("createdAt").getTime()
     })
+    @postContent = ko.observable("abc def ghi")
+    @alertContent = => alert(@postContent())
+    @gotoRandom = =>
+      panels = ["annotations", "create"]
+      @panels.goto(panels[Math.floor(Math.random()*panels.length)])
     @gotoPosts = => @panels.goto("posts")
     @gotoAnnotations = => @panels.goto("annotations")
     ko.applyBindings(this, $("#comments-region")[0])

@@ -15,6 +15,10 @@
 * take a look at the session expiration date
 * test big coordinates
 * test why window resize fails displaying drawing scene
+* line tool
+* airbrush tool
+* stamp functionality
+* library per user (uploaded images files, own static and live images, readonly points)
 
 ## v0.4
 * read-only mode

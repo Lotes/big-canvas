@@ -1,15 +1,10 @@
 = THOUGHTS =
-* change language to coffee script
 * read more papers about group ware
 * make an own paper about the internals and design decisions of big canvas
 * when does the server draw the tiles?
   * should be only done when they were requested (static or live images or undo command or initial tile loading)
   * need a publish-subscribe solution
 * which tile revisions should the server store on hard disk and which can be discarded?
-* rebuild RPC interface?
-  * could use XText and XTend to generate coffee scripts for data structures
-  * discard "switch" and introduce inheritance using a "$type" attribute
-  * may add namespaces
 * rethink the hierarchal structure of revisions and actions
   * use child-parent-relation table with links to all parents (quadratic space, but easy search queries)
   * may introduce an abstract layer to try more solutions
