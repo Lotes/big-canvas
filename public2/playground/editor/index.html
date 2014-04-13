@@ -1,49 +1,53 @@
 <html>
 <head>
     <title>editor prototype</title>
-    <!-- jquery -->
+    <script type="text/javascript" src="tinyeditor/tiny.editor.js"></script>
+	<link rel="stylesheet" href="tinyeditor/tinyeditor.css">
     <script type="text/javascript" src="../../jquery.min.js"></script>
     <script type="text/javascript" src="../../knockback.min.js"></script>
-	
 	<style>
-		.editor-toolbar {
-			float: left;
-			height: 24px;
-			background-color: white;
-			outline: 1px solid black;
-			width: 100%;
-		}
-		.editor-toolbutton {
-			margin: 1px;
-			width: 22px;
-			height: 22px;
-			float: left;
-			background-image:url(editor-toolbar-buttons.gif);
-			background-repeat:no-repeat;
-			cursor: pointer;
-		}
-		.editor-toolbutton:hover {
-			outline: 1px black solid;
-		}
-		.editor-toolbutton-bold {
-			background-position: 0px 0px;
-		}
-		.editor-toolbutton-italic {
-			background-position: -72px 0px;
-		}
-		.editor-toolbutton-underline {
-			background-position: -288px 0px;
-		}
-		.editor-toolbutton-strike {
-			background-position: -216px 0px;
-		}
-		.editor-textarea {
-			height: 100%;
-			background-color: white;
-			border: 1px solid black;
-		}
 	</style>
-    <script type="text/javascript">
+	<script type="text/javascript">
+		ko.bindingHandlers.editorContent = {
+			init: function(element, valueAccessor, allBindings, viewModel, bindingContext) {
+				var editor = new TINY.editor.edit('editor', {
+					element: element,
+					width: 584,
+					height: 175,
+					cssclass: 'tinyeditor',
+					controlclass: 'tinyeditor-control',
+					rowclass: 'tinyeditor-header',
+					dividerclass: 'tinyeditor-divider',
+					controls: ['bold', 'italic', 'underline', 'strikethrough', '|', 'orderedlist', 'unorderedlist', '|', 'outdent', 'indent', '|', 'leftalign',
+						'centeralign', 'rightalign', 'blockjustify', '|', 'unformat', 'n',
+						'font', 'size', 'style', '|', 'link', 'unlink'],
+					footer: true,
+					fonts: ['Verdana','Arial','Georgia','Trebuchet MS'],
+					xhtml: true,
+					cssfile: 'custom.css',
+					bodyid: 'editor',
+					footerclass: 'tinyeditor-footer',
+					toggle: {text: 'source', activetext: 'wysiwyg', cssclass: 'toggle'},
+					resize: {cssclass: 'resize'}
+				});
+				$(element).data("editor", editor);
+			},
+			update: function(element, valueAccessor, allBindings) {
+				var editor = $(element).data("editor");
+				if(editor.getContents() != valueAccessor()())
+					editor.setContents(valueAccessor()());
+			}
+		};
+		$(function() {
+			var viewModel = {
+				content: ko.observable("Hello there, <b>World</b>!"),
+				getContent: function() { alert(viewModel.content()); }
+			};
+			ko.applyBindings(viewModel);
+			viewModel.content("Quak");
+		});
+	</script>
+    <!--script type="text/javascript">
 		function wrap(tag) {
 			 if (window.getSelection) {
 				// not IE case
@@ -112,7 +116,7 @@
 			ko.applyBindings(viewModel);
 			viewModel.content("Quak");
 		});
-    </script>
+    </script-->
 </head>
 <body>
 	<div data-bind="editorContent: content" style="height: 300px; width: 200px; background-color: green">
